@@ -2412,6 +2412,15 @@ jobs:
       - name: 'L16 : réception → facture fournisseur, rattachée et tracée (755)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/755_chain_l16_reception_facturefournisseur_tests.sql
 
+      # L16 — chaînage interne ACHATS : l'AVOIR FOURNISSEUR qui annule une FACTURE
+      # FOURNISSEUR lui est rattaché et tracé (effet `purchase.invoice.to_credit_note`) ;
+      # `purchase_credit_notes` entre au registre chain_document_types. Dernier
+      # tronçon de la famille Achats.
+      # 14 verdicts : nominal, idempotence (D1), quatre refus (avoir introuvable/
+      # brouillon/autre fournisseur/déjà rattaché), frise (I-01), isolation (D8).
+      - name: 'L16 : facture fournisseur → avoir, rattachée et tracée (756)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/756_chain_l16_avoir_fournisseur_tests.sql
+
       # --- plan6:b --- règles d'état, paie française ---
       # Territoire : règles d'état par module ; app/src/lib/payroll*, écrans de paie
       # Plage : 500→559

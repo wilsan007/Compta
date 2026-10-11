@@ -35,7 +35,7 @@ le **comportement** peut se contrer. Garde-fous :
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | A3.1 | Recompter L16 → L22 : inventaire de ce que `415` → `422` ont réellement posé (L23 tranche 1, L17 capacité ↔ absence, L18 consommation chantier, L19, L20, métriques, retour arrière) et ce qu'il reste par lot du plan d'implémentation | A.6 | 1 j | ✅ fait le 05/10 (voir §Recomptage) |
-| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **10 maillons livrés** : L16 **Commercial** — devis → commande (`493`, **19/19**), commande → livraison (`494`, **14/14**), livraison → facture (`495`, **14/14**), facture → règlement (`497`, **14/14**), facture → avoir (`754`, **14/14**) ; L16 **Achats** — commande d'achat → réception (`498`, **14/14**), réception → facture fournisseur (`755`, **14/14**), facture fournisseur → règlement (`753`, **14/14**) ; L16 **Trésorerie** — ordre de paiement → virement (`499`, **16/16**) ; L16 **Stock** — proposition MRP → commande d'achat (`751`, **15/15**) — voir §A3.2 lots 1 à 10 |
+| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **11 maillons livrés** : L16 **Commercial** — devis → commande (`493`, **19/19**), commande → livraison (`494`, **14/14**), livraison → facture (`495`, **14/14**), facture → règlement (`497`, **14/14**), facture → avoir (`754`, **14/14**) ; L16 **Achats** — commande d'achat → réception (`498`, **14/14**), réception → facture fournisseur (`755`, **14/14**), facture fournisseur → règlement (`753`, **14/14**), facture fournisseur → avoir (`756`, **14/14**) ; L16 **Trésorerie** — ordre de paiement → virement (`499`, **16/16**) ; L16 **Stock** — proposition MRP → commande d'achat (`751`, **15/15**) — voir §A3.2 lots 1 à 11 |
 | A3.3 | L23 (événements et webhooks unifiés, suite de la tranche 1) ; L24 (explicabilité, régularisation guidée) | A.7 | plafond du plan | 🟡 **L23-b livré le 06/10** : le **moteur d'automatisations** (`752`, suite **10/10**) — voir §A3.3 ; restent **L23-c** (lecture écran), **L24** |
 | A3.4 | P1 certificat d'intégrité, P3 audit de reprise, P2 banc sur données du prospect, puis P4, P5, P7, P8, P6 | A.8 (propositions P1 → P8) | ≈ 25 j | 🟢 **débloqué le 05/10** — les cinq questions du §6 sont **tranchées** et l'expert-comptable référent est **désigné** (dossier `doc/validation-expert-comptable/DOSSIER-EXPERT-COMPTABLE-2026-10-05.md`, lot A1) ; ordre d'exécution : P1 → P3 → P2 → P4 → P5 → P7 → P8 → P6 |
 
@@ -412,8 +412,35 @@ n'a pas besoin du harnais d'approbation du lot 8. Portes : G2 / G8 /
 `check_tenant_guard` / `check_anon_grants` **OK** ; rejouable ; enrôlée dans
 `ci.yml` (G5).
 
-**La chaîne Achats est désormais fermée** : `commande → réception → facture →
-règlement`. Reste de la famille : **avoir fournisseur** (`purchase_credit_notes`).
+**La chaîne Achats** : `commande → réception → facture → règlement`. Le dernier
+tronçon (**avoir fournisseur**) est fermé au **lot 11** ; la famille Achats est
+alors complète.
+
+## A3.2 — lot 11 : l'avoir fournisseur rattaché à la facture (migration `756`)
+
+**Le dernier tronçon de la famille Achats**, miroir du lot 9 (avoir client).
+`purchase_credit_notes.purchase_invoice_id` **existe** et le trigger `192` l'utilise
+pour valider (la facture d'origine doit être **approuvée**) — mais **aucun lien de
+chaîne** n'est posé, et `purchase_credit_notes` **n'est pas au registre**
+`chain_document_types` (un lien vers un avoir fournisseur aurait été **REFUSÉ**, 451).
+
+**Ce qui est livré** — migration `756_chain_l16_avoir_fournisseur.sql` : le type
+`purchase_credit_notes` **entre au registre**, le contrat d'effet
+`purchase.invoice.to_credit_note`, et le maillon
+`chain_l16_supplier_invoice_credit_note` — avoir non **brouillon**, même
+fournisseur, un avoir qui annule **déjà** une autre facture est refusé ;
+**idempotent** ; **lien** `link_documents` (`reversed_by`). Il **ne réécrit pas**
+`purchase_invoice_id` (posée par le trigger `192`, qui refuse de modifier un avoir
+validé). Même décision qu'au lot 9 : **le statut de la facture n'est pas un refus**
+(un avoir entier la fait légitimement passer à `cancelled`).
+
+**Éprouvé** — suite `756` **14/14** sur base neuve (harnais `_mk_approved_pi` +
+`_mk_validated_pcn`). Portes : G2 / G8 / `check_tenant_guard` / `check_anon_grants`
+**OK** ; rejouable ; enrôlée dans `ci.yml` (G5).
+
+**Les chaînes Commercial ET Achats sont désormais complètes de bout en bout** :
+`devis → commande → livraison → facture → avoir / règlement` et
+`commande → réception → facture → avoir / règlement`.
 
 ## Demandes reçues (R3) — transmises par l'intégration du 05/10/2026
 
@@ -437,4 +464,5 @@ règlement`. Reste de la famille : **avoir fournisseur** (`purchase_credit_notes
 | 2026-10-06 | A3.3 (L23-b) | **L23-b · le MOTEUR D'AUTOMATISATIONS** : migration `752` (`automation_actions` catalogue fermé, `automation_rules`, `automation_runs` — idempotence `(tenant, règle, événement)`, moteur `chain_l23_automatiser`, déclencheur `zz_l23_automatiser` sur `domain_events`) + suite `752` enrôlée dans `ci.yml` | suite **10/10** sur base neuve · G2/G8/tenant/anon/composite-FK **OK** · **plafond FORCE RLS 318→320 inscrit** · rejouable | `fd9a11b` |
 | 2026-10-11 | A3.2 (lot 8) | **L16 · Achats · facture fournisseur → règlement** : migration `753` (contrat `purchase.invoice.to_payment`, maillon `chain_l16_supplier_invoice_payment` — même fournisseur, statuts valides, idempotent, écrit `supplier_payments.purchase_invoice_id`, lien `paid_by`) + suite `753` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2 67 constats **0 au registre** · G8/tenant/anon **OK** · rejouable | `94cbc84` |
 | 2026-10-11 | A3.2 (lot 9) | **L16 · Commercial · facture → avoir** — le **DIFFÉRÉ fermé** : migration `754` (contrat `sale.invoice.to_credit_note`, maillon `chain_l16_invoice_credit_note` — avoir non brouillon, même client, ne réécrit pas `invoice_id`, lien `reversed_by`). **Décision mesurée** : le statut de la facture n'est PAS un refus (un avoir entier la passe légitimement à `cancelled`) — la 1ʳᵉ version le refusait et cassait le geste normal. Harnais `_mk_validated_invoice` / `_mk_validated_credit_note`. + suite `754` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2 67 constats **0 au registre** · G8/tenant/anon **OK** · rejouable | `06f8975` |
-| 2026-10-11 | A3.2 (lot 10) | **L16 · Achats · réception → facture fournisseur** : migration `755` (contrat `purchase.receipt.to_invoice`, maillon `chain_l16_receipt_supplier_invoice` — même fournisseur, statuts valides, idempotent, **écrit `purchase_invoices.goods_receipt_id`** que le rapprochement trois points 135/148 lisait sans qu'on l'écrive, lien `invoiced_by`). La chaîne Achats `commande → réception → facture → règlement` est **fermée**. + suite `755` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2/G8/tenant/anon **OK** · rejouable | _(ce lot)_ |
+| 2026-10-11 | A3.2 (lot 10) | **L16 · Achats · réception → facture fournisseur** : migration `755` (contrat `purchase.receipt.to_invoice`, maillon `chain_l16_receipt_supplier_invoice` — même fournisseur, statuts valides, idempotent, **écrit `purchase_invoices.goods_receipt_id`** que le rapprochement trois points 135/148 lisait sans qu'on l'écrive, lien `invoiced_by`). La chaîne Achats `commande → réception → facture → règlement` est **fermée**. + suite `755` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2/G8/tenant/anon **OK** · rejouable | `48078ce` |
+| 2026-10-11 | A3.2 (lot 11) | **L16 · Achats · facture fournisseur → avoir** : migration `756` (`purchase_credit_notes` au registre, contrat `purchase.invoice.to_credit_note`, maillon `chain_l16_supplier_invoice_credit_note` — avoir non brouillon, même fournisseur, ne réécrit pas `purchase_invoice_id`, lien `reversed_by`). **Dernier tronçon de la famille Achats** : Commercial **et** Achats sont désormais complets de bout en bout. + suite `756` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2/G8/tenant/anon **OK** · rejouable | _(ce lot)_ |
