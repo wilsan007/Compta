@@ -2500,6 +2500,12 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # R-046 (partie B, lot Production) — OF d'origine MRP lié à sa proposition.
+      - name: 'plan6 B — R-046 : OF lié à sa proposition MRP (529)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/529_regle_r046_lier_proposition_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:c --- lot K, localisation Djibouti ---
       # Territoire : legislation_packs, chart_*, resolve_account, grilles fiscales ;
       #              app/src/lib/countries.ts ; écrans Paramètres ; doc/localisation/

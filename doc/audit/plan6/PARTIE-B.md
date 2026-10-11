@@ -19,7 +19,7 @@
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | B.1 | Inventaire des 62 règles d'état contre le schéma du jour : lesquelles existent déjà (W1 → W10, X1 → X6 en ont posé) | L8 → L15 | 2 j | 🟡 **compté le 05/10** — [rapport B.1](B1-INVENTAIRE-62-REGLES-2026-10-05.md) |
-| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **62/62 règles touchées (`500`→`528`) ; R-015, R-016, R-019, R-043, R-044/045, R-047 complétées — 108 scénarios verts** |
+| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **62/62 règles touchées (`500`→`529`) ; R-015, R-016, R-019, R-043, R-044/045, R-046, R-047 complétées — 112 scénarios verts. ⚠️ `529` ajoute 2 colonnes → **régénérer `database-generated.ts`** (R6)** |
 | B.3 | Paie : seuil **hebdomadaire** des heures supplémentaires, exonération d'impôt de 7 500 € | reste de 2.3 | 1,5 j | ⬜ |
 | B.4 | Paie : arrêt maladie (carence, maintien) | reste de 2.4 | 1,5 j | ⬜ |
 
@@ -259,6 +259,19 @@ stock est **REFUSÉE** (message nominatif). Contrôle `passed`/`partial` → pas
 contrôle → passe, inchangé** (non-régression garantie par T03). *Rendre le contrôle
 obligatoire même en son absence (plan de contrôle actif) est une **décision métier** — non posée.*
 
+## B.2 — lot 29 : R-046 (OF lié à sa proposition MRP) — livré le 11/10/2026
+
+**Migration `529` (suite 4 verts)** — **R-046** (complète) : ajoute à l'OF les colonnes
+**`mrp_run_id`** et **`mrp_proposal_id`** (`ADD COLUMN IF NOT EXISTS`, **additif**), puis, à
+la création d'un OF d'origine `mrp`, le **LIE à sa proposition** MRP (`mrp_proposals`,
+`status = 'converted'`) — valeur **posée** si présente, sinon **résolue** (même article, même
+nomenclature, la plus récente). Événement `manufacturing_orders.mrp_linked` ; sans proposition
+→ `sans_effet`. `mrp_proposals` **inscrit au registre**.
+
+⚠️ **R6 — à faire par l'intégration :** cette migration **ajoute des colonnes** →
+`npm run db:types` doit être rejoué et **`database-generated.ts` régénéré** (la partie B ne
+le régénère pas).
+
 ## B.2 — l'état réel : 62 / 62 règles touchées, 0 vierge
 
 **Vierges (0).** Les quatre dernières — **R-019** (facture client annulée), **R-044 / R-045**
@@ -269,9 +282,8 @@ mouvements liés restent coordonnés).
 **Partielles restantes — l'accroche (ou la garde) existe, l'effet MÉTIER est coordonné :**
 - **stock / écrans (parties E, D)** : R-006, R-009, R-013 ;
 - **comptabilité (noyau, expert-comptable)** : R-048→R-051, R-052/R-053, R-058 ;
-- **paie FR** : R-025/R-026/R-028 (écriture au `approved`), R-036 (règles par type) — **B.3/B.4** ;
-- **schéma** : R-046 (le schéma ne stocke pas la proposition MRP).
-*(R-020 est close : état inatteignable. R-015, R-016, R-019, R-043, R-044/045 et R-047 sont complétées — lots 23 à 28.)*
+- **paie FR** : R-025/R-026/R-028 (écriture au `approved`), R-036 (règles par type) — **B.3/B.4**.
+*(R-020 est close : état inatteignable. R-015, R-016, R-019, R-043, R-044/045, R-046 et R-047 sont complétées — lots 23 à 29.)*
 
 **Complètes : R-001→R-005, R-007, R-010, R-012, R-014, R-017, R-018, R-021, R-022, R-027,
 R-030, R-033, R-034, R-035, R-048→R-061**, plus **R-062** (contrainte déjà au schéma).
@@ -443,4 +455,5 @@ comptable. Et la batterie complète est rejouée à chaque fusion (R8).
 | 11/10 | B.2 · production-2 | Production | **R-043** : OF annulé → **contre-passation** des mouvements de stock (inverse, même dépôt/coût) + lien. Migration `525` + suite `525_…_tests.sql`. | base **359 migrations, 0 erreur** ; suite **5/5** | _à venir_ |
 | 11/10 | B.2 · achats-4 | Achats | **R-016** : facture fournisseur annulée → **avoir fournisseur** lié (`reversed_by`) ; `purchase_credit_notes` inscrit au registre. Migration `526` + suite `526_…_tests.sql`. | base **360 migrations, 0 erreur** ; suite **4/4** | _à venir_ |
 | 11/10 | B.2 · production-3 | Production | **R-044/R-045** : OF planifié → **réservation** des composants ; OF en cours → **consommation** + réservations `consumed`. Migration `527` + suite `527_…_tests.sql`. | base **361 migrations, 0 erreur** ; suite **5/5** | _à venir_ |
-| 11/10 | B.2 · achats-5 | Achats | **R-015** : garde **contrôle qualité** avant entrée en stock (`pending`/`failed` → refus ; absent → passe). Migration `528` + suite `528_…_tests.sql`. | base **362 migrations, 0 erreur** ; suite **3/3** (les 29 suites B : **108/108**) | _à venir_ |
+| 11/10 | B.2 · achats-5 | Achats | **R-015** : garde **contrôle qualité** avant entrée en stock (`pending`/`failed` → refus ; absent → passe). Migration `528` + suite `528_…_tests.sql`. | base **362 migrations, 0 erreur** ; suite **3/3** | _à venir_ |
+| 11/10 | B.2 · production-4 | Production | **R-046** : colonnes `mrp_run_id`/`mrp_proposal_id` sur l'OF + **lien à la proposition** MRP convertie. Migration `529` + suite `529_…_tests.sql`. | base **363 migrations, 0 erreur** ; suite **4/4** (les 30 suites B : **112/112**) | _à venir_ |

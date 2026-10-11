@@ -68,5 +68,7 @@ Chaque en-tête le dit ; la liste est dans PARTIE-B.md § « l'état réel ».
 ## À faire par l'intégration (R6/R8)
 
 1. Rejouer la batterie sur base neuve ; **régénérer types et plafonds**.
+   ⚠️ **`529` ajoute deux colonnes** (`manufacturing_orders.mrp_run_id`, `mrp_proposal_id`) →
+   `npm run db:types` **doit** être rejoué (le fichier `database-generated.ts` a changé).
 2. Fusionner en `main` (déploie) ; mettre à jour `SUIVI-CHANTIERS.md` depuis `PARTIE-B.md`.
 3. Transmettre les demandes hors territoire (référentiel, E/D pour le stock, comptabilité).
