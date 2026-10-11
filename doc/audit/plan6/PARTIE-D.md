@@ -19,7 +19,7 @@
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | D.1 | Vrai dialogue de confirmation à la place de `confirmSync` (100 fichiers), **par module, un lot par jour** | 1.8, AUD-I01 | 4 j | ✅ **tous les usages migrés (05/10)** |
-| D.2 | Typer les 80 états d'écran restants (RH, production, trésorerie, immobilisations, CRM) | DAT-02, suite de 2.16 | 5 j | 🟡 **tranches 1–6 (05/10) : 64 états** |
+| D.2 | Typer les 80 états d'écran restants (RH, production, trésorerie, immobilisations, CRM) | DAT-02, suite de 2.16 | 5 j | 🟡 **tranches 1–7 (05/10) : 77 états** |
 | D.3 | Alignement des colonnes sur 10 écrans | étape 0.5 | 1 j | ✅ **4 restants faits (05/10) — 6 déjà en `main`** |
 | D.4 | Lectures du chemin de l'écran (159 fonctions non couvertes) ; immobilisations et tableaux de bord à l'écran | 4.5, 4.11, 4.12 | 5 j | ⬜ |
 | D.5 | Playwright sur chaque PR vers `main` ; 4 parcours qui lisent un chiffre | 4.3, 4.4, AUD-J01/J02 | 3 j | ⬜ |
@@ -298,10 +298,33 @@ Vitest **1661 / 1699** (38 sautés) ✅ · plafond `any` de production **936 →
 Vitest **1661 / 1699** (38 sautés) ✅ · plafond `any` de production **936 → 872**
 (**64 `any`** en moins sur les six tranches).
 
-**Reste (tranche 7)** — les états **génériques** de `Phase3Pages`/`Phase5Pages`
-(un même composant sert plusieurs tables : il faut **paramétrer** le composant,
-pas nommer l'état), et les lectures **inline `supabase`** (`EmployeeLeavesPage`,
-`MobileApproval`) dont le type vient de `@/types` / `Row<…>`.
+### Tranche 7 — 05/10 (13 états, 3 écrans)
+
+| Écran | États typés |
+|---|---|
+| `Phase3Pages` | `items` ×7 (MCF, transferts, lignes de crédit, placements, dates de valeur, récurrents, consolidation) |
+| `Phase5Pages` | `items` ×4 (plans d'amortissement, familles, réévaluations, mises au rebut) |
+| `employee/EmployeeLeavesPage` | `requests`, `balances` (lectures inline `supabase` → `Row<…>`) |
+
+> Les états `items` des deux bundles sont bien **nommés depuis leur requête** (un
+> composant = une table), malgré sept noms d'état identiques : l'appariement suit
+> l'ordre des composants (7 + 4).
+
+**Un défaut révélé ET corrigé (dans le territoire de D)** — l'onglet « soldes » de
+`EmployeeLeavesPage` lisait `b.acquired_days`, `b.taken_days`, `b.pending_days`,
+`b.current_balance` : **ces colonnes n'existent pas** (`leave_balances` porte
+`acquired`, `taken`, `pending`, `remaining`). Les libellés étaient justes, les
+**lectures non** → l'écran affichait `undefined`. Corrigé : `b.acquired`,
+`b.taken`, `b.pending`, `b.remaining`.
+
+**Preuve.** `tsc -b --noEmit` ✅ · `oxlint` **0** sur les 3 ✅ ·
+Vitest **1661 / 1699** (38 sautés) ✅ · plafond `any` de production **936 → 859**
+(**77 `any`** en moins sur les sept tranches).
+
+**Reste (tranche 8, 3 états)** — `OnboardingDashboardPage.state` (indexé
+dynamiquement), `hr/RhReportsPage.statsData` (union de 5 requêtes), et
+`components/employee/MobileApproval.items` (écran mobile **jamais peuplé** — la
+donnée n'est jamais chargée ; à traiter avec le bug amont).
 
 ## D.3 — alignement des colonnes (reprise gelée)
 
@@ -393,4 +416,5 @@ kit n'ajoute ni service, ni dépendance, ni étape — il **range** ce qui exist
 | 05/10 | D.2 · tranche 4 | RH | 10 états typés (8 écrans) + 1 défaut de jointure manquante révélé (R3) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→893 (cumul 43) | `1c90744` |
 | 05/10 | D.2 · tranche 5 | RH/social/frais | 9 états typés (5 écrans) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→884 (cumul 52) | `dd65316` |
 | 05/10 | D.2 · tranche 6 | complémentaires/dashboard/audit/OF | 12 états typés (4 écrans) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→872 (cumul 64) | `c544ec1` |
+| 05/10 | D.2 · tranche 7 | Phase3/5Pages + soldes | 13 états typés (3 écrans) + 1 défaut de colonnes corrigé | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→859 (cumul 77) | `HASH_D2T7` |
 | 05/10 | D.6 | recette | kit P0-08 : référentiel 14 parcours + PV + certificat (empreinte `ce92316f…`, 112 passages) | script OK · oxlint 0 | `56892d6` |
