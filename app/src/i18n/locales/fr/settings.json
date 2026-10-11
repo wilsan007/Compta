@@ -36,6 +36,27 @@
     "consolidate": "Consolider",
     "intraGroup": "Flux intra-groupe à éliminer"
   },
+  "collectiveAgreements": {
+    "title": "Conventions collectives",
+    "subtitle": "Rattachez vos salariés à une convention collective (IDCC) et à sa classification.",
+    "createTitle": "Ajouter une convention",
+    "idcc": "Code IDCC",
+    "name": "Intitulé",
+    "date": "Date d'application",
+    "create": "Ajouter",
+    "empty": "Aucune convention pour l'instant",
+    "select": "Convention",
+    "classifications": "Classifications",
+    "coefficient": "Coefficient",
+    "minSalary": "Salaire minimum mensuel",
+    "addClassification": "Ajouter la classification",
+    "assignTitle": "Rattacher un salarié",
+    "employee": "Salarié",
+    "classification": "Classification",
+    "assign": "Rattacher",
+    "clear": "Détacher",
+    "assigned": "Salarié rattaché"
+  },
   "tabs": {
     "chartAccounts": "Plan comptable",
     "asset": "Actif",

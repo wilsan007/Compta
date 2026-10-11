@@ -24,7 +24,7 @@
 | F.4 | Groupe : structure, opérations intra-groupe, consolidation | GRP-01 → 03 | ≈ 5 j | ✅ **livré le 05/10** — `702` (structure + intra-groupe) et `703` (consolidation), + écran Paramètres → Groupes |
 | F.5 | CRM (séquences, scoring) ; projets (capacité par ressource, champs personnalisés, automatisations) | CRM-01/02, PRJ-02/04/08 | ≈ 5 j | ⬜ |
 | F.6 | Notifications et alertes ; rattachement universel de documents ; générateur d'états ; modèles de documents ; connecteurs métier | NOT-01/02, GED-01, BI-01, ADM-04, API-03 | ≈ 8 j | ⬜ |
-| F.7 | RH hors paie : conventions collectives, recrutement ; mobile hors ligne | PAY-08, RH-03, PTL-03 | ≈ 4 j | ⬜ |
+| F.7 | RH hors paie : conventions collectives, recrutement ; mobile hors ligne | PAY-08, RH-03, PTL-03 | ≈ 4 j | 🟡 **PAY‑08 livré le 05/10** (`704` : RLS forcée + rattachement validé, + écran Paramètres → Conventions collectives) ; **RH‑03 (recrutement, tables supprimées par la 164) et PTL‑03 (mobile) restent** |
 | F.8 | Tables coquilles de son périmètre (les 25 autres), **brancher ou supprimer** | ORPH-02 | ≈ 5 j | 🟡 **premier lot livré le 05/10** — recomptage (5 tables réelles, pas 25) + `time_entries` supprimée (`701`) |
 
 ## F.1 — le recomptage (fait le 05/10/2026)
@@ -208,6 +208,41 @@ légitime du produit — et elle est réservée à un **administrateur d'une soc
 membre** (un membre non administrateur ou une société hors du groupe sont refusés
 nommément : `GROUP_FORBIDDEN`, `GROUP_NOT_MEMBER`).
 
+## F.7 — premier lot livré le 05/10 (PAY‑08, conventions collectives)
+
+**Le constat.** `collective_agreements` et `collective_classifications` ont été
+créées par la `123` (PAY‑08), avec leurs deux colonnes de rattachement sur
+`employees` (`collective_agreement_id`, `classification_id`) rendues **composites**
+par la `237` — puis **jamais lues** : deux « coquilles » (ORPH‑02). Deux défauts
+mesurés le 05/10 :
+
+1. leur **RLS est activée mais NON forcée** — le défaut ISO‑04 que la grille BT
+   comptait (`rls_sans_force`) ;
+2. **rien ne valide le rattachement** : `employees.collective_agreement_id`
+   s'écrit par un simple UPDATE, sans vérifier que la convention appartient à la
+   société ni que la classification appartient **à cette convention** — les clés
+   composites garantissent la **société**, pas la cohérence interne.
+
+**Livré** :
+- migration `704` : **FORCE RLS** sur les deux tables ; `set_employee_collective_agreement(...)`,
+  le seul chemin d'affectation, qui vérifie que l'appelant est **administrateur**,
+  que le salarié et la convention relèvent de la société, et que la classification
+  appartient à la convention (`AGREEMENT_NOT_FOUND`, `CLASSIFICATION_MISMATCH`,
+  `PAY_FORBIDDEN` — refus **nommés**) ;
+- suite `704` **6/6** (RLS forcée ; affectation ; refus convention étrangère ;
+  refus classification incohérente ; refus non‑admin ; retrait) ;
+- **l'écran** `Paramètres → Conventions collectives` (conventions, classifications,
+  rattachement d'un salarié) + i18n fr/en/ar.
+
+**Plafond daté réinscrit** : `check_bt_grid` `rls_sans_force` 53 → **51** (les deux
+tables passent sous FORCE). `check-unused-tables` **74 → 72** (les deux tables sont
+lues par l'écran).
+
+**Ce qui reste de F.7** : **RH‑03 (recrutement)** — les tables (`job_postings`,
+`job_applications`) ont été **supprimées par la 164** : il faut les recréer, et
+c'est un modèle à décider — et **PTL‑03 (mobile et hors ligne)**, hors d'un lot
+base de données.
+
 ## Attend de vous
 
 - La clé **`sb_secret_…` à tourner**.
@@ -236,3 +271,4 @@ autres. F n'est pas concernée, mais elle peut l'être indirectement par F.4
 | 05/10/2026 | F.8 tables coquilles (premier lot) | **recompté** : 24 listées → 5 existent (19 déjà supprimées par la `164`). `time_entries` **supprimée** (`701`, garde de la 164) + suite `701` 4/4 ; `collective_*` → brancher F.7 ; `platform_admins` = faux positif (lue par `is_platform_admin()`) | 0,5 j | `plan6/f-plateforme` |
 | 05/10/2026 | F.4 groupe (premier lot) | **livré** : `702` (structure `groups`/`group_members` + flux `intra_group_transactions`, RLS, helper anti-récursion, 5 RPC) + suite 8/8 + **écran** Paramètres→Groupes (queries/nav/route/i18n fr/en/ar). Plafonds : `unused-tables` 75→74 ; `check_bt_grid` réinscrit (2 baisses) | 1,5 j | `plan6/f-plateforme` |
 | 05/10/2026 | F.4 groupe (GRP‑03, consolidation) | **livré** : `703` (`group_consolidated_balance` — pondération full/proportional, equity/none exclus, bornage de période, flux intra-groupe publiés) + suite 6/6 + section « Consolidation » de l'écran + i18n. **F.4 complet (GRP‑01→03)** | 1 j | `plan6/f-plateforme` |
+| 05/10/2026 | F.7 conventions collectives (PAY‑08) | **livré** : `704` (FORCE RLS sur les 2 tables + `set_employee_collective_agreement` validée : société, convention, cohérence classification) + suite 6/6 + écran Paramètres→Conventions collectives + i18n. Plafonds : `rls_sans_force` 53→51 ; `unused-tables` 74→72 | 1 j | `plan6/f-plateforme` |

@@ -36,6 +36,27 @@
     "consolidate": "Consolidate",
     "intraGroup": "Intra-group flows to eliminate"
   },
+  "collectiveAgreements": {
+    "title": "Collective agreements",
+    "subtitle": "Link your employees to a collective agreement (IDCC) and its classification.",
+    "createTitle": "Add an agreement",
+    "idcc": "IDCC code",
+    "name": "Title",
+    "date": "Application date",
+    "create": "Add",
+    "empty": "No agreement yet",
+    "select": "Agreement",
+    "classifications": "Classifications",
+    "coefficient": "Coefficient",
+    "minSalary": "Minimum monthly salary",
+    "addClassification": "Add classification",
+    "assignTitle": "Link an employee",
+    "employee": "Employee",
+    "classification": "Classification",
+    "assign": "Link",
+    "clear": "Unlink",
+    "assigned": "Employee linked"
+  },
   "tabs": {
     "chartAccounts": "Chart of accounts",
     "asset": "Asset",

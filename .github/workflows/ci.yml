@@ -2389,6 +2389,17 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # F.7 / PAY-08 — conventions collectives. Les deux tables de la 123 étaient
+      # des « coquilles » : RLS activée mais NON forcée (défaut ISO-04), et rien
+      # ne validait le rattachement d'un salarié (les clés composites de la 237
+      # garantissent la SOCIÉTÉ, pas la cohérence convention ↔ classification).
+      # La 704 force la RLS et pose le seul chemin d'affectation validé ; l'écran
+      # Paramètres → Conventions collectives les branche.
+      - name: 'F.7 : conventions collectives (PAY-08) — RLS forcée et rattachement validé (704)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/704_conventions_collectives_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
   # ─────────────────────────────────────────────
   # Job 6: Build verification
   # ─────────────────────────────────────────────

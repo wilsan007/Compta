@@ -36,6 +36,27 @@
     "consolidate": "توحيد",
     "intraGroup": "التدفقات داخل المجموعة الواجب إلغاؤها"
   },
+  "collectiveAgreements": {
+    "title": "الاتفاقيات الجماعية",
+    "subtitle": "اربط موظفيك باتفاقية جماعية (IDCC) وتصنيفها.",
+    "createTitle": "إضافة اتفاقية",
+    "idcc": "رمز IDCC",
+    "name": "العنوان",
+    "date": "تاريخ التطبيق",
+    "create": "إضافة",
+    "empty": "لا توجد اتفاقية بعد",
+    "select": "الاتفاقية",
+    "classifications": "التصنيفات",
+    "coefficient": "المعامل",
+    "minSalary": "الحد الأدنى للأجر الشهري",
+    "addClassification": "إضافة التصنيف",
+    "assignTitle": "ربط موظف",
+    "employee": "الموظف",
+    "classification": "التصنيف",
+    "assign": "ربط",
+    "clear": "فصل",
+    "assigned": "تم ربط الموظف"
+  },
   "tabs": {
     "chartAccounts": "دليل الحسابات",
     "asset": "أصول",

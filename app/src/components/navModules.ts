@@ -501,6 +501,7 @@ export const navModules: NavModule[] = [
           { labelKey: 'items.modulesSettings', path: '/settings/modules' },
           { labelKey: 'items.multiCompany', path: '/settings/multi-company' },
           { labelKey: 'items.groups', path: '/settings/groups' },
+          { labelKey: 'items.collectiveAgreements', path: '/settings/collective-agreements' },
           { labelKey: 'items.documentTemplates', path: '/settings/document-templates' },
           { labelKey: 'items.apiWebhooks', path: '/settings/api-webhooks' },
           { labelKey: 'items.apiDocs', path: '/settings/api-docs' },
