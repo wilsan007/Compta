@@ -2464,6 +2464,18 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # R-019 (partie B, lot Ventes) — facture annulée : avoir + arrêt des relances.
+      - name: 'plan6 B — R-019 : facture annulée → avoir (523)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/523_regle_r019_avoir_facture_annulee_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-047 (partie B, lot Stock) — les deux jambes d'un transfert liées.
+      - name: 'plan6 B — R-047 : transfert → deux jambes liées (524)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/524_regle_r047_transfert_lie_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:c --- lot K, localisation Djibouti ---
       # Territoire : legislation_packs, chart_*, resolve_account, grilles fiscales ;
       #              app/src/lib/countries.ts ; écrans Paramètres ; doc/localisation/
