@@ -22,7 +22,7 @@
 | E.2 | Restes à l'écran : transfert entre dépôts, étiquettes, MRP jamais testés ; action « Modifier » d'une nomenclature | D13, reste de 2.5 | ≈ 3 j | ✅ **livré le 05/10** — « Modifier » une nomenclature ; **transferts inter-dépôts** (`652` + requêtes + écran `/stock/transfers`, suite 5/5) ; MRP testé (`651`) ; étiquettes OF déjà câblées (`of_labels`) |
 | E.3 | Stock avancé : FIFO/LIFO, unités de mesure, frais accessoires, réapprovisionnement et inventaire tournant, emplacements, transferts et variantes | STK-03/07/08/09/11/14 | ≈ 5 sem. | 🔶 **`STK-07`** (unités), **`STK-09`** (réappro `653` + inventaire `654`), **`STK-14`** (transferts, E.2) et **`STK-11`** (stock par emplacement `655`, socle) livrés le 05/10 · restent `STK-08` (moteur à corriger) et le reste de `STK-11` (arbre/capacité à l'écran, rangement) |
 | E.4 | Production : capacité finie, maintenance, sous-OF (`parent_mo_id` inutilisé) | PRD-07, PRD-11 | ≈ 1,5 sem. | 🔶 `PRD-07` (capacité `657`) et `PRD-11` (usure `656` + interventions, `maintenance_records` branchée) livrés le 06/10 · reste le sous-OF (`parent_mo_id`) |
-| E.5 | Tables coquilles de son périmètre — **brancher ou supprimer** : `uom_categories`, `landed_cost_lines`, `reorder_rules`, `stock_count_cycles`, `stock_transfer_lines`, `mo_consumptions`, `mo_operations`, `maintenance_records`, `work_center_calendars`, `quality_control_*`, `fixed_asset_components`, `resource_capacities` | ORPH-02 | — | ⬜ |
+| E.5 | Tables coquilles de son périmètre — **brancher ou supprimer** : `uom_categories`, `landed_cost_lines`, `reorder_rules`, `stock_count_cycles`, `stock_transfer_lines`, `mo_consumptions`, `mo_operations`, `maintenance_records`, `work_center_calendars`, `quality_control_*`, `fixed_asset_components`, `resource_capacities` | ORPH-02 | ≈ 0,5 j | 🔶 **6 branchées** (`uom_categories`, `reorder_rules`, `stock_count_cycles`, `stock_transfer_lines`, `maintenance_records`, `work_center_calendars`) · les autres **décidées** (voir §E.5) |
 
 ## E.1 d'abord : pourquoi
 
@@ -198,6 +198,30 @@ charge × capacité par poste et par jour, avec le drapeau **surcharge**. Carte
 **« Charge / capacité des postes »** sur `/production/machines`. Suite `657` :
 **4/4**, rouge avant.
 
+## E.5 — tables coquilles : brancher ou supprimer
+
+**Six coquilles de mon périmètre sont désormais branchées** (lues par un écran ou
+une fonction) :
+
+| Table | Branchée par |
+|---|---|
+| `uom_categories` (+ `uoms`) | `STK-07`, écran `/stock/uoms` |
+| `reorder_rules` | `STK-09`, `653` + `/stock/reorder` |
+| `stock_count_cycles` | `STK-09`, `654` + `/stock/counts` |
+| `stock_transfer_lines` | `STK-14`, `652` + `/stock/transfers` |
+| `maintenance_records` | `PRD-11`, carte « Interventions » |
+| `work_center_calendars` | `PRD-07`, `657` (`work_center_capacity`) |
+
+**Ce qui reste, et pourquoi** — aucune n'est laissée en suspens :
+
+| Table | Décision | Motif |
+|---|---|---|
+| `landed_cost_lines` | **brancher** (STK-08) | le moteur `distribute_landed_cost` est à corriger d'abord (il répartit sur **toutes** les réceptions de la société) |
+| `mo_consumptions`, `mo_operations` | **brancher** (PRD-06) | déclaration de production par opération (quantités réelles, rebuts, temps) |
+| `quality_control_plans`, `quality_control_points` | **brancher** (STK-13) | plans de contrôle et échantillonnage |
+| `fixed_asset_components` | **hors périmètre E** | immobilisations (`ACC-07`) — à l'intégration |
+| `resource_capacities` | **hors périmètre E** | capacité par ressource des projets (`PRJ`) — à l'intégration |
+
 ## Les deux décisions de politique — tranchées le 05/10/2026
 
 E.1 laissait deux questions ouvertes. Elles sont tranchées **selon les normes
@@ -294,4 +318,5 @@ comme le reste.
 | 05/10/2026 | **E.3** — `STK-11` stock par emplacement | `655` `stock_by_location` + type/capacité et « stock par emplacement » à l'écran | `655` 3/3 · tsc 0 · oxlint 0 · i18n OK | `5bdf317` |
 | 06/10/2026 | **E.4** — `PRD-11` usure outillage | `656` `tooling_wear_alert` + carte « Usure des outillages » sur `/production/machines` | `656` 3/3 · tsc 0 · oxlint 0 · i18n OK | `0cf025c` |
 | 06/10/2026 | **E.4** — `PRD-07` capacité finie | `657` `work_center_capacity`/`work_center_capacity_load` + carte « Charge / capacité » | `657` 4/4 · tsc 0 · oxlint 0 · i18n OK | `9b5f493` |
-| 06/10/2026 | **E.4** — `PRD-11` interventions de maintenance | requêtes + carte « Interventions » sur `/production/machines` ; branche `maintenance_records` | tsc 0 · oxlint 0 · i18n OK · vitest 86/86 | à committer |
+| 06/10/2026 | **E.4** — `PRD-11` interventions de maintenance | requêtes + carte « Interventions » sur `/production/machines` ; branche `maintenance_records` | tsc 0 · oxlint 0 · i18n OK · vitest 86/86 | `b80d729` |
+| 06/10/2026 | **E.5** — décision par coquille | 6 branchées, 5 décidées (brancher via leur chantier / hors périmètre E) | doc seule | à committer |
