@@ -451,6 +451,32 @@ la société semée, puis **rendre le job `e2e-tests` obligatoire sur chaque PR 
 arriver **qu'avec** les secrets : sans `VITE_SUPABASE_*`, l'application ne démarre
 pas et la PR rougirait.
 
+### Joué en local — 11/10/2026
+
+Un **compte de test local** a été créé (`e2e@test.local`) avec une société
+provisionnée par la RPC réelle (712 comptes, 10 journaux, 1 exercice), et le
+harnais a été **joué contre le stack Supabase local** (`127.0.0.1:54321` — jamais
+la production ; `.env.local` est ignoré par git). La connexion, la navigation et
+le rendu fonctionnent : **le harnais vit**.
+
+Deux constats, et ils comptent :
+
+1. L'écran des comptes affiche **« 0 account(s) »** alors que la base en porte
+   **712** pour cette société. Cause isolée : la RLS exige
+   `tenant_id = current_tenant_id()`, qui lit l'en-tête `x-tenant-id` ; l'en-tête
+   n'était pas appliqué à cette requête. **C'est exactement ce qu'un test à
+   l'écran est là pour attraper** — la mesure ne se contente pas de « la page
+   s'est ouverte ».
+2. ⚠️ **Le stack local est en retard : 324 migrations appliquées sur 470** au
+   dépôt. Il ne peut donc pas servir d'**oracle** pour le code courant : le
+   constat (1) doit être **reconfirmé sur un banc à jour** (`supabase db reset`
+   puis migrations, ou reprise des migrations manquantes) avant d'en faire un
+   défaut du produit.
+
+**Correction apportée au passage** : l'attente de C1 portait sur
+`table tbody tr, h1, h2` — un titre suffisait, donc le comptage pouvait tomber
+avant le tableau. Elle attend désormais **une ligne**.
+
 ## Journal
 
 | Date | Lot | Module | Ce qui est fait | Batterie | Commit |
@@ -469,4 +495,5 @@ pas et la PR rougirait.
 | 05/10 | D.2 · tranche 7 | Phase3/5Pages + soldes | 13 états typés (3 écrans) + 1 défaut de colonnes corrigé | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→859 (cumul 77) | `cabf927` |
 | 05/10 | D.2 · tranche 8 | clôture | 3 états typés — `useState<any>` = **0** | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→854 (cumul 82) | `aaaddbe` |
 | 05/10 | D.5 | recette | 4 parcours qui lisent un chiffre (`e2e/chiffres.ts` + spec) — prêts, non joués (secrets absents) | `playwright --list` 78/6 ✅ · oxlint 0 | `78c7d63` |
+| 11/10 | D.5 · local | recette | compte de test local (`e2e@test.local`) + harnais **joué contre 127.0.0.1** ; C1 attend une ligne ; banc local **en retard (324/470)** | playwright C1 exécuté (échec documenté) · oxlint 0 | `HASH_LOCAL` |
 | 05/10 | D.6 | recette | kit P0-08 : référentiel 14 parcours + PV + certificat (empreinte `ce92316f…`, 112 passages) | script OK · oxlint 0 | `56892d6` |

@@ -21,7 +21,9 @@ test.skip(!E2E_CREDENTIALS_CONFIGURED, E2E_SKIP_REASON)
 // ── 1. Inscription → le plan comptable est semé ─────────────
 test('C1 : après inscription, le plan comptable porte des comptes', async ({ page, request }) => {
   await navigateWithAuth(page, request, '/accounting/chart-accounts')
-  await page.waitForSelector('table tbody tr, h1, h2', { timeout: 15000 })
+  // On attend une LIGNE, pas seulement un titre : l'en-tête s'affiche avant que
+  // le tableau (chargé en asynchrone) ne soit peuplé — compter trop tôt rendait 0.
+  await page.locator('table tbody tr').first().waitFor({ timeout: 20000 })
   const comptes = await page.locator('table tbody tr').count()
   expect(comptes, 'un plan comptable semé doit porter des comptes, pas un écran vide').toBeGreaterThan(0)
 })
