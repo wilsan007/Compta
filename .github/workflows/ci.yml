@@ -2421,6 +2421,14 @@ jobs:
       - name: 'L16 : facture fournisseur → avoir, rattachée et tracée (756)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/756_chain_l16_avoir_fournisseur_tests.sql
 
+      # L16 — chaînage interne COMMERCIAL : la RELANCE d'une FACTURE lui est
+      # rattachée et tracée (effet `sale.invoice.to_reminder`) ; `collection_reminders`
+      # entre au registre chain_document_types. Dernier tronçon du Commercial.
+      # 15 verdicts : nominal, idempotence (D1), cinq refus (introuvable/brouillon/
+      # annulée/autre client/déjà portée), frise (I-01), isolation (D8).
+      - name: 'L16 : facture → relance, rattachée et tracée (757)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/757_chain_l16_relance_tests.sql
+
       # --- plan6:b --- règles d'état, paie française ---
       # Territoire : règles d'état par module ; app/src/lib/payroll*, écrans de paie
       # Plage : 500→559
