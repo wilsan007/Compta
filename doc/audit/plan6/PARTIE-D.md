@@ -489,10 +489,29 @@ journaux, 1 exercice**).
 
 | # | Parcours | Verdict |
 |---|---|---|
-| **C1** | inscription → le plan comptable porte des comptes | ✅ **vert** (4,2 s) |
-| C2 | la balance est équilibrée (débit = crédit) | 🔴 la balance est **vide** — société neuve |
-| C3 | bulletin : brut − retenues = net | ⏸ non joué (série) |
+| **C1** | inscription → le plan comptable porte des comptes | ✅ **vert** |
+| **C2** | la balance est équilibrée (débit = crédit) | ✅ **vert** — après amorçage d'une écriture équilibrée (100 / 100) |
+| C3 | bulletin : brut − retenues = net | 🔴 **aucun bulletin** — la paie n'est pas amorcée |
 | C4 | session de caisse : un total | ⏸ non joué (série) |
+
+**Deux corrections révélées par le passage réel** — c'est le but même de D.5 :
+
+1. **L'extracteur de montants ne lisait que la virgule française.** L'écran rend
+   `€100.00` (point décimal, symbole devant), donc C2 voyait **0 montant** alors
+   que la balance affichait bel et bien 100 au débit et 100 au crédit.
+   `e2e/chiffres.ts` lit désormais **les deux écritures**, et exige **deux
+   décimales** pour ne pas prendre `401000` (un code de compte) pour un montant.
+2. **Amorcer une écriture passe par le produit** : `post_journal_entry` crée un
+   **brouillon**, `validate_journal_entries` le **valide** (`posted`,
+   `VT-2026-000001`, débit = crédit = 100). Le garde refuse tout `posted` à
+   l'insertion : la protection a tenu, exactement comme prévu — aucun
+   contournement.
+
+**Un piège du banc, à savoir** : reconstruire un schéma `public` **efface les
+privilèges par défaut** que Supabase accorde aux nouvelles fonctions
+(`has_permission`, `can_perform`). Sans `GRANT EXECUTE … TO authenticated`, la
+validation d'écriture répond `permission denied` — ce n'est pas un défaut du
+produit, c'est une propriété du banc reconstruit à la main.
 
 **Ce que ça dit, et c'est le point.** C1 **passe** : le banc, le compte, la
 connexion et l'écran fonctionnent. C2 échoue **à juste titre** : une société
@@ -530,4 +549,5 @@ suite naturelle — pas un contournement.
 | 05/10 | D.5 | recette | 4 parcours qui lisent un chiffre (`e2e/chiffres.ts` + spec) — prêts, non joués (secrets absents) | `playwright --list` 78/6 ✅ · oxlint 0 | `78c7d63` |
 | 11/10 | D.5 · local | recette | compte de test local (`e2e@test.local`) + harnais **joué contre 127.0.0.1** ; C1 attend une ligne ; banc local **en retard (324/470)** | playwright C1 exécuté (échec documenté) · oxlint 0 | `ca345cd` |
 | 11/10 | D.5 · base locale | recette | base locale **remontée à neuf** (`00_schema_dump` + **333 migrations, 0 erreur**) + compte recréé ; **C1 vert** ; C2/C3/C4 attendent la « société remplie » (le seed SQL est refusé par `journal_entry_guard`) | runner 333/333 ✅ · playwright **C1 ✅** | `420dff6` |
+| 11/10 | D.5 · parcours | recette | **C1 ✅ et C2 ✅** — extracteur corrigé (`€100.00` : point décimal) ; écriture équilibrée amorcée **par le produit** (`post_journal_entry` → `validate_journal_entries`) | playwright **2 passed** · oxlint | `HASH_PARC` |
 | 05/10 | D.6 | recette | kit P0-08 : référentiel 14 parcours + PV + certificat (empreinte `ce92316f…`, 112 passages) | script OK · oxlint 0 | `56892d6` |

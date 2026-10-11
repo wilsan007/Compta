@@ -31,7 +31,7 @@ test('C1 : après inscription, le plan comptable porte des comptes', async ({ pa
 // ── 2. Vente complète → l'écriture est équilibrée (HT + TVA) ─
 test('C2 : la balance est équilibrée — total débit = total crédit (au centime)', async ({ page, request }) => {
   await navigateWithAuth(page, request, '/accounting/trial-balance')
-  await page.waitForSelector('table tbody tr, h1, h2', { timeout: 15000 })
+  await page.locator('table tbody tr').first().waitFor({ timeout: 20000 })
   const montants = await montantsVisibles(page)
   expect(montants.length, 'la balance doit afficher des montants').toBeGreaterThanOrEqual(2)
   // Deux montants égaux : c'est le total débit et le total crédit d'une balance équilibrée.
