@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, Plus, Trash2, Tag, Calendar, Package, Layers, ClipboardList, Printer } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Tag, Calendar, Package, Layers, ClipboardList, Printer, Factory } from 'lucide-react'
 import { Card, Button, Input, Select, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
 import { errorMessage, formatCurrency } from '@/lib/utils'
-import { getManufacturingOrder, getOFLabels, generateOFLabels, updateOFLabel, deleteOFLabel, getOFLots, createOFLot, deleteOFLot, getOFConsumptions, createOFConsumption, deleteOFConsumption, getSubManufacturingOrders, getProducts } from '@/lib/queries/stock'
+import { getManufacturingOrder, getOFLabels, generateOFLabels, updateOFLabel, deleteOFLabel, getOFLots, createOFLot, deleteOFLot, getOFConsumptions, createOFConsumption, deleteOFConsumption, getSubManufacturingOrders, getProducts, getMoOperations, recordMoOperation, getMoOperationsSummary } from '@/lib/queries/stock'
 import { calculateProductionCost } from '@/lib/queries/businessFunctions'
 import type { Product } from '@/types'
 
@@ -21,11 +21,14 @@ export function ManufacturingOrderDetailPage() {
   const [mo, setMo] = useState<any>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'info' | 'labels' | 'lots' | 'consumptions' | 'sublevels'>('info')
+  const [activeTab, setActiveTab] = useState<'info' | 'labels' | 'lots' | 'consumptions' | 'sublevels' | 'shopfloor'>('info')
   const [labels, setLabels] = useState<any[]>([])
   const [lots, setLots] = useState<any[]>([])
   const [consumptions, setConsumptions] = useState<any[]>([])
   const [subMOs, setSubMOs] = useState<any[]>([])
+  const [operations, setOperations] = useState<any[]>([])
+  const [opsSummary, setOpsSummary] = useState<any>(null)
+  const [showOpForm, setShowOpForm] = useState(false)
   const [showLotForm, setShowLotForm] = useState(false)
   const [showConsForm, setShowConsForm] = useState(false)
   const [labelCount, setLabelCount] = useState(1)
@@ -64,6 +67,18 @@ export function ManufacturingOrderDetailPage() {
     if (tab === 'sublevels' && subMOs.length === 0) {
       try { setSubMOs(await getSubManufacturingOrders(id)) } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     }
+    if (tab === 'shopfloor' && operations.length === 0) {
+      try {
+        const [ops, sum] = await Promise.all([getMoOperations(id), getMoOperationsSummary(id)])
+        setOperations(ops); setOpsSummary(sum)
+      } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
+    }
+  }
+
+  async function reloadShopfloor() {
+    if (!id) return
+    const [ops, sum] = await Promise.all([getMoOperations(id), getMoOperationsSummary(id)])
+    setOperations(ops); setOpsSummary(sum)
   }
 
   async function handleGenerateLabels() {
@@ -144,6 +159,7 @@ export function ManufacturingOrderDetailPage() {
     { key: 'lots', label: t('manufacturing.detail.tabs.lots'), icon: Calendar },
     { key: 'consumptions', label: t('manufacturing.detail.tabs.consumptions'), icon: Package },
     { key: 'sublevels', label: t('manufacturing.detail.tabs.sublevels'), icon: Layers },
+    { key: 'shopfloor', label: t('manufacturing.detail.tabs.shopfloor'), icon: Factory },
   ] as const
 
   return (
@@ -379,6 +395,48 @@ export function ManufacturingOrderDetailPage() {
           )}
         </Card>
       )}
+
+      {/* Tab: Atelier — PRD-06 (661) : temps réel, quantités produites, rebuts */}
+      {activeTab === 'shopfloor' && (
+        <div className="space-y-4">
+          <Card>
+            <div className="p-4 border-b border-[var(--color-border)]"><h3 className="font-semibold">{t('manufacturing.detail.shopfloor.summary')}</h3></div>
+            <div className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3">
+              <InfoRow label={t('manufacturing.detail.shopfloor.nbOperations')} value={String(opsSummary?.nb_operations ?? 0)} />
+              <InfoRow label={t('manufacturing.detail.shopfloor.totalPlanned')} value={`${Number(opsSummary?.planned_minutes ?? 0)} min`} />
+              <InfoRow label={t('manufacturing.detail.shopfloor.totalActual')} value={`${Number(opsSummary?.actual_minutes ?? 0)} min`} />
+              <InfoRow label={t('manufacturing.detail.shopfloor.totalProduced')} value={String(Number(opsSummary?.produced ?? 0))} />
+              <InfoRow label={t('manufacturing.detail.shopfloor.totalScrapped')} value={String(Number(opsSummary?.scrapped ?? 0))} />
+              <InfoRow label={t('manufacturing.detail.shopfloor.scrapRate')} value={`${Number(opsSummary?.scrap_rate ?? 0)} %`} />
+            </div>
+          </Card>
+          <div className="flex justify-end">
+            <Button onClick={() => setShowOpForm(true)} disabled={mo.status === 'cancelled'}>
+              <Plus className="w-4 h-4" /> {t('manufacturing.detail.shopfloor.add')}
+            </Button>
+          </div>
+          <Card>
+            {operations.length === 0 ? (
+              <EmptyState icon={<Factory className="w-8 h-8" />} title={t('manufacturing.detail.shopfloor.noOperations')} description={t('manufacturing.detail.shopfloor.noOperationsDescription')} />
+            ) : (
+              <Table headers={[t('manufacturing.detail.shopfloor.operation'), t('manufacturing.detail.shopfloor.plannedMinutes'), t('manufacturing.detail.shopfloor.actualMinutes'), t('manufacturing.detail.shopfloor.produced'), t('manufacturing.detail.shopfloor.scrapped'), t('manufacturing.detail.shopfloor.scrapReason')]}>
+                {operations.map((op) => (
+                  <TableRow key={op.id}>
+                    <TableCell className="text-sm">{op.operation_name || '—'}</TableCell>
+                    <TableCell className="font-mono text-xs">{op.planned_time_minutes ?? '—'}</TableCell>
+                    <TableCell className="font-mono text-xs">{op.actual_time_minutes ?? '—'}</TableCell>
+                    <TableCell className="font-mono text-xs">{Number(op.quantity_produced || 0)}</TableCell>
+                    <TableCell className="font-mono text-xs">{Number(op.quantity_scrapped || 0)}</TableCell>
+                    <TableCell className="text-xs">{op.scrap_reason || '—'}</TableCell>
+                  </TableRow>
+                ))}
+              </Table>
+            )}
+          </Card>
+          {showOpForm && <OperationFormModal moId={id!} onClose={() => setShowOpForm(false)} onSaved={async () => { setShowOpForm(false); await reloadShopfloor() }} />}
+        </div>
+      )}
+
     </div>
   )
 }
@@ -481,3 +539,46 @@ function ConsumptionFormModal({ moId, products, isDeferred, onClose, onSaved }: 
     </div>
   )
 }
+
+function OperationFormModal({ moId, onClose, onSaved }: { moId: string; onClose: () => void; onSaved: () => void }) {
+  const { t } = useTranslation('production')
+  const { toast } = useToast()
+  const [name, setName] = useState('')
+  const [planned, setPlanned] = useState<number | null>(null)
+  const [actual, setActual] = useState(0)
+  const [produced, setProduced] = useState(0)
+  const [scrapped, setScrapped] = useState(0)
+  const [reason, setReason] = useState('')
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!name.trim()) { toast('error', t('common.required'), t('manufacturing.detail.shopfloor.operationRequired')); return }
+    try {
+      await recordMoOperation(moId, name.trim(), planned, actual, produced, scrapped, reason || null)
+      toast('success', t('manufacturing.detail.shopfloor.saved'), t('manufacturing.detail.shopfloor.savedMsg'))
+      onSaved()
+    } catch (err) { toast('error', t('common.error'), errorMessage(err)) }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="bg-[var(--color-surface)] rounded-xl shadow-xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-lg font-semibold mb-4">{t('manufacturing.detail.shopfloor.add')}</h2>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <Input label={t('manufacturing.detail.shopfloor.operation')} value={name} onChange={(e) => setName(e.target.value)} />
+          <Input label={t('manufacturing.detail.shopfloor.plannedMinutes')} type="number" value={planned ?? ''} onChange={(e) => setPlanned(e.target.value === '' ? null : Number(e.target.value))} />
+          <Input label={t('manufacturing.detail.shopfloor.actualMinutes')} type="number" value={actual} onChange={(e) => setActual(Number(e.target.value))} />
+          <Input label={t('manufacturing.detail.shopfloor.produced')} type="number" step="0.01" value={produced} onChange={(e) => setProduced(Number(e.target.value))} />
+          <Input label={t('manufacturing.detail.shopfloor.scrapped')} type="number" step="0.01" value={scrapped} onChange={(e) => setScrapped(Number(e.target.value))} />
+          <Input label={t('manufacturing.detail.shopfloor.scrapReason')} value={reason} onChange={(e) => setReason(e.target.value)} />
+          <p className="text-xs text-[var(--color-text-secondary)]">{t('manufacturing.detail.shopfloor.hint')}</p>
+          <div className="flex gap-2 justify-end pt-2">
+            <Button type="button" variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
+            <Button type="submit">{t('common.add')}</Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+

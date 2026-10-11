@@ -241,9 +241,38 @@ charge × capacité par poste et par jour, avec le drapeau **surcharge**. Carte
 **« Charge / capacité des postes »** sur `/production/machines`. Suite `657` :
 **4/4**, rouge avant.
 
+### `PRD-06` — déclaration d'atelier : `mo_operations` branchée (migration `661`)
+
+**Le trou.** La table `mo_operations` existe depuis la `126` et **rien** ne
+l'écrivait. C'est pourtant la seule du domaine qui sache dire **où le temps est
+passé** et **où sont les rebuts** : `planned_time_minutes`, `actual_time_minutes`,
+`quantity_produced`, `quantity_scrapped`, `scrap_reason`.
+
+**Livré.**
+
+- `record_mo_operation(of, opération, minutes prévues, minutes réelles, produites,
+  rebutées, motif)` — l'atelier déclare. Un **index unique** sur
+  `(société, OF, lower(nom d'opération))` rend la déclaration **rejouable** :
+  corriger un temps met la ligne à jour, il ne la double pas. Un OF **annulé**
+  refuse la déclaration ; un temps ou une quantité **négative** aussi ;
+- `mo_operations_summary(of)` — le récapitulatif : nombre d'opérations, minutes
+  prévues / réelles, produites, rebutées et **taux de rebut**.
+
+**Aucun impact sur le stock** : la matière reste consommée par les mouvements
+(`reference_type = 'production'`), cette table ne fait que **déclarer**. Le
+moteur de stock n'est pas touché — c'est ce qui rend la brique sûre.
+
+**Écran.** Nouvel onglet **« Atelier »** de la fiche OF
+(`/production/of/:id`) : carte de récapitulatif (6 chiffres), tableau des
+opérations, et bouton **« Déclarer une opération »**.
+
+Suite `661` : **3/3**, rouge avant (aucune fonction n'existait) ; et
+**non-régression** : `302` 8/8, `254` 5/5.
+
+
 ## E.5 — tables coquilles : brancher ou supprimer
 
-**Six coquilles de mon périmètre sont désormais branchées** (lues par un écran ou
+**Sept coquilles de mon périmètre sont désormais branchées** (lues par un écran ou
 une fonction) :
 
 | Table | Branchée par |
@@ -254,13 +283,15 @@ une fonction) :
 | `stock_transfer_lines` | `STK-14`, `652` + `/stock/transfers` |
 | `maintenance_records` | `PRD-11`, carte « Interventions » |
 | `work_center_calendars` | `PRD-07`, `657` (`work_center_capacity`) |
+| `mo_operations` | `PRD-06`, `661` + onglet « Atelier » de la fiche OF |
 
 **Ce qui reste, et pourquoi** — aucune n'est laissée en suspens :
 
 | Table | Décision | Motif |
 |---|---|---|
 | `landed_cost_lines` (+ `landed_cost_receipts`) | **branchée** (STK-08, `658`) | le moteur corrigé et l'écran `/stock/landed-costs` |
-| `mo_consumptions`, `mo_operations` | **brancher** (PRD-06) | déclaration de production par opération (quantités réelles, rebuts, temps) |
+| `mo_operations` | **branchée** (PRD-06, `661`) | déclaration d'atelier : temps réel, produites, rebuts |
+| `mo_consumptions` | **brancher** (PRD-06) | écart matière prévu/réel — l'écart se calcule déjà (`manufacturing_requirements` + mouvements `production`), il reste à le figer |
 | `quality_control_plans`, `quality_control_points` | **brancher** (STK-13) | plans de contrôle et échantillonnage |
 | `fixed_asset_components` | **hors périmètre E** | immobilisations (`ACC-07`) — à l'intégration |
 | `resource_capacities` | **hors périmètre E** | capacité par ressource des projets (`PRJ`) — à l'intégration |
@@ -366,4 +397,5 @@ comme le reste.
 | 11/10/2026 | **E.3** — `STK-08` frais accessoires | `658` `landed_cost_receipts` + moteur corrigé + écran `/stock/landed-costs` | `658` 4/4 · tsc 0 · oxlint 0 · i18n OK | `e238842` |
 | 11/10/2026 | **E.4** — sous-OF (recomptage) | déjà câblé (onglet « sous-niveaux ») ; colonne produit corrigée | tsc 0 · oxlint 0 · i18n OK · vitest 86/86 | `444d70d` |
 | 11/10/2026 | **E.3** — `STK-11` stock par casier | `659` affectations + `location_stock` + « Affecter » à l'écran | `659` 3/3 · non-régression 254/652/653/654/655 · tsc 0 · oxlint 0 · i18n OK | `3b17bf9` |
-| 11/10/2026 | **E.3** — `STK-11` rangement/prélèvement | `660` `suggest_putaway_location` + `suggest_pick_location` + carte à l'écran | `660` 3/3 (rouge avant) · `659` 3/3 · tsc 0 · oxlint 0 · i18n OK · vitest 1662 ✓ | à committer |
+| 11/10/2026 | **E.3** — `STK-11` rangement/prélèvement | `660` `suggest_putaway_location` + `suggest_pick_location` + carte à l'écran | `660` 3/3 (rouge avant) · `659` 3/3 · tsc 0 · oxlint 0 · i18n OK · vitest 1662 ✓ | `1bfdba4` |
+| 11/10/2026 | **E.5 / PRD-06** — déclaration d'atelier | `661` `mo_operations` branchée (`record_mo_operation` + `mo_operations_summary`) + onglet « Atelier » | `661` 3/3 (rouge avant) · `302` 8/8 · tsc 0 · oxlint 0 · i18n OK · vitest 1662 ✓ | à committer |

@@ -202,7 +202,8 @@
         "labels": "Suivi Quantité",
         "lots": "Lots & Péremption",
         "consumptions": "Consommation",
-        "sublevels": "Sous-niveaux"
+        "sublevels": "Sous-niveaux",
+        "shopfloor": "Atelier"
       },
       "info": {
         "number": "Numéro",
@@ -289,6 +290,28 @@
         "quantity": "Quantité",
         "status": "Statut",
         "view": "Voir"
+      },
+      "shopfloor": {
+        "summary": "Récapitulatif atelier",
+        "add": "Déclarer une opération",
+        "noOperations": "Aucune opération déclarée",
+        "noOperationsDescription": "Déclarez les opérations de l'atelier : temps réel, quantités produites et rebuts.",
+        "operation": "Opération",
+        "operationRequired": "Le nom de l'opération est obligatoire",
+        "plannedMinutes": "Minutes prévues",
+        "actualMinutes": "Minutes réelles",
+        "produced": "Quantité produite",
+        "scrapped": "Quantité rebutée",
+        "scrapReason": "Motif du rebut",
+        "nbOperations": "Opérations",
+        "totalPlanned": "Minutes prévues (total)",
+        "totalActual": "Minutes réelles (total)",
+        "totalProduced": "Produites (total)",
+        "totalScrapped": "Rebuts (total)",
+        "scrapRate": "Taux de rebut",
+        "saved": "Opération déclarée",
+        "savedMsg": "Le récapitulatif de l'OF est à jour.",
+        "hint": "Rejouer une opération du même nom corrige ses valeurs. Aucun mouvement de stock n'est créé."
       }
     },
     "number": "N° OF",

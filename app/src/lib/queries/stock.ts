@@ -1010,6 +1010,58 @@ export async function getOFLots(moId: string) {
   return data as any[]
 }
 
+// PRD-06 (661) : déclaration d'atelier — temps réel, quantités produites, rebuts.
+export interface MoOperation {
+  id: string
+  operation_name: string | null
+  planned_time_minutes: number | null
+  actual_time_minutes: number | null
+  quantity_produced: number | null
+  quantity_scrapped: number | null
+  scrap_reason: string | null
+  status: string | null
+}
+
+export async function getMoOperations(moId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('mo_operations').select('*').eq('manufacturing_order_id', moId).order('operation_name')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return (data || []) as MoOperation[]
+}
+
+export async function recordMoOperation(
+  moId: string, operationName: string, plannedMinutes: number | null,
+  actualMinutes: number, produced: number, scrapped: number, scrapReason: string | null,
+) {
+  const { error } = await supabase.rpc('record_mo_operation', {
+    p_mo_id: moId,
+    p_operation_name: operationName,
+    p_planned_minutes: plannedMinutes,
+    p_actual_minutes: actualMinutes,
+    p_produced: produced,
+    p_scrapped: scrapped,
+    p_scrap_reason: scrapReason,
+  })
+  if (error) throw error
+}
+
+export interface MoOperationsSummary {
+  nb_operations: number
+  planned_minutes: number
+  actual_minutes: number
+  produced: number
+  scrapped: number
+  scrap_rate: number
+}
+
+export async function getMoOperationsSummary(moId: string) {
+  const { data, error } = await supabase.rpc('mo_operations_summary', { p_mo_id: moId })
+  if (error) throw error
+  return ((data || []) as MoOperationsSummary[])[0] ?? null
+}
+
 export async function createOFLot(lot: Omit<OFLot, 'id' | 'created_at'>) {
   const tid = await getTenantId()
   const { data, error } = await supabase.from('of_lots').insert(ti(lot, 'of_lots', tid)).select().single()

@@ -202,7 +202,8 @@
         "labels": "Quantity tracking",
         "lots": "Lots & Expiry",
         "consumptions": "Consumption",
-        "sublevels": "Sub-levels"
+        "sublevels": "Sub-levels",
+        "shopfloor": "Shop floor"
       },
       "info": {
         "number": "Number",
@@ -289,6 +290,28 @@
         "quantity": "Quantity",
         "status": "Status",
         "view": "View"
+      },
+      "shopfloor": {
+        "summary": "Shop floor summary",
+        "add": "Declare an operation",
+        "noOperations": "No operation declared",
+        "noOperationsDescription": "Declare shop floor operations: actual time, produced quantities and scrap.",
+        "operation": "Operation",
+        "operationRequired": "The operation name is required",
+        "plannedMinutes": "Planned minutes",
+        "actualMinutes": "Actual minutes",
+        "produced": "Quantity produced",
+        "scrapped": "Quantity scrapped",
+        "scrapReason": "Scrap reason",
+        "nbOperations": "Operations",
+        "totalPlanned": "Planned minutes (total)",
+        "totalActual": "Actual minutes (total)",
+        "totalProduced": "Produced (total)",
+        "totalScrapped": "Scrapped (total)",
+        "scrapRate": "Scrap rate",
+        "saved": "Operation declared",
+        "savedMsg": "The MO summary is up to date.",
+        "hint": "Replaying an operation with the same name corrects its values. No stock movement is created."
       }
     },
     "number": "MO no.",
