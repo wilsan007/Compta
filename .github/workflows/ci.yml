@@ -2464,6 +2464,16 @@ jobs:
       - name: 'L16 : mouvement de stock → son lot, tracé (761)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/761_chain_l16_stock_lot_tests.sql
 
+      # L16 — chaînage interne STOCK : les MOUVEMENTS DE STOCK produits par une
+      # RÉCEPTION (effet `stock.receipt.movement_recorded`) ; l'écrivain est le
+      # déclencheur de la 241 (`reference_type = 'goods_receipt'`). Sens
+      # MOUVEMENT → RÉCEPTION : une réception produit N mouvements, donc l'amont
+      # est le mouvement. 14 verdicts : nominal (3, dont « rien n'est réécrit »),
+      # idempotence (D1), quatre refus (introuvable ×2, non reçue, autre
+      # réception), frise (I-01, DEUX mouvements vers une réception), isolation.
+      - name: 'L16 : réception → ses mouvements de stock, tracé (762)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/762_chain_l16_reception_mouvement_tests.sql
+
 
       # P1 (A3.4) — l'ATTESTATION D'INTÉGRITÉ TECHNIQUE : un `jsonb` de FAITS
       # (dernier relevé des invariants, écarts nommés, rapport du banc — non_joue

@@ -35,7 +35,7 @@ le **comportement** peut se contrer. Garde-fous :
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | A3.1 | Recompter L16 → L22 : inventaire de ce que `415` → `422` ont réellement posé (L23 tranche 1, L17 capacité ↔ absence, L18 consommation chantier, L19, L20, métriques, retour arrière) et ce qu'il reste par lot du plan d'implémentation | A.6 | 1 j | ✅ fait le 05/10 (voir §Recomptage) |
-| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **16 maillons livrés** : L16 **Commercial** — devis → commande (`493`, **19/19**), commande → livraison (`494`, **14/14**), livraison → facture (`495`, **14/14**), facture → règlement (`497`, **14/14**), facture → avoir (`754`, **14/14**), facture → relance (`757`, **15/15**) ; L16 **Achats** — commande d'achat → réception (`498`, **14/14**), réception → facture fournisseur (`755`, **14/14**), facture fournisseur → règlement (`753`, **14/14**), facture fournisseur → avoir (`756`, **14/14**) ; L16 **Comptabilité** — groupe de lettrage → ses lignes (`758`, **12/12**), exercice clos → écriture d'affectation (`760`, **12/12**) ; L16 **RH/Paie** — bulletin → écriture (`759`, **12/12**) ; L16 **Trésorerie** — ordre de paiement → virement (`499`, **16/16**) ; L16 **Stock** — proposition MRP → commande d'achat (`751`, **15/15**), mouvement de stock → son lot (`761`, **15/15**, traçabilité) — voir §A3.2 lots 1 à 16 |
+| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **17 maillons livrés** : L16 **Commercial** — devis → commande (`493`, **19/19**), commande → livraison (`494`, **14/14**), livraison → facture (`495`, **14/14**), facture → règlement (`497`, **14/14**), facture → avoir (`754`, **14/14**), facture → relance (`757`, **15/15**) ; L16 **Achats** — commande d'achat → réception (`498`, **14/14**), réception → facture fournisseur (`755`, **14/14**), facture fournisseur → règlement (`753`, **14/14**), facture fournisseur → avoir (`756`, **14/14**) ; L16 **Comptabilité** — groupe de lettrage → ses lignes (`758`, **12/12**), exercice clos → écriture d'affectation (`760`, **12/12**) ; L16 **RH/Paie** — bulletin → écriture (`759`, **12/12**) ; L16 **Trésorerie** — ordre de paiement → virement (`499`, **16/16**) ; L16 **Stock** — proposition MRP → commande d'achat (`751`, **15/15**), mouvement → son lot (`761`, **15/15**), réception → ses mouvements (`762`, **14/14**) — voir §A3.2 lots 1 à 17 |
 | A3.3 | L23 (événements et webhooks unifiés, suite de la tranche 1) ; L24 (explicabilité, régularisation guidée) | A.7 | plafond du plan | 🟡 **L23-b livré le 06/10** : le **moteur d'automatisations** (`752`, suite **10/10**) — voir §A3.3 ; restent **L23-c** (lecture écran), **L24** |
 | A3.4 | P1 certificat d'intégrité, P3 audit de reprise, P2 banc sur données du prospect, puis P4, P5, P7, P8, P6 | A.8 (propositions P1 → P8) | ≈ 25 j | 🟡 **P1 : le SQL est livré** (`770`, suite **7/7** sur base neuve) — voir §A3.4 ; l'**écran** reste à **A2** ; puis P3 → P6 |
 
@@ -599,8 +599,54 @@ de sortie en tiennent compte.
 (`chain_l16_paie_virement`) ; le numéro a été **rendu** (`rendre`) puis le vrai nom
 **inscrit** (`inscrire`) — la commande du dépôt a servi « à l'envers », sans forcer.
 
-**Reste du Stock** : **réception → mouvement de stock** (`reference_type`/`reference_id`
-polymorphes, sans FK) ; CUMP → écriture.
+**Reste du Stock** : **CUMP → écriture** — avec le défaut mesuré au lot 17
+(`'receipt'` contre `'goods_receipt'`).
+
+## A3.2 — lot 17 : la réception rattachée à ses mouvements de stock (migration `762`)
+
+**La famille Stock, troisième tronçon** — « **réception → stock** → CUMP → écriture »
+(§B.3).
+
+**Ce que la mesure a trouvé.** L'écrivain **existe** : `create_stock_on_goods_receipt`
+(`241`, déclencheur `AFTER UPDATE` sur `status = 'received'`) insère les mouvements en
+posant `reference = 'BR-' || number`, **`reference_type = 'goods_receipt'`**,
+`reference_id = NEW.id` ; l'annulation (`251`) écrit une sortie miroir en
+`'goods_receipt_cancel'`. Les gardes `133`, `141` et `251` **lisent** tous
+`'goods_receipt'`. Mais **aucun lien de chaîne** n'était posé : les mouvements d'une
+réception étaient **invisibles pour la frise**, et un mouvement se réclamant d'une
+réception qui n'est pas la sienne passait sans bruit.
+
+**Ce qui est livré** — migration `762_chain_l16_reception_mouvement.sql` : contrat
+d'effet `stock.receipt.movement_recorded`, maillon `chain_l16_receipt_movement` —
+réception **« reçue »** exigée (`pending`/`cancelled` refusées : sa sortie de stock
+n'existe pas), et le mouvement doit **désigner cette réception** par
+`reference_type`/`reference_id`. Lien `link_documents` (`created_from`).
+**Rien n'est réécrit** : les colonnes de l'entrée en stock sont lues pour vérifier.
+
+**Le registre, exigé et non supposé.** `goods_receipts` et `stock_movements` étaient
+**déjà** au registre : plutôt que de les réinscrire (ce qui masquerait une
+régression), le fichier **l'exige** — un `DO $$` lève si l'un des deux manque, au
+déploiement, au lieu de laisser `link_documents` refuser plus tard (451).
+
+**Deux mesures neuves.**
+1. `uq_stock_movement_source (tenant_id, reference_type, reference_id, product_id,
+   movement_type)` borne le couple : une réception produit **au plus un mouvement par
+   produit**. C'est ce qui donne son sens à « N mouvements depuis une réception »
+   (N produits) — et c'est pourquoi T04 mesure avec **deux produits**, pas un.
+2. **DÉFAUT TRANSMIS, non corrigé ici** : `125_stock_advanced.sql` (le CUMP / les
+   frais accessoires) filtre **deux fois** sur `reference_type = 'receipt'` — **une
+   valeur que personne n'écrit** (l'écrivain dit `'goods_receipt'`). Le couple
+   « réception ↔ valorisation » est donc **vide** :
+   `calculate_landed_cost_distribution` lève toujours « Aucune réception à
+   répartir ». La correction appartient au lot **CUMP → écriture** (migration `_fix_`,
+   avec sa mesure) ; le taire ici aurait été le défaut.
+
+**Éprouvé** — suite `762` **14/14** sur base neuve : T01 nominal (3, dont « rien n'est
+réécrit »), T02 idempotence (D1), T03 **quatre refus** (réception introuvable,
+mouvement introuvable, réception non reçue, mouvement d'une autre réception), T04
+frise (2, **deux mouvements vers une réception**), T05 isolation (3).
+
+**Reste du Stock** : **CUMP → écriture**, avec le défaut ci-dessus en tête.
 
 ## Demandes reçues (R3) — transmises par l'intégration du 05/10/2026
 
@@ -667,4 +713,5 @@ contrat de la fonction et le plan d'écran sont dans
 | 2026-10-11 | A3.2 (lot 14) | **L16 · RH/Paie · bulletin → son écriture comptable** : migration `759` (`pay_slips` au registre, contrat `payroll.slip.posted`, maillon `chain_l16_payslip_entry` — bulletin comptabilisé requis, ne réécrit pas `journal_entry_id`, lien `generated_entry`). **⚠️ dernier numéro de la plage `750→759` : extension à demander.** + suite `759` enrôlée dans `ci.yml` | suite **12/12** sur base neuve · G2/G8/tenant/anon **OK** · rejouable | `467ee12` |
 | 2026-10-11 | A3.2 (lot 15) | **L16 · Comptabilité · exercice clos → son écriture d'affectation du résultat** : migration `760` (`fiscal_years` au registre, contrat `rev.fiscal_year.result_allocated`, maillon `chain_l16_fiscal_year_result` — exercice clos et résultat affecté requis, ne réécrit pas `result_allocation_entry_id`, lien `generated_entry`). **1ʳᵉ migration de la plage `760→769`**, inscrite au registre + `AGENTS.md` + `NUMEROTATION-MIGRATIONS.md`. + suite `760` enrôlée dans `ci.yml` | suite **12/12** sur base neuve · G2/G8/tenant/anon **OK** · rejouable | `20bd408` |
 | 2026-10-11 | A3.2 (lot 16) | **L16 · Stock · mouvement de stock → son lot (traçabilité)** : migration `761` (`product_batches` au registre, contrat `stock.movement.lot_traced`, maillon `chain_l16_stock_lot` — lot du MÊME produit exigé, mouvement sans produit refusé, aucune trace réécrite, lien `created_from`). **Défaut mesuré** : `stock_movements.lot_id` existait **sans clé étrangère ni lien** — un lot orphelin passait, et le lot était invisible pour la frise. **Rencontre** : le registre portait `761` pour un lot abandonné (`chain_l16_paie_virement`) — rendu (`rendre`), puis `inscrire` du vrai nom. + suite `761` enrôlée dans `ci.yml` | suite **15/15** sur base neuve · G2/G8/tenant/anon **OK** · rejouable | _(ce lot)_ |
+| 2026-10-11 | A3.2 (lot 17) | **L16 · Stock · réception → ses mouvements de stock** : migration `762` (contrat `stock.receipt.movement_recorded`, maillon `chain_l16_receipt_movement` — réception « reçue » exigée, `reference_type`/`reference_id` de l'entrée en stock `241` vérifiés, **rien n'est réécrit**, lien `created_from` ; le registre accueille déjà les deux types, il est **exigé** et non supposé). **Deux mesures neuves** : (1) `uq_stock_movement_source` borne le couple à **un mouvement par produit et par réception** — d'où T04 avec **deux produits** ; (2) **défaut transmis** : `125_stock_advanced.sql` filtre sur `reference_type = 'receipt'` alors que l'écrivain `241` pose `'goods_receipt'` — le couple **réception ↔ CUMP est vide** (à corriger au lot CUMP). + suite `762` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · les **cinq portes** (G2/G7/tenant/anon/G8) **OK** · G5 **169/169** · verifier **271** | _(ce lot)_ |
 | 2026-10-11 | A3.4 (P1) | **P1 — le SQL** : migration `770` (`chain_certificat_integrite` → `jsonb` de FAITS : invariants / écarts nommés / banc (`non_joue` compris) / empreinte NF-525 ; **garde de société** ; **lecture pure** ; aucun « tenu » inventé). **Plage `770`→`779` inscrite** au registre. + suite `770` enrôlée dans `ci.yml` sous `plan6:a3` | suite **770 7/7** sur base neuve · SOC-06 **0 collision** (269 numéros) · suites **167/167 branchées** | _(ce lot)_ |
