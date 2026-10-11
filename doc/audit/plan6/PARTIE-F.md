@@ -22,8 +22,8 @@
 | F.2 | Authentification forte : suite SQL (émission, usage, révocation, rejeu d'une clé ; TOTP), test Edge « clé révoquée → 401 » | ORPH-01, SEC-02 | 1 j | ✅ **livré le 05/10** — migration `700`, suite `700` (T01→T13), test Edge « révoquée → 401 » |
 | F.3 | `generate-pdf`, voie A : convertisseur isolé, `GOTENBERG_URL`, un appelant | 1.13, D-4 | 1 j (code) + décision D-4 | 🔴 **attend de vous** — D‑4 §9 : le code est durci (503 honnête, bucket `317`), il reste A1 (convertisseur injoignable), le secret `GOTENBERG_URL`, un appelant, le déploiement |
 | F.4 | Groupe : structure, opérations intra-groupe, consolidation | GRP-01 → 03 | ≈ 5 j | ✅ **livré le 05/10** — `702` (structure + intra-groupe) et `703` (consolidation), + écran Paramètres → Groupes |
-| F.5 | CRM (séquences, scoring) ; projets (capacité par ressource, champs personnalisés, automatisations) | CRM-01/02, PRJ-02/04/08 | ≈ 5 j | 🟡 **PRJ‑04, PRJ‑02, CRM‑01 et CRM‑02 livrés le 05/10** (`706`, `708`, `709`, `710`, avec leurs écrans) ; **PRJ‑08 (automatisations) reste** |
-| F.6 | Notifications et alertes ; rattachement universel de documents ; générateur d'états ; modèles de documents ; connecteurs métier | NOT-01/02, GED-01, BI-01, ADM-04, API-03 | ≈ 8 j | 🟡 **GED‑01 livré le 05/10** (`707` : le rattachement de documents est **validé**) ; **NOT‑01/02, BI‑01, ADM‑04, API‑03 restent** |
+| F.5 | CRM (séquences, scoring) ; projets (capacité par ressource, champs personnalisés, automatisations) | CRM-01/02, PRJ-02/04/08 | ≈ 5 j | ✅ **livré le 05/10** — PRJ‑04 (`706`), PRJ‑02 (`708`), CRM‑01 (`709`), CRM‑02 (`710`) ; **PRJ‑08 (automatisations)** est un **moteur de règles** : **transféré à la partie A** (L22/L23 — R3/R7, voir ci‑dessous) |
+| F.6 | Notifications et alertes ; rattachement universel de documents ; générateur d'états ; modèles de documents ; connecteurs métier | NOT-01/02, GED-01, BI-01, ADM-04, API-03 | ≈ 8 j | 🟡 **GED‑01 (`707`) et API‑03 (`711`) livrés le 05/10** ; **NOT‑01/02, BI‑01, ADM‑04 restent** |
 | F.7 | RH hors paie : conventions collectives, recrutement ; mobile hors ligne | PAY-08, RH-03, PTL-03 | ≈ 4 j | ✅ **PAY‑08 et RH‑03 livrés le 05/10** (`704` conventions collectives + `705` recrutement, avec leurs écrans) ; **PTL‑03 (mobile hors ligne)** reste — hors lot base de données |
 | F.8 | Tables coquilles de son périmètre (les 25 autres), **brancher ou supprimer** | ORPH-02 | ≈ 5 j | 🟡 **premier lot livré le 05/10** — recomptage (5 tables réelles, pas 25) + `time_entries` supprimée (`701`) |
 
@@ -441,6 +441,46 @@ société ; nom unique ; opérateur/valeur contraints ; `anon` sans droits) ;
 encore le score d'un lead ni ne le recalcule à son changement ; le brancher sur la
 fiche prospect est un lot.
 
+## F.6 — deuxième lot livré le 05/10 (API‑03, les connecteurs métier)
+
+**Le constat.** `business_connectors` avait été **supprimée par la 164**. F.6 la
+rétablit : intégrer une société, c'est d'abord **déclarer où l'on parle**.
+
+**Le modèle, et ce qui le tient** (migration `711`) :
+- un **connecteur** : nom **unique par société**, **type contraint** (`webhook`,
+  `rest`, `odoo`, `sage`, `stripe`, `generic`), URL de base, **mode
+  d'authentification contraint** (`none`, `api_key`, `basic`, `oauth2`) ;
+- **il ne porte JAMAIS le secret** : `auth_ref` est le **nom** sous lequel le
+  secret vit ailleurs (un secret d'Edge Function) — une table qui contiendrait le
+  jeton serait une fuite en attente —, et un mode d'authentification **exige** une
+  référence (CHECK) ;
+- l'URL passe la **garde SSRF du dépôt** : `is_allowed_webhook_url` (`154`, durcie
+  par `167`) — **HTTPS seul**, hôte public seul. On ne réécrit pas le contrôle, on
+  l'appelle ; le refus est **nommé** (`CONNECTOR_URL_REFUSED`).
+
+**Livré** : migration `711` (RLS forcée, 4 politiques, `anon` révoqué, fonction de
+déclencheur retirée de `PUBLIC`) ; suite `711` **8/8** (RLS forcée ; connecteur
+valide ; **HTTP refusé** ; **hôte local refusé** — la garde SSRF de bout en bout ;
+type contraint ; authentification sans référence refusée ; nom unique ; `anon` sans
+droits) ; **écran** `Paramètres → Connecteurs métier` + i18n fr/en/ar. Plafonds
+datés réinscrits : `check_bt_grid` `tables_tenant` 373 → **374** ;
+`unused-tables` 64 → **63**.
+
+⚠️ **Limite dite** : **HTTPS est une exigence**, pas un confort — un connecteur
+vers un Odoo **on‑premise en HTTP sera refusé**. C'est le prix de la garde SSRF, et
+c'est écrit dans la migration pour ne pas être découvert en production.
+
+## PRJ‑08 (automatisations de projet) — **transféré à la partie A** (R3)
+
+Le suivi range `PRJ‑08` sous « ➜ **L22/L23** » : les automatisations de projet sont
+un **moteur de règles** (L22) sur des **événements unifiés** (L23), que la partie A
+construit. En livrer une version dans F créerait un **second moteur** — exactement ce
+que R7 interdit (une fonction, un propriétaire) et ce que le dépôt appelle un
+doublon en attente. **Demande consignée** (R3) : l'intégration la transmettra à la
+partie A, qui possède `L22`/`L23` et pourra s'appuyer sur les deux tables de F.5
+(`crm_scoring_rules` pour la forme « fait → points », qu'elle pourra citer plutôt
+que réinventer).
+
 ## Attend de vous
 
 - La clé **`sb_secret_…` à tourner**.
@@ -476,3 +516,5 @@ autres. F n'est pas concernée, mais elle peut l'être indirectement par F.4
 | 05/10/2026 | F.5 capacité par ressource (PRJ‑02) | **livré** : `708` (capacité par salarié et par période, clé composite ISO‑02, bornes contraintes, déclencheur de non‑chevauchement — la règle qu'aucune clé ne tient) + suite 8/8 + écran Paramètres→Capacité par ressource + i18n. Plafonds : `tables_tenant` 369→370 ; `unused-tables` 68→67 | 1 j | `plan6/f-plateforme` |
 | 05/10/2026 | F.5 séquences de relance (CRM‑01) | **livré** : `709` (séquence à nom unique + étapes à rang unique, délai ≥ 0, canal contraint, clé composite ISO‑02) + suite 9/9 + écran CRM→Séquences de relance + i18n. Plafonds : `tables_tenant` 370→372 ; `unused-tables` 67→65 | 1 j | `plan6/f-plateforme` |
 | 05/10/2026 | F.5 scoring de lead (CRM‑02) | **livré** : `710` (règles pondérées à opérateur contraint + moteur `crm_lead_score` qui rend le total ET ses raisons ; fait absent non matché ; comparaisons numériques ; filtre société explicite) + suite 10/10 + écran CRM→Scoring de lead (simulateur) + i18n. Plafonds : `tables_tenant` 372→373 ; `unused-tables` 65→64 | 1 j | `plan6/f-plateforme` |
+| 05/10/2026 | F.5 PRJ‑08 (automatisations de projet) | **transféré à la partie A** (L22/L23, moteur de règles — R3/R7 : un second moteur serait un doublon). Demandé dans ce fichier, à transmettre par l'intégration | — | — |
+| 05/10/2026 | F.6 connecteurs métier (API‑03) | **livré** : `711` (connecteur à type/auth contraints, jamais de secret — seulement son nom, URL validée par la garde SSRF du dépôt : HTTPS + hôte public) + suite 8/8 + écran Paramètres→Connecteurs métier + i18n. Plafonds : `tables_tenant` 373→374 ; `unused-tables` 64→63 | 1 j | `plan6/f-plateforme` |

@@ -91,6 +91,23 @@
     "remove": "حذف الطاقة",
     "confirmDelete": "حذف هذه الطاقة؟"
   },
+  "businessConnectors": {
+    "title": "موصّلات الأعمال",
+    "subtitle": "أعلن أين يتم التخاطب (webhook، واجهة برمجية، ERP…). لا يُخزَّن السر هنا أبدًا: اسمه فقط.",
+    "createTitle": "إضافة موصّل",
+    "name": "الاسم",
+    "type": "النوع",
+    "baseUrl": "الرابط الأساسي",
+    "auth": "المصادقة",
+    "authRef": "اسم السر",
+    "create": "إضافة",
+    "empty": "لا يوجد موصّل",
+    "remove": "حذف الموصّل",
+    "confirmDelete": "حذف هذا الموصّل؟",
+    "urlHint": "HTTPS نحو مضيف عام فقط (حماية SSRF للمستودع).",
+    "types": { "webhook": "Webhook", "rest": "واجهة REST", "odoo": "Odoo", "sage": "Sage", "stripe": "Stripe", "generic": "عام" },
+    "authTypes": { "none": "بدون", "api_key": "مفتاح API", "basic": "أساسي", "oauth2": "OAuth2" }
+  },
   "tabs": {
     "chartAccounts": "دليل الحسابات",
     "asset": "أصول",

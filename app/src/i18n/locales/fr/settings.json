@@ -91,6 +91,23 @@
     "remove": "Supprimer la capacité",
     "confirmDelete": "Supprimer cette capacité ?"
   },
+  "businessConnectors": {
+    "title": "Connecteurs métier",
+    "subtitle": "Déclarez où l'on parle (webhook, API, ERP…). Le secret n'est jamais stocké ici : seulement son nom.",
+    "createTitle": "Ajouter un connecteur",
+    "name": "Nom",
+    "type": "Type",
+    "baseUrl": "URL de base",
+    "auth": "Authentification",
+    "authRef": "Nom du secret",
+    "create": "Ajouter",
+    "empty": "Aucun connecteur",
+    "remove": "Supprimer le connecteur",
+    "confirmDelete": "Supprimer ce connecteur ?",
+    "urlHint": "HTTPS vers un hôte public uniquement (garde SSRF du dépôt).",
+    "types": { "webhook": "Webhook", "rest": "API REST", "odoo": "Odoo", "sage": "Sage", "stripe": "Stripe", "generic": "Générique" },
+    "authTypes": { "none": "Aucune", "api_key": "Clé d'API", "basic": "Basic", "oauth2": "OAuth2" }
+  },
   "tabs": {
     "chartAccounts": "Plan comptable",
     "asset": "Actif",

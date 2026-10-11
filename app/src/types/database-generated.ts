@@ -2193,6 +2193,56 @@ export interface Database {
         },
       ]
     }
+    business_connectors: {
+      Row: {
+        id: string
+        tenant_id: string
+        name: string
+        connector_type: string
+        base_url: string
+        auth_type: string
+        auth_ref: string | null
+        is_active: boolean
+        config: Json
+        created_at: string
+        updated_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        name: string
+        connector_type: string
+        base_url: string
+        auth_type?: string
+        auth_ref?: string
+        is_active?: boolean
+        config?: Json
+        created_at?: string
+        updated_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        name?: string
+        connector_type?: string
+        base_url?: string
+        auth_type?: string
+        auth_ref?: string
+        is_active?: boolean
+        config?: Json
+        created_at?: string
+        updated_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "business_connectors_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
     career_history: {
       Row: {
         id: string

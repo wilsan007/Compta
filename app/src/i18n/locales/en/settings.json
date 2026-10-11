@@ -91,6 +91,23 @@
     "remove": "Delete capacity",
     "confirmDelete": "Delete this capacity?"
   },
+  "businessConnectors": {
+    "title": "Business connectors",
+    "subtitle": "Declare where we talk (webhook, API, ERP…). The secret is never stored here: only its name.",
+    "createTitle": "Add a connector",
+    "name": "Name",
+    "type": "Type",
+    "baseUrl": "Base URL",
+    "auth": "Authentication",
+    "authRef": "Secret name",
+    "create": "Add",
+    "empty": "No connector",
+    "remove": "Delete connector",
+    "confirmDelete": "Delete this connector?",
+    "urlHint": "HTTPS to a public host only (repository SSRF guard).",
+    "types": { "webhook": "Webhook", "rest": "REST API", "odoo": "Odoo", "sage": "Sage", "stripe": "Stripe", "generic": "Generic" },
+    "authTypes": { "none": "None", "api_key": "API key", "basic": "Basic", "oauth2": "OAuth2" }
+  },
   "tabs": {
     "chartAccounts": "Chart of accounts",
     "asset": "Asset",

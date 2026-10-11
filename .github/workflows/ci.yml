@@ -2462,6 +2462,16 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # F.6 / API-03 — les connecteurs métier. Une table neuve : où l'on parle
+      # (webhook, API REST, Odoo, Sage, Stripe), un MODE d'authentification
+      # contraint, et JAMAIS le secret — seulement son nom. L'URL passe la garde
+      # SSRF du dépôt (`is_allowed_webhook_url`, 154/167) : HTTPS seul, hôte
+      # public seul.
+      - name: 'F.6 : connecteurs métier (API-03) — URL publique, jamais un secret (711)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/711_connecteurs_metier_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
   # ─────────────────────────────────────────────
   # Job 6: Build verification
   # ─────────────────────────────────────────────
