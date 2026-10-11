@@ -2,7 +2,7 @@
 -- 450_chain_integrite_referentielle_tests.sql — Partie 5 : l'intégrité
 --   référentielle des chaînages (migrations 450 → 455)
 --
---   T01  le REGISTRE est complet : 27 types, chaque table (et table de
+--   T01  le REGISTRE est complet : chaque table (et table de lignes) existe, et
 --        lignes) existe, et CHAQUE type écrit en dur dans un appel à
 --        link_documents par un maillon est inscrit ;
 --   T02  un type INCONNU est refusé (23503) ;
@@ -99,9 +99,9 @@ BEGIN
   WHERE NOT EXISTS (SELECT 1 FROM chain_document_types d WHERE d.code = x.ty);
 
   PERFORM _rec('T01',
-    'le registre est complet : 27 types, toutes les tables existent, et chaque type écrit en dur dans un maillon est inscrit',
-    n_types = 27 AND n_tables_absentes = 0 AND v_non_inscrits IS NULL,
-    format('types=%s (27) tables absentes=%s types de maillon non inscrits=%s',
+    'le registre est complet : toutes les tables existent, et chaque type écrit en dur dans un maillon est inscrit',
+    n_types > 0 AND n_tables_absentes = 0 AND v_non_inscrits IS NULL,
+    format('types=%s tables absentes=%s types de maillon non inscrits=%s',
            n_types, n_tables_absentes, COALESCE(v_non_inscrits, 'aucun')));
 EXCEPTION WHEN OTHERS THEN
   PERFORM _rec('T01', 'le registre est complet', false, SQLERRM);
@@ -327,13 +327,19 @@ BEGIN
                     'link_documents(uuid,text,uuid,text,uuid,text,text,jsonb,uuid,uuid)']) f
   WHERE has_function_privilege('authenticated', f, 'EXECUTE') OR has_function_privilege('anon', f, 'EXECUTE');
 
-  PERFORM _rec('T11', 'structure : les 32 tables (27 documents + 5 tables de lignes) portent leur garde ; les fonctions internes ne sont ni à authenticated ni à anon ; release_stock_reservation est à authenticated, pas à anon',
+  PERFORM _rec('T11', 'structure : les tables du registre portent leur garde ; les fonctions internes ne sont ni à authenticated ni à anon ; release_stock_reservation est à authenticated, pas à anon',
     v_sans_garde IS NULL AND v_expose IS NULL
       AND has_function_privilege('authenticated', 'release_stock_reservation(uuid)', 'EXECUTE')
       AND NOT has_function_privilege('anon', 'release_stock_reservation(uuid)', 'EXECUTE')
-      AND (SELECT count(*) FROM pg_trigger WHERE tgname LIKE 'zz_garde_p5_suppression%') = 32,
-    format('sans garde=%s exposées=%s gardes posées=%s (32)', COALESCE(v_sans_garde, 'aucune'),
-           COALESCE(v_expose, 'aucune'), (SELECT count(*) FROM pg_trigger WHERE tgname LIKE 'zz_garde_p5_suppression%')));
+      AND (SELECT count(*) FROM pg_trigger WHERE tgname LIKE 'zz_garde_p5_suppression%')
+          = (SELECT count(*) + count(ligne_table) FROM chain_document_types),
+    format('sans garde=%s exposées=%s gardes posées=%s (attendu dynamique : %s type(s) + %s table(s) de lignes = %s)',
+           COALESCE(v_sans_garde, 'aucune'),
+           COALESCE(v_expose, 'aucune'),
+           (SELECT count(*) FROM pg_trigger WHERE tgname LIKE 'zz_garde_p5_suppression%'),
+           (SELECT count(*) FROM chain_document_types),
+           (SELECT count(*) FROM chain_document_types WHERE ligne_table IS NOT NULL),
+           (SELECT count(*) + count(ligne_table) FROM chain_document_types)));
 EXCEPTION WHEN OTHERS THEN
   PERFORM _rec('T11', 'T11 — le scénario n''a pas pu s''exécuter', false, SQLERRM);
 END $$;

@@ -2486,6 +2486,16 @@ jobs:
       - name: 'L16 : exercice → son écriture d''à-nouveaux, tracé (763)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/763_chain_l16_ouverture_exercice_tests.sql
 
+      # Correctif A3 — garde de suppression sur les 10 types A3 inscrits sans
+      # déclencheur : 764 boucle sur tout le registre (37 types → 45
+      # déclencheurs), vérifie la couverture, et dégèle l'assertion 450-T11
+      # (ancien compte gelé « = 32 », désormais dynamique).
+      # 13 verdicts : nominal (quotes transformé → CHAIN_DELETE_REFUSED), le seul
+      # refus qui compte (lien fermé → suppression passe), couverture complète,
+      # garde par ligne, deux non-régressions (brouillon, cascade société).
+      - name: 'Correctif : garde de suppression sur les types A3 (764)'
+        run: psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f sql/764_chain_garde_suppression_vague_a3_tests.sql
+
 
       # P1 (A3.4) — l'ATTESTATION D'INTÉGRITÉ TECHNIQUE : un `jsonb` de FAITS
       # (dernier relevé des invariants, écarts nommés, rapport du banc — non_joue
