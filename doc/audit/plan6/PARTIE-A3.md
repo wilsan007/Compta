@@ -36,7 +36,7 @@ le **comportement** peut se contrer. Garde-fous :
 |---|---|---|---|---|
 | A3.1 | Recompter L16 → L22 : inventaire de ce que `415` → `422` ont réellement posé (L23 tranche 1, L17 capacité ↔ absence, L18 consommation chantier, L19, L20, métriques, retour arrière) et ce qu'il reste par lot du plan d'implémentation | A.6 | 1 j | ✅ fait le 05/10 (voir §Recomptage) |
 | A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **7 maillons livrés** : L16 **Commercial** — devis → commande (`493`, **19/19**), commande → livraison (`494`, **14/14**), livraison → facture (`495`, **14/14**), facture → règlement (`497`, **14/14**) ; L16 **Achats** — commande d'achat → réception (`498`, **14/14**) ; L16 **Trésorerie** — ordre de paiement → virement (`499`, **16/16**) ; L16 **Stock** — proposition MRP → commande d'achat (`751`, **15/15**) — voir §A3.2 lots 1 à 7 ; l'**avoir** est différé (cf. lot 4) |
-| A3.3 | L23 (événements et webhooks unifiés, suite de la tranche 1) ; L24 (explicabilité, régularisation guidée) | A.7 | plafond du plan | ⬜ |
+| A3.3 | L23 (événements et webhooks unifiés, suite de la tranche 1) ; L24 (explicabilité, régularisation guidée) | A.7 | plafond du plan | 🟡 **L23-b livré le 06/10** : le **moteur d'automatisations** (`752`, suite **10/10**) — voir §A3.3 ; restent **L23-c** (lecture écran), **L24** |
 | A3.4 | P1 certificat d'intégrité, P3 audit de reprise, P2 banc sur données du prospect, puis P4, P5, P7, P8, P6 | A.8 (propositions P1 → P8) | ≈ 25 j | 🟢 **débloqué le 05/10** — les cinq questions du §6 sont **tranchées** et l'expert-comptable référent est **désigné** (dossier `doc/validation-expert-comptable/DOSSIER-EXPERT-COMPTABLE-2026-10-05.md`, lot A1) ; ordre d'exécution : P1 → P3 → P2 → P4 → P5 → P7 → P8 → P6 |
 
 ## Recomptage L16 → L22 (05/10/2026) — mesuré dans `app/sql/`, pas recopié
@@ -284,6 +284,52 @@ Portes : G2 **67 constats, 0 au registre** ; G8 **OK** ; `check_tenant_guard` /
 *Plage utilisée : `750 → 759` « plan6 A3 L16 (familles restantes) », inscrite pour
 les familles restantes d'A3 après saturation de `493 → 499` (le registre fait foi).*
 
+## A3.3 — L23-b : le moteur d'automatisations (migration `752`)
+
+**L23** (plan du 24/09, I-06) = « journal unique + **automatisations** + webhooks
+branchés sur les MÊMES événements ». La tranche 1 (`415`) a livré le **journal**
+et le pont **webhooks**. **L23-b = les automatisations.**
+
+**Ce que la mesure a trouvé.** Aucune table de règles d'automatisation ; aucun
+moteur n'écoute `domain_events` pour autre chose que les webhooks.
+
+**Ce qui est livré** — migration `752_chain_l23_automatisations.sql` :
+
+- `automation_actions` — le **catalogue FERMÉ** des actions (clé étrangère :
+  jamais un nom de fonction venu d'une donnée) ;
+- `automation_rules` — les règles de la société (`event_name` + `action_code` +
+  `params` + `active`, RLS **forcée**) ;
+- `automation_runs` — **l'idempotence structurelle et la trace** :
+  `UNIQUE (tenant, règle, événement)` ;
+- `chain_l23_automatiser(event_id)` — le **moteur** : lit l'événement, joue
+  chaque règle ACTIVE de sa société, trace (`executed` / `skipped` / `failed`) ;
+- `zz_l23_automatiser` — déclencheur `AFTER INSERT` sur `domain_events` : le
+  même point que le pont de la `415`, personne ne peut oublier d'appeler.
+
+**Première action** (`chain.link`, **pilotée par la charge utile**) : poser un
+lien amont→aval (`link_documents`) depuis l'agrégat de l'événement et les `params`
+de la règle. Les actions métier nommées (« créer la commande », « notifier »)
+s'inscrivent au même catalogue.
+
+**Éprouvé** — suite `752` **10/10** sur base neuve : T01 nominal (déclenchement +
+lien + trace `executed`, 2), T02 idempotence (rejeu : `rules_run = 0`, un seul
+lien, une seule trace, 3), T03 `skipped` (paramètres incomplets, 2), T04 `failed`
+(uuid invalide → `SQLERRM` tracée, la transaction métier survit, 1), T05 isolation
+(l'événement de B ne joue pas la règle de A, 2). Portes : G2 / G8 /
+`check_tenant_guard` / `check_anon_grants` / `check_composite_fks` **OK** ;
+**`check_forced_rls_writers` : plafond relevé `318 → 320`** dans le même commit
+(deux tables NEUVES, RLS forcée dès la création — la doctrine §3.5, pas une
+exposition) ; rejouable ; enrôlée dans `ci.yml` (G5).
+
+**Reste d'A3.3** : **L23-c** (lecture écran des automatisations), **L24**
+(explicabilité I-09/I-11/I-12).
+
+⚠️ **Limite dite** : le moteur joue des effets **nommés par la donnée** (les
+`params` d'une règle). Or la porte **G2** lit les effets **LITTÉRAUX** du code :
+un effet non déclaré posé par une règle ne serait refusé par personne. Sujet à
+porter (catalogue d'effets par action, ou contrôle à l'exécution) — c'est le prix
+d'un moteur de règles, et il est écrit ici plutôt que tu.
+
 ## Demandes reçues (R3) — transmises par l'intégration du 05/10/2026
 
 | # | Demande | De | Ce qu'elle débloque |
@@ -302,4 +348,5 @@ les familles restantes d'A3 après saturation de `493 → 499` (le registre fait
 | 2026-10-05 | A3.2 (lot 4) | **Avoir (`498`) DIFFÉRÉ, numéro rendu** : la suite se heurte aux gardes de validation (avoir brouillon→validé ; facture validée sans ligne interdite) — harnais dédié requis. Le tronçon reste au reste d'A3.2 | — (report décidé) | — |
 | 2026-10-06 | A3.2 (lot 5) | **L16 · Achats · commande d'achat → réception** : migration `498` (`purchase_orders` au registre, contrat `purchase.order.to_receipt`, maillon `chain_l16_receipt_order` — cohérence fournisseur/statut, idempotent, écrit `goods_receipts.purchase_order_id`, lien `delivered_by`) + suite `498` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2 **OK** · G8 15 maillons **OK** · tenant/anon **OK** · rejouable | `61f0ee7` |
 | 2026-10-06 | A3.2 (lot 6) | **L16 · Trésorerie · ordre de paiement → virement** : migration `499` (`payment_orders` au registre, contrat `treasury.order.to_payment`, maillon `chain_l16_order_payment` — auto-détection achat/vente, cohérence compte/montant, marque l'ordre `executed`, lien `paid_by`) + suite `499` enrôlée dans `ci.yml` | suite **16/16** sur base neuve · G2 65 constats **0 au registre** · G8/tenant/anon **OK** · rejouable | `560477c` |
-| 2026-10-06 | A3.2 (lot 7) | **L16 · Stock · proposition (MRP) → commande d'achat** : migration `751` (`mrp_proposals` au registre, contrat `purchase.proposal.to_order`, maillon `chain_l16_proposal_order` — type `purchase` seul, même fournisseur, marque la proposition `converted`, lien `created_from`) + suite `751` enrôlée dans `ci.yml` | suite **15/15** sur base neuve · G2 67 constats **0 au registre** · G8/tenant/anon **OK** · rejouable | _(ce lot)_ |
+| 2026-10-06 | A3.2 (lot 7) | **L16 · Stock · proposition (MRP) → commande d'achat** : migration `751` (`mrp_proposals` au registre, contrat `purchase.proposal.to_order`, maillon `chain_l16_proposal_order` — type `purchase` seul, même fournisseur, marque la proposition `converted`, lien `created_from`) + suite `751` enrôlée dans `ci.yml` | suite **15/15** sur base neuve · G2 67 constats **0 au registre** · G8/tenant/anon **OK** · rejouable | `4bc9567` |
+| 2026-10-06 | A3.3 (L23-b) | **L23-b · le MOTEUR D'AUTOMATISATIONS** : migration `752` (`automation_actions` catalogue fermé, `automation_rules`, `automation_runs` — idempotence `(tenant, règle, événement)`, moteur `chain_l23_automatiser`, déclencheur `zz_l23_automatiser` sur `domain_events`) + suite `752` enrôlée dans `ci.yml` | suite **10/10** sur base neuve · G2/G8/tenant/anon/composite-FK **OK** · **plafond FORCE RLS 318→320 inscrit** · rejouable | _(ce lot)_ |

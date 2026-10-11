@@ -2379,6 +2379,15 @@ jobs:
       - name: 'L16 : proposition (MRP) → commande d''achat, rattachée et tracée (751)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/751_chain_l16_proposition_commande_tests.sql
 
+      # L23-b — LES AUTOMATISATIONS branchées sur le journal d'événements unifié :
+      # le moteur `chain_l23_automatiser` joue, pour chaque événement entrant,
+      # les règles ACTIVES de sa société (catalogue FERMÉ `automation_actions`,
+      # idempotence structurelle `automation_runs`).
+      # 10 verdicts : nominal (déclenchement + lien), idempotence (D1), skipped,
+      # failed (erreur tracée, transaction survit), isolation (D8).
+      - name: 'L23-b : automatisations sur le journal d''événements, tracées (752)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/752_chain_l23_automatisations_tests.sql
+
       # --- plan6:b --- règles d'état, paie française ---
       # Territoire : règles d'état par module ; app/src/lib/payroll*, écrans de paie
       # Plage : 500→559
