@@ -3,7 +3,8 @@
 --
 --   T01  le référentiel PCG porte 65 rôles de comptes (67 moins les 2 « par
 --        catégorie » : IMMOBILISATIONS, AMORTISSEMENTS) ;
---   T02  il porte 7 rôles de journaux (JOURNAL_PAIE volontairement absent) ;
+--   T02  le référentiel PCG porte 10 rôles de journaux (387 : POS, PRODUCTION ;
+--        389 : CLOTURE) — JOURNAL_PAIE volontairement absent ;
 --   T03  RECETTE LOC1-05 : société FR → resolve_account(…,'CLIENTS') = 411000 ;
 --   T04  un pays hérite des rôles de son référentiel (FR → PCG) ;
 --   T05  les deux rôles « par catégorie » ne sont PAS dans le pack (ctx oblige) ;
@@ -25,11 +26,14 @@ BEGIN
   SELECT count(*) INTO v_jrn FROM pack_journal_roles WHERE pack_code = 'PCG';
   PERFORM _rec('T01', 'le référentiel PCG porte 65 rôles de comptes (67 moins IMMOBILISATIONS et AMORTISSEMENTS)',
     v_cpt = 65, format('%s rôle(s) de comptes (65 attendus)', v_cpt));
-  PERFORM _rec('T02', 'le référentiel PCG porte 7 rôles de journaux (JOURNAL_PAIE absent)',
-    v_jrn = 7, format('%s rôle(s) de journaux (7 attendus)', v_jrn));
+  -- 385 pose 7 rôles de journaux au référentiel PCG (JOURNAL_PAIE reste ABSENT :
+  -- la paie est le sujet de la partie B). 387 en ajoute deux (POS, PRODUCTION)
+  -- et 389 un (CLOTURE) → 10. Le référentiel est un SUPER-ENSEMBLE daté.
+  PERFORM _rec('T02', 'le référentiel PCG porte 10 rôles de journaux (JOURNAL_PAIE absent)',
+    v_jrn = 10, format('%s rôle(s) de journaux (10 attendus)', v_jrn));
 EXCEPTION WHEN OTHERS THEN
   PERFORM _rec('T01', 'le référentiel PCG porte 65 rôles de comptes (67 moins IMMOBILISATIONS et AMORTISSEMENTS)', false, SQLERRM);
-  PERFORM _rec('T02', 'le référentiel PCG porte 7 rôles de journaux (JOURNAL_PAIE absent)', false, SQLERRM);
+  PERFORM _rec('T02', 'le référentiel PCG porte 10 rôles de journaux (JOURNAL_PAIE absent)', false, SQLERRM);
 END $$;
 
 -- ─────────────────────────────────────────────────────────────

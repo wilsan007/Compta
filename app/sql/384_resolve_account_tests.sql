@@ -73,13 +73,18 @@ END $$;
 
 -- ─────────────────────────────────────────────────────────────
 -- T04 — rôle non mappé : échec EXPLICITE
+--
+-- AMORTISSEMENTS est, avec IMMOBILISATIONS, le seul rôle du catalogue que le
+-- référentiel PCG ne mappe PAS (voir 385 T01 : 65 = 67 − 2) : il reste donc le
+-- témoin du « non mappé ». (`COMPTE_ATTENTE`, utilisé ici à l'origine, a reçu
+-- une correspondance en 387 : il ne peut plus jouer ce rôle.)
 -- ─────────────────────────────────────────────────────────────
 DO $$
 DECLARE t uuid; msg text := '';
 BEGIN
   t := _mk_tenant('RACCT3');
   BEGIN
-    PERFORM resolve_account(t, 'COMPTE_ATTENTE');
+    PERFORM resolve_account(t, 'AMORTISSEMENTS');
   EXCEPTION WHEN OTHERS THEN msg := SQLERRM; END;
   PERFORM _rec('T04', 'un rôle non mappé échoue EXPLICITEMENT (ROLE_NON_MAPPE), jamais en silence',
     msg LIKE 'ROLE_NON_MAPPE%', format('message=%s', left(msg, 90)));

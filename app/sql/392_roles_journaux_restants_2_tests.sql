@@ -2,7 +2,7 @@
 -- 392_roles_journaux_restants_2_tests.sql — LOC1-09 (tranche 2)
 --
 --   T01  les 2 fonctions demandent leur journal (plus de 'OD' en dur) ;
---   T02  le RESTE est FIGÉ : exactement 4 fonctions (tranche 3) ;
+--   T02  le RESTE est BORNÉ : au plus les 4 fonctions de la tranche 3 ;
 --   T03  société FR : JOURNAL_OD = OD (écritures identiques) ;
 --   T04  rejouable.
 --
@@ -41,10 +41,16 @@ BEGIN
   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public'
     AND p.prosrc ~ '''(VT|AC|OD|AN|BQ|CA|ST|POS|OF|CL)'', *''draft'''
-    AND p.proname <> 'ensure_standard_journals';
+    AND p.proname <> 'ensure_standard_journals'
+    -- Fixtures de suites (préfixe `_`, convention du dépôt : `_i8_piece`,
+    -- `_vc_entry`) : hors du garde, qui ne parle que de la PRODUCTION.
+    AND p.proname !~ '^_';
 
-  PERFORM _rec('T02', 'le reste des journaux en dur est FIGÉ (4 fonctions : tranche 3)',
-    v_restant = 'credit_note_guard, generate_depreciation_entry, purchase_credit_note_guard, revaluate_currency_balances',
+  -- LOC1-09 s'achève en 393 : à partir de là, le reste est VIDE. Ce qui compte
+  -- ici est la borne HAUTE — jamais PLUS que les 4 fonctions de la tranche 3.
+  PERFORM _rec('T02', 'le reste des journaux en dur ne peut être QUE les 4 fonctions de la tranche 3 (jamais davantage)',
+    v_restant IS NULL
+      OR v_restant ~ '^(credit_note_guard|generate_depreciation_entry|purchase_credit_note_guard|revaluate_currency_balances)(, (credit_note_guard|generate_depreciation_entry|purchase_credit_note_guard|revaluate_currency_balances))*$',
     format('restant : %s', COALESCE(v_restant, 'aucun')));
 EXCEPTION WHEN OTHERS THEN
   PERFORM _rec('T02', 'le reste des journaux en dur est FIGÉ (4 fonctions : tranche 3)', false, SQLERRM);

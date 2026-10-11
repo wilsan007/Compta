@@ -228,9 +228,9 @@ CATÉGORIE ; le pack porte `681100`). Le remplacer **changerait les écritures**
 à trancher (même principe que `613000` — on ne « corrige » pas pour coller au
 cahier).
 
-### `LOC1-09` — les derniers journaux en dur (`391`, tranche 1/2)
+### `LOC1-09` — les derniers journaux en dur (`391`, `392`, `393`) — **TERMINÉ**
 
-**`391_roles_journaux_restants.sql` (+ suite).** Les 4 triggers de
+**`391_roles_journaux_restants.sql` (+ suite) — tranche 1.** Les 4 triggers de
 ventes/achats/règlements (`386`), le stock/POS (`387`/`388`) et la clôture
 (`389`/`390`) étaient déjà faits. Une **détection sur la base** (patron
 `<code>, 'draft'`) a trouvé **9 fonctions** qui écrivaient encore un code de
@@ -244,18 +244,31 @@ journal littéral. Cette tranche en traite **3** :
 `integrate_expense_report_on_approval` et `post_deferred_charge` passent par le
 rôle (journal `OD`). `392` 4/4 ; suites `211`/`102` OK.
 
-**Le reste est FIGÉ et gardé.** La suite `391` (`T03`) **verrouille** l'ensemble :
-le reste **recule** à chaque tranche et **ne peut pas grossir** — toute
-**nouvelle** occurrence de journal en dur la fait échouer (garde-fou E03). Il
-reste **4** fonctions (tranche 3) :
+**`393_roles_journaux_restants_3.sql` (+ suite) — tranche 3, la dernière.**
+`credit_note_guard` (avoir client → `JOURNAL_VENTES`),
+`purchase_credit_note_guard` (avoir fournisseur → `JOURNAL_ACHATS`),
+`generate_depreciation_entry` et `revaluate_currency_balances` (→ `JOURNAL_OD`)
+demandent leur rôle. **Écritures identiques** (le pack rend `VT`, `AC`, `OD`).
+`393` 4/4 ; suites `102`/`180`/`192`/`197`/`211`/`213`/`226`/`255`/`260`/`309`/
+`317`/`353` + chaînes `400`/`403`/`412` OK.
 
-`credit_note_guard`, `generate_depreciation_entry`,
-`purchase_credit_note_guard`, `revaluate_currency_balances`.
+> ⚠ Dans `generate_depreciation_entry`, **seul le journal** passe par le rôle. Ses
+> **comptes** (`681200`/`281000`, ou ceux de la fiche) restent des comptes : le
+> référentiel porte `681100` et `280000`, et les rôles de la `383` sont rangés
+> **par catégorie**. Les réécrire **changerait les écritures** → arbitrage, pas
+> une correction de tranche.
 
-R7 déjà vérifié : aucune branche `plan6/*` ne les définit.
+**LOC1-09 est clos : plus aucune fonction n'écrit un code de journal littéral.**
+Le garde de la suite `391` (`T03`) a été **resserré** — sa liste blanche est
+maintenant **vide** : la moindre réapparition d'un journal en dur est une
+**nouvelle** fonction, donc rouge. La suite `392` (`T02`) ne borne plus qu'un
+majorant (les 4 fonctions de la tranche 3), et `393` (`T02`) constate le
+**reste à zéro**. R7 déjà vérifié : aucune branche `plan6/*` ne les définit.
 
-**Reste en dur, hors LOC1-09** : les **comptes** `890000` (« Bilan d'ouverture »),
-`411000`, `666000`, `766000` — ce sont des comptes, pas des journaux (LOC1-10/11).
+**Reste en dur, hors LOC1-09 — ce sont des COMPTES (LOC1-10/11)**, pas des
+journaux : `890000` (« Bilan d'ouverture »), `411000`, `401000`, `666000`,
+`766000`, `486000`, `487000`, et `603000` dans `resolve_variation_account`.
+Le prochain lot (`LOC1-10`) attaque précisément cette liste, **côté écritures**.
 
 ### Ce qui reste dans C.1
 
@@ -306,6 +319,78 @@ reprise.
 | **D1** | **Partie B** (paie) | Réécrire sur les **rôles** les comptes d'écriture de la paie, dans **`payroll_post_run`** — `create_journal_on_payroll_validate` n'est qu'une **enveloppe** qui l'appelle. Rôles prêts : `SALAIRES_BRUTS`(641000), `CHARGES_SOCIALES_PATRONALES`(645000), `PERSONNEL_REMUNERATIONS_DUES`(421000), `ORGANISME_SOCIAL`(431000), `ETAT_IMPOT_SALAIRES`(442000), `JOURNAL_PAIE`. | Le module paie est le **territoire de la Partie B** (`lib/payroll*`, écrans de paie). C a livré le catalogue, `resolve_account`/`resolve_journal` et les rôles du pack : il ne reste qu'à les appeler. ⚠ `JOURNAL_PAIE` n'est **pas encore mappé** dans le pack PCG (le cahier le note « à créer ») — B doit trancher son code de journal. |
 | **D2** | **Partie E** (opérations) | Si la **taxonomie d'article** (marchandise/matière/produit fini) est voulue, elle touche `products` — table d'E. C la consommerait par le rôle. | `products` est le territoire de la Partie E (stock, production). Décision du 06/10 : **pas de compte de stock par type** tant que la taxonomie n'existe pas. |
 
+## Trouvé en chemin (11/10) — ce que la validation élargie a mis au jour
+
+La clôture de `LOC1-09` a été l'occasion de **passer toutes les suites du dépôt**
+(et non les seules suites du lot) sur une base neuve, plus les contrôles
+`sql/ci/check_*` **au-delà des 10 habituels**. Quatre constats — trois corrigés,
+un à vous.
+
+**1. `check_bt_grid` est ROUGE, et il l'était DÉJÀ avant la `393`.** Sur base
+neuve, la grille BT donne **367 tables / 56 sans RLS forcée / 84 à moins de
+4 commandes** là où les plafonds datés du fichier disent **365 / 54 / 82**. La
+même mesure sur `main`, base neuve aussi, donne **365 / 54 / 82** : la grille y
+est **verte**. L'écart est donc celui de la branche, et il tient à **deux
+tables** — `tenant_account_roles` et `tenant_journal_roles` (posées par la
+`383`) : elles portent `tenant_id`, la RLS **activée mais non forcée**, et **une**
+politique `ALL`.
+
+`FORCE ROW LEVEL SECURITY` a été **essayé et mesuré** : il ramène bien
+`rls_sans_force` à 54, mais il **casse** `ci/check_forced_rls_writers.sql` **et**
+les suites `383`/`384`/`385` — l'écriture de ces catalogues passe par des
+fonctions qui écrivent pour la société **passée en paramètre**, jamais pour celle
+du contexte.
+
+> **À trancher** : **(a)** reprendre la chaîne d'écriture des deux catalogues
+> (garde d'écriture + société de contexte) pour pouvoir les **forcer**, puis
+> relever les trois plafonds datés — c'est ce que demande la règle ISO-04 du
+> dépôt (« une table cloisonnée porte la RLS forcée ») ; ou **(b)** relever les
+> trois plafonds avec leur **raison datée** et tracer la dette. C'est un sujet de
+> la `383`, pas des journaux : il ne se règle pas par une tranche de LOC1-09.
+
+**2. Trois suites datées ne suivaient plus l'état de la branche** — elles
+n'étaient pas jouées par les validations précédentes, qui ne lançaient que les
+suites du lot :
+
+| Suite | Ce qu'elle attendait | Ce que la branche porte | Cause |
+|---|---|---|---|
+| `383` T02 | **8** rôles de journaux | **11** | `387` : `JOURNAL_POS`, `JOURNAL_PRODUCTION` ; `389` : `JOURNAL_CLOTURE` |
+| `385` T02 | **7** rôles au référentiel PCG | **10** | les deux rôles de `387` + celui de `389` |
+| `384` T04 | `COMPTE_ATTENTE` = rôle **non mappé** | il l'est devenu | la `387` lui a donné une correspondance |
+
+Les deux premières sont **alignées sur l'état réel** (le catalogue et le pack
+sont des **super-ensembles datés** : ils ne reculent pas, ils suivent les
+tranches). Pour la troisième, le témoin du « non mappé » est désormais
+`AMORTISSEMENTS` — avec `IMMOBILISATIONS`, le seul rôle du catalogue que le
+référentiel PCG ne mappe pas (65 = 67 − 2, ce que `385` T01 dit déjà).
+`383` 6/6, `384` 7/7, `385` 6/6.
+
+**3. Les gardes de `391`/`392`/`393` dépendaient de l'ORDRE des suites.** Elles
+cherchent les journaux en dur dans les fonctions de `public` — et elles
+trouvaient les **fixtures** d'autres suites : `325` crée `_i8_piece`, `462` crée
+`_vc_entry`, et les deux tournent **avant** `plan6:c` en CI (lignes 775 et 1861).
+Le patron exclut maintenant les helpers `_…`, convention du dépôt pour les
+fixtures : **le garde ne parle que des fonctions de production** (sur base neuve,
+sans suite, il en trouve **zéro**).
+
+**4. `105_rls_tests` ne pouvait plus semer `legislation_packs`.** La `380` lui a
+donné **deux CHECK croisés** (niveau × pays, niveau × parent) que le semeur
+générique ne sait pas produire : il posait `level = 'country'` sans
+`country_code`, la ligne était **refusée**, et la table sortait « **non
+alimentée** » — donc **son isolation n'était plus prouvée**. Le semeur a
+désormais un **cas dédié** (niveau `sector`, pays `FR`, `parent_code` = son propre
+code, recollé ensuite par la passe H02) : `105` repasse à **356 tables / 356
+alimentées / 0 fuite**, et l'isolation de `legislation_packs` est **réellement
+vérifiée** — ce qu'elle n'était plus depuis la `383`.
+
+**Et deux faux positifs, écartés par la mesure.** Le run complet signale aussi
+`234_webhook_queue` et `243_payroll_and_employee_name` : ce sont les suites que
+la `105` **pollue** (son semeur générique insère une ligne dans **chaque** table
+cloisonnée, y compris `employees` — fiche sans prénom ni nom — et la file de
+webhooks). Jouées sur base neuve **sans** `105`, elles passent toutes les deux
+(vérifié). `436` et `450` sont du même genre — sensibles à l'état laissé par les
+suites précédentes : `450` échoue **même sur `main`** quand on la joue seule.
+
 ## Attend de vous
 
 - **`D-11`** : entreprises publiques seules, ou avec le module des
@@ -347,4 +432,5 @@ git grep -l "FUNCTION <nom>" $(git branch --list 'plan6/*' --format='%(refname:s
 | 06/10 | LOC1-08 (tranche affectation/écarts) | `allocate_result`, `generate_residual_entry` | affectation du résultat et écarts de lettrage sur les rôles ; **rôle `JOURNAL_CLOTURE`→`CL` ajouté** ; écritures identiques | base : `389` 5/5 ; suites `179`/`175` OK ; **10 portes CI vertes** | 29aac80 |
 | 06/10 | LOC1-08 (clôture d'exercice) | `close_fiscal_year` | journaux `CL`/`AN` et comptes de résultat `120000`/`129000` par les rôles ; écritures identiques ; la sélection par CLASSE reste (`LOC1-11`) | base : `390` 4/4 ; suites `179`/`175` OK ; **10 portes CI vertes** | 424eeca |
 | 11/10 | LOC1-09 (tranche 1) | `bank_account_post_opening_balance`, `stock_initial_post_opening_entry`, `post_exchange_gain_loss_on_payment` | journaux `AN`/`OD` par les rôles ; écritures identiques ; **le reste (6 fonctions) est FIGÉ et gardé** par la suite `391` (T03) | base : `391` 4/4 ; suites `173`/`211`/`102` OK ; **10 portes CI vertes** | eb47800 |
+| 11/10 | LOC1-09 (tranche 3, **la dernière**) | `credit_note_guard`, `purchase_credit_note_guard`, `generate_depreciation_entry`, `revaluate_currency_balances` | journaux `VT`/`AC`/`OD` par les rôles ; écritures identiques ; **LOC1-09 TERMINÉ** — garde de `391` (T03) resserré à **liste blanche vide**, `392` (T02) borné, `393` (T02) constate **zéro restant** ; gardes rendus **insensibles aux fixtures** (`_…`, suites `325`/`462`) ; suites datées `383`/`384`/`385` réalignées sur l'état réel ; `105` doté d'un **semis dédié** à `legislation_packs` (son isolation est de nouveau **prouvée**) | base neuve : **347 migrations / 0 erreur** ; `393` 4/4, `391` 4/4, `392` 4/4, `383` 6/6, `384` 7/7, `385` 6/6, `105` 356/356 0 fuite ; suites d'écritures (`102`/`180`/`192`/`197`/`211`/`213`/`226`/`255`/`260`/`309`/`317`/`353`) et chaînes (`400`/`403`/`412`) OK ; **10 portes CI vertes** ; G5 164/164. ⚠ `check_bt_grid` **ROUGE** : dette de la `383` (`tenant_account_roles`, `tenant_journal_roles` non forcées), **à trancher** — voir « Trouvé en chemin » | à venir |
 | 11/10 | LOC1-09 (tranche 2) | `integrate_expense_report_on_approval`, `post_deferred_charge` | journal `OD` par le rôle ; le garde `391` (T03) **verrouille l'ensemble** et empêche toute nouvelle occurrence ; **reste 4 fonctions** (tranche 3) | base : `392` 4/4, `391` 4/4 ; suites `211`/`102` OK ; **10 portes CI vertes** | (ce commit) |

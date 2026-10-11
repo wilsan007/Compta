@@ -149,11 +149,31 @@ BEGIN
         v_vals := v_vals || ', ' || v_val || '::' || col.typ;
       END LOOP;
 
-      BEGIN
-        EXECUTE format('INSERT INTO public.%I (%s) VALUES (%s)', r.table_name, v_cols, v_vals);
-      EXCEPTION WHEN OTHERS THEN
-        UPDATE rls_test_tables SET seed_error = SQLERRM WHERE table_name = r.table_name;
-      END;
+      -- 380 (LOT 1-A) : `legislation_packs` porte une HIÉRARCHIE bornée par
+      -- deux CHECK — `referential` (ni pays ni parent) → `country` (un pays) →
+      -- `sector` (parent obligatoire). Le semeur générique n'y arrive pas : il
+      -- pose `level = 'country'` en laissant `country_code` NULL, la ligne est
+      -- REFUSÉE, et la table sortait « non alimentée » — son isolation n'était
+      -- donc plus prouvée (constaté le 11/10 sur base neuve, table par table).
+      -- On sème ici une ligne VALIDE : niveau `sector` (le plus exigeant, donc
+      -- celui qui prouve le plus), pays `FR`, et `parent_code` = son PROPRE
+      -- code — la passe H02 recollera `parent_code` vers le parent de la même
+      -- société, et la valeur restera non nulle, comme la hiérarchie l'exige.
+      IF r.table_name = 'legislation_packs' THEN
+        v_val := 'rls-pack-' || substr(md5(random()::text), 1, 8);
+        EXECUTE format(
+          'INSERT INTO public.legislation_packs
+             (tenant_id, code, name, country_name, accounting_standard,
+              level, country_code, parent_code)
+           VALUES (%L, %L, %L, %L, %L, %L, %L, %L)',
+          v_tenant, v_val, 'RLS pack', 'RLS pays', 'PCG', 'sector', 'FR', v_val);
+      ELSE
+        BEGIN
+          EXECUTE format('INSERT INTO public.%I (%s) VALUES (%s)', r.table_name, v_cols, v_vals);
+        EXCEPTION WHEN OTHERS THEN
+          UPDATE rls_test_tables SET seed_error = SQLERRM WHERE table_name = r.table_name;
+        END;
+      END IF;
     END LOOP;
 
     EXECUTE format('SELECT count(DISTINCT tenant_id) = 2 FROM public.%I WHERE tenant_id IN ($1, $2)', r.table_name)

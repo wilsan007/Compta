@@ -2,7 +2,8 @@
 -- 383_role_catalog_tests.sql — LOT 1-B : le catalogue fermé des rôles
 --
 --   T01  account_role_catalog porte les 67 rôles de l'annexe B.1 ;
---   T02  journal_role_catalog porte les 8 rôles de l'annexe B.2 ;
+--   T02  journal_role_catalog porte les rôles de l'annexe B.2 — et ceux des
+--        tranches suivantes (387 : POS, PRODUCTION ; 389 : CLOTURE) ;
 --   T03  les CHECK tiennent (normal_side, forme du nom de rôle) ;
 --   T04  une table de pack ne peut mapper qu'un rôle DU catalogue (clé étrangère) ;
 --   T05  RLS : lisible par un connecté, NON écrivable ;
@@ -25,11 +26,15 @@ BEGIN
   SELECT count(*) INTO v_journaux FROM journal_role_catalog;
   PERFORM _rec('T01', 'account_role_catalog porte les 67 rôles de l''annexe B.1',
     v_comptes = 67, format('%s rôle(s) de comptes (67 attendus)', v_comptes));
-  PERFORM _rec('T02', 'journal_role_catalog porte les 8 rôles de l''annexe B.2',
-    v_journaux = 8, format('%s rôle(s) de journaux (8 attendus)', v_journaux));
+  -- 383 pose les 8 rôles de l'annexe B.2 ; 387 en ajoute DEUX (JOURNAL_POS,
+  -- JOURNAL_PRODUCTION : le POS et la fabrication écrivaient déjà, sans rôle)
+  -- et 389 un troisième (JOURNAL_CLOTURE, pour la clôture). Le catalogue est un
+  -- SUPER-ENSEMBLE daté : il ne recule pas, il suit les tranches.
+  PERFORM _rec('T02', 'journal_role_catalog porte les 11 rôles de journaux (8 de l''annexe B.2, +3 par 387 et 389)',
+    v_journaux = 11, format('%s rôle(s) de journaux (11 attendus)', v_journaux));
 EXCEPTION WHEN OTHERS THEN
   PERFORM _rec('T01', 'account_role_catalog porte les 67 rôles de l''annexe B.1', false, SQLERRM);
-  PERFORM _rec('T02', 'journal_role_catalog porte les 8 rôles de l''annexe B.2', false, SQLERRM);
+  PERFORM _rec('T02', 'journal_role_catalog porte les 11 rôles de journaux (8 de l''annexe B.2, +3 par 387 et 389)', false, SQLERRM);
 END $$;
 
 -- ─────────────────────────────────────────────────────────────

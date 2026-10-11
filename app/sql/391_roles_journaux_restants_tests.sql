@@ -64,14 +64,19 @@ BEGIN
   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public'
     AND p.prosrc ~ '''(VT|AC|OD|AN|BQ|CA|ST|POS|OF|CL)'', *''draft'''
-    AND p.proname <> 'ensure_standard_journals';
+    AND p.proname <> 'ensure_standard_journals'
+    -- Les FIXTURES de suites (325 → `_i8_piece`, 462 → `_vc_entry`) écrivent
+    -- elles aussi un journal : elles sont reconnaissables à leur préfixe `_`
+    -- (convention du dépôt). Le garde ne parle que des fonctions de PRODUCTION ;
+    -- sans cette exclusion il deviendrait rouge selon l'ordre des suites en CI.
+    AND p.proname !~ '^_';
 
+  -- LOC1-09 est TERMINÉ (tranche 2 en 392, tranche 3 en 393) : la liste blanche
+  -- est VIDE. Le moindre retour d'un journal littéral est donc une NOUVELLE
+  -- fonction → rouge.
   SELECT count(*) INTO v_nouveau
   FROM unnest(string_to_array(COALESCE(v_restant, ''), ', ')) x
-  WHERE x <> '' AND x NOT IN ('bank_account_post_opening_balance','credit_note_guard',
-    'generate_depreciation_entry','integrate_expense_report_on_approval','post_deferred_charge',
-    'post_exchange_gain_loss_on_payment','purchase_credit_note_guard','revaluate_currency_balances',
-    'stock_initial_post_opening_entry');
+  WHERE x <> '';
 
   PERFORM _rec('T03', 'aucune NOUVELLE fonction n''écrit un journal littéral (le reste recule, il ne grossit pas)',
     v_nouveau = 0, format('nouvelles : %s ; restant : %s', v_nouveau, COALESCE(v_restant, 'aucun')));

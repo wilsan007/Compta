@@ -2386,6 +2386,11 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      - name: 'LOC1-09 (tranche 3) : les 4 derniers journaux en dur — LOC1-09 TERMINÉ'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/393_roles_journaux_restants_3_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:d --- qualité des écrans, recette, livraison ---
       # Territoire : app/src/pages, app/src/components, e2e/, scripts/qa,
       #              app/src/__screen__, job Playwright
