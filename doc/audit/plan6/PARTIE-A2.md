@@ -90,14 +90,12 @@ directe et assumée :
   `PosSessionsPage`, `PayrollAccountingPage` n'ont ni lignes consultables ni vue
   détail. Y héberger la frise demanderait d'abord de **créer l'écran de
   détail** — décision de conception, pas intégration ;
-- ⚠️ **`purchase_orders` n'est PAS au registre** `chain_document_types` (`450`).
-  La frise du bon de commande d'achat **fonctionne** (le nœud racine porte son
-  libellé par la prop `libelle`), mais ses nœuds dans **d'autres** frises
-  seraient **muets**. Même constat que le devis avant `475` : **demande** —
-  inscrire `purchase_orders` (A1, à côté de `475`, sur le modèle exact de
-  `quotes`/`quote_lines` ; ou par **A3** si c'est lui qui trace les liens de
-  cette chaîne, L16 achats — la `493` a déjà fait ce geste pour le devis, on
-  évite le doublon non nécessaire) ;
+- ✅ **`purchase_orders` : la demande est déjà satisfaite — A3 l'inscrit**
+  (`498_chain_l16_reception_commande`, réaffirmé `751`), avec **les mêmes
+  valeurs** que j'aurais posées (`('purchase_orders','purchase_orders','purchase_order_lines','Commande d''achat')`).
+  La frise du bon de commande d'achat est donc **nommée** dès que ces lots sont
+  dans `main` ; **aucune inscription A1 n'est nécessaire** — elle créerait un
+  **troisième** exemplaire après le doublon `475`/`493` du devis.
 - ✅ **Le devis était bloqué, il ne l'est plus.** La frise d'un devis a besoin
   de **deux** choses : le type `quotes` **au registre** et le **lien** devis →
   commande. Le type est inscrit (`475` A1, `493` A3) et le lien est **tracé par
