@@ -39,8 +39,8 @@
 
 | Mesure | Valeur | Chantier |
 |---|---|---|
-| Branche de la copie de travail | `integration/plan6-b` @ `3fcd3bb` | — |
-| Migrations / suites SQL dans `app/sql` | 279 / 197 | — |
+| Branche de la copie de travail | `integration/plan6-b` @ `7f0a50c` | — |
+| Migrations / suites SQL dans `app/sql` | 280 / 198 | — |
 | **Numéros de migration en collision entre branches** (SOC-06) | ✅ 0 | alerte |
 | Registre SQL `ci/expected_failures.sql` (lignes `INSERT`) | 1 | registre |
 | Registre écran `__screen__/expected_failures.json` | ✅ vide | registre |
