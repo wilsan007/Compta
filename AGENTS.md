@@ -68,6 +68,12 @@ L'essentiel en huit lignes :
 > | `326` → `339`, `370` → `399` | **libre** — inscrire la plage (`migration-numero.mjs plage`) avant usage | — |
 > | **`460` → `469`** | **I-01, la « Vue Chaîne »** (`460`) — instrumenter les chaînages existants, pas les réécrire | **2026-10-02** |
 > | **`470` → `474`** | **partie 2 (défauts métier) — dernier écrivain au-dessus des chaînages** : `470` (tâche 2.17) réécrit `cash_flow_forecast`, que la `420` réécrit aussi — en `35x` elle serait écrasée sur base neuve | **2026-10-05** |
+> | **`475` → `486`** | **plan6 A1** (preuve et indice : maillons RPC, banc D1→D8, invariants, relevé nocturne) | **2026-10-05** |
+> | **`487` → `492`** | **plan6 A2** (Vue Chaîne, pages Robustesse/Cohérence, lecture écran de l'indice) | **2026-10-05** |
+> | **`493` → `499`** | **plan6 A3** (moteur L16 → L24) | **2026-10-05** |
+> | **`750` → `759`** | **plan6 A3, familles restantes** — 1ʳᵉ extension, après saturation de `493` → `499` | **2026-10-06** |
+> | **`760` → `769`** | **plan6 A3, familles restantes** — 2ᵉ extension, après saturation de `750` → `759` (`760` : exercice clos → écriture d'affectation) | **2026-10-11** |
+
 > | **`475` → `486`** | **plan6 A1 (preuve et indice)** — scission de la partie A : maillons RPC restants, invariants, relevé nocturne — branche `plan6/a-chainages` | **2026-10-05** |
 > | **`487` → `492`** | **plan6 A2 (Vue Chaîne et écrans)** — héberger la frise sur tous les types de documents, pages Robustesse/Cohérence — branche `plan6/a2-vue-chaine` | **2026-10-05** |
 > | **`493` → `499`** | **plan6 A3 (moteur L16-L24)** — chaînages internes, régénération, lettrage, moteur de règles, webhooks — branche `plan6/a3-moteur` | **2026-10-05** |

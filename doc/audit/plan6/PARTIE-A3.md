@@ -35,9 +35,9 @@ le **comportement** peut se contrer. Garde-fous :
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | A3.1 | Recompter L16 → L22 : inventaire de ce que `415` → `422` ont réellement posé (L23 tranche 1, L17 capacité ↔ absence, L18 consommation chantier, L19, L20, métriques, retour arrière) et ce qu'il reste par lot du plan d'implémentation | A.6 | 1 j | ✅ fait le 05/10 (voir §Recomptage) |
-| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **14 maillons livrés** : L16 **Commercial** — devis → commande (`493`, **19/19**), commande → livraison (`494`, **14/14**), livraison → facture (`495`, **14/14**), facture → règlement (`497`, **14/14**), facture → avoir (`754`, **14/14**), facture → relance (`757`, **15/15**) ; L16 **Achats** — commande d'achat → réception (`498`, **14/14**), réception → facture fournisseur (`755`, **14/14**), facture fournisseur → règlement (`753`, **14/14**), facture fournisseur → avoir (`756`, **14/14**) ; L16 **Comptabilité** — groupe de lettrage → ses lignes (`758`, **12/12**) ; L16 **RH/Paie** — bulletin → écriture (`759`, **12/12**) ; L16 **Trésorerie** — ordre de paiement → virement (`499`, **16/16**) ; L16 **Stock** — proposition MRP → commande d'achat (`751`, **15/15**) — voir §A3.2 lots 1 à 14 |
+| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **15 maillons livrés** : L16 **Commercial** — devis → commande (`493`, **19/19**), commande → livraison (`494`, **14/14**), livraison → facture (`495`, **14/14**), facture → règlement (`497`, **14/14**), facture → avoir (`754`, **14/14**), facture → relance (`757`, **15/15**) ; L16 **Achats** — commande d'achat → réception (`498`, **14/14**), réception → facture fournisseur (`755`, **14/14**), facture fournisseur → règlement (`753`, **14/14**), facture fournisseur → avoir (`756`, **14/14**) ; L16 **Comptabilité** — groupe de lettrage → ses lignes (`758`, **12/12**), exercice clos → écriture d'affectation (`760`, **12/12**) ; L16 **RH/Paie** — bulletin → écriture (`759`, **12/12**) ; L16 **Trésorerie** — ordre de paiement → virement (`499`, **16/16**) ; L16 **Stock** — proposition MRP → commande d'achat (`751`, **15/15**) — voir §A3.2 lots 1 à 15 |
 | A3.3 | L23 (événements et webhooks unifiés, suite de la tranche 1) ; L24 (explicabilité, régularisation guidée) | A.7 | plafond du plan | 🟡 **L23-b livré le 06/10** : le **moteur d'automatisations** (`752`, suite **10/10**) — voir §A3.3 ; restent **L23-c** (lecture écran), **L24** |
-| A3.4 | P1 certificat d'intégrité, P3 audit de reprise, P2 banc sur données du prospect, puis P4, P5, P7, P8, P6 | A.8 (propositions P1 → P8) | ≈ 25 j | 🟢 **débloqué le 05/10** — les cinq questions du §6 sont **tranchées** et l'expert-comptable référent est **désigné** (dossier `doc/validation-expert-comptable/DOSSIER-EXPERT-COMPTABLE-2026-10-05.md`, lot A1) ; ordre d'exécution : P1 → P3 → P2 → P4 → P5 → P7 → P8 → P6 |
+| A3.4 | P1 certificat d'intégrité, P3 audit de reprise, P2 banc sur données du prospect, puis P4, P5, P7, P8, P6 | A.8 (propositions P1 → P8) | ≈ 25 j | 🟡 **P1 : le SQL est livré** (`770`, suite **7/7** sur base neuve) — voir §A3.4 ; l'**écran** reste à **A2** ; puis P3 → P6 |
 
 ## Recomptage L16 → L22 (05/10/2026) — mesuré dans `app/sql/`, pas recopié
 
@@ -533,11 +533,77 @@ registre fait foi (R2).
 convergent pas), temps, variable ↔ bulletin, cumuls, virement (`sepa_payment_orders`,
 ≡ INV-09), DSN.
 
+## A3.2 — lot 15 : l'exercice clos rattaché à son écriture d'affectation (migration `760`)
+
+**La famille Comptabilité, suite du lot 13** — « provision pour dépréciation ↔
+**écriture de clôture** » (§B.3). **Première migration de la nouvelle plage A3
+`760 → 769`**, inscrite au registre le 06/10 après saturation de `750 → 759`.
+
+**Ce que la mesure a trouvé.** `fiscal_years.result_allocation_entry_id` **existe**
+(posée par `189`) et est **écrit** par la clôture (`189`, ligne 672) — mais **aucun
+lien de chaîne** n'est posé : l'écriture d'affectation d'un exercice est **invisible
+pour la frise**. Et `fiscal_years` **n'est pas au registre** `chain_document_types`.
+
+**Ce qui est livré** — migration `760_chain_l16_cloture_resultat.sql` :
+`fiscal_years` **entre au registre**, contrat d'effet
+`rev.fiscal_year.result_allocated`, maillon `chain_l16_fiscal_year_result` —
+exercice **clos** et au résultat **affecté** (refusé sinon), lien `link_documents`
+(`generated_entry`). Il **ne réécrit pas** `result_allocation_entry_id` (posée par la
+clôture `189`).
+
+**Éprouvé** — suite `760` **12/12** sur base neuve : T01 nominal (2), T02 idempotence
+(2), T03 trois refus (introuvable / ouvert / non affecté), T04 frise (2), T05
+isolation (3). Portes : G2 / G8 / `check_tenant_guard` / `check_anon_grants` **OK** ;
+rejouable ; enrôlée dans `ci.yml` (G5).
+
+**Régistration de plage** : `760 → 769` inscrite au registre **et** dans `AGENTS.md`
++ `doc/audit/NUMEROTATION-MIGRATIONS.md`, **dans ce commit** (la règle de l'outil).
+
+**Reste de la Comptabilité** : provision pour dépréciation → écriture ; à-nouveaux ;
+état de rapprochement ; la **FK composite** `journal_lines → lettrage_groups`
+(doctrine 237, territoire C).
+
 ## Demandes reçues (R3) — transmises par l'intégration du 05/10/2026
 
 | # | Demande | De | Ce qu'elle débloque |
 |---|---|---|---|
 | 1 | Bâtir le **lien `lettrage_groups` ↔ `journal_lines`** (pour **INV-07**) | A1 — invariant **INV-07** | **Mesure du 05/10** : `journal_lines.lettrage_group_id` **existe déjà** (124) mais **sans clé étrangère** — un premier tronçon possible (FK composite, doctrine 237). Mais INV-07 lui-même (« le lettrage = la TVA sur encaissements ») est le **lettrage génératif** d'**L21**, **bloqué par L20-tranche 2**. **↳ Livré le 06/10/2026 (`758`)** : le lien de **chaîne** est posé — `journal_lines → lettrage_groups`, effet `rev.line.lettered` — un groupe de lettrage est désormais lisible par la frise. Reste la **FK composite** (doctrine 237), qui touche `journal_lines` (territoire C) |
+
+## A3.4 — P1 : l'attestation d'intégrité technique (le SQL, migration `770`)
+
+**Le lot est débloqué** (décisions du §6 bis + dossier expert-comptable, lot A1)
+et sa **plage `770` → `779`** est inscrite au registre
+(`plan6 A3 (certificat d'integrite, A3.4)`).
+
+`public.chain_certificat_integrite(p_tenant)` (`770`) rend un **`jsonb` de
+FAITS** — jamais de prose (le vocabulaire vit à l'écran, pour l'i18n) :
+
+| Champ | Source | Règle tenue |
+|---|---|---|
+| `emis_le` · `version_migrations` · `nb_migrations` | `now()`, `sql_migrations_tracker` | **quelle** base atteste |
+| `invariants` | `chain_invariant_results`, dernier relevé par code | un code **sans relevé** est `non_mesure`, **jamais `tenu`** |
+| `ecarts` | les `rompu`, **nommés** (code, libellé, écart, lignes en écart) | **on publie ses écarts** — le différenciateur |
+| `banc` | `chain_banc_resultats`, dernier verdict par `(maillon, épreuve)` | `non_joue` **compté et visible** ; le dénominateur `maillons × 8` publié à part |
+| `nf525` | `verify_nf525_chain()` (déjà `jsonb`) | **`sans_objet`** si la chaîne est **vide** — « une absence de preuve n'est pas une preuve » |
+
+**Ce que la fonction ne fait pas** : elle **n'écrit rien**, **ne recalcule aucun
+solde**, **n'invente aucun `tenu`** ; elle **n'atteste que sa propre société**
+(`p_tenant` ≠ `current_tenant_id()` → **refus `42501`**).
+
+**Preuve** — suite `770`, **7/7** sur base neuve : la forme · « aucun `tenu` sans
+relevé » (0 tenu / 20 non mesurés) · l'écart nommé · le banc (4 tenues / 2
+rompues / 2 non jouées, `maillons = 7`) · `sans_objet` · **lecture pure** (deux
+appels identiques, `document_links` inchangé) · **garde de société** (`42501`).
+Enrôlée dans `ci.yml` sous `plan6:a3`.
+
+**DEMANDE (R3) — la plage, dans les documents.** L'intégration doit inscrire
+`770` → `779` dans `AGENTS.md` **et** `NUMEROTATION-MIGRATIONS.md` (R4 : ces
+fichiers ne s'écrivent que par elle) — le **registre machine** la connaît déjà.
+
+**Ce qui reste pour P1** : l'**écran** (A2) — page 1 dirigeant / annexe
+vérifiable, la mention légale, « qui signe » ; et le **PDF** (D-4, hors P1). Le
+contrat de la fonction et le plan d'écran sont dans
+`doc/audit/PREPARATION-P1-CERTIFICAT-INTEGRITE-2026-10-05.md` (lot **A1**).
 
 ## Journal
 
@@ -559,4 +625,5 @@ convergent pas), temps, variable ↔ bulletin, cumuls, virement (`sepa_payment_o
 | 2026-10-11 | A3.2 (lot 11) | **L16 · Achats · facture fournisseur → avoir** : migration `756` (`purchase_credit_notes` au registre, contrat `purchase.invoice.to_credit_note`, maillon `chain_l16_supplier_invoice_credit_note` — avoir non brouillon, même fournisseur, ne réécrit pas `purchase_invoice_id`, lien `reversed_by`). **Dernier tronçon de la famille Achats** : Commercial **et** Achats sont désormais complets de bout en bout. + suite `756` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2/G8/tenant/anon **OK** · rejouable | `60839c2` |
 | 2026-10-11 | A3.2 (lot 12) | **L16 · Commercial · facture → relance** : migration `757` (`collection_reminders` au registre, contrat `sale.invoice.to_reminder`, maillon `chain_l16_invoice_reminder` — relance non brouillon/annulée, même client, écrit `invoice_id` si vide, lien `created_from`). **Dernier tronçon du Commercial** ; les familles tenues par A3 sont complètes de bout en bout. + suite `757` enrôlée dans `ci.yml` | suite **15/15** sur base neuve · G2/G8/tenant/anon **OK** · rejouable | `f31bde7` |
 | 2026-10-11 | A3.2 (lot 13) | **L16 · Comptabilité · groupe de lettrage → ses lignes de journal** — la **demande R3 d'A1** : migration `758` (`lettrage_groups` au registre, contrat `rev.line.lettered`, maillon `chain_l16_lettrage_group` — trace chaque ligne vers son groupe). **Défaut mesuré et corrigé** : `link_documents` fusionne deux liens de même amont, donc le sens est LIGNE → GROUPE (avec le groupe pour amont, 2 lignes ne tenaient qu'1 lien). + suite `758` enrôlée dans `ci.yml` | suite **12/12** sur base neuve · G2/G8/tenant/anon **OK** · rejouable | `76e9199` |
-| 2026-10-11 | A3.2 (lot 14) | **L16 · RH/Paie · bulletin → son écriture comptable** : migration `759` (`pay_slips` au registre, contrat `payroll.slip.posted`, maillon `chain_l16_payslip_entry` — bulletin comptabilisé requis, ne réécrit pas `journal_entry_id`, lien `generated_entry`). **⚠️ dernier numéro de la plage `750→759` : extension à demander.** + suite `759` enrôlée dans `ci.yml` | suite **12/12** sur base neuve · G2/G8/tenant/anon **OK** · rejouable | _(ce lot)_ |
+| 2026-10-11 | A3.2 (lot 14) | **L16 · RH/Paie · bulletin → son écriture comptable** : migration `759` (`pay_slips` au registre, contrat `payroll.slip.posted`, maillon `chain_l16_payslip_entry` — bulletin comptabilisé requis, ne réécrit pas `journal_entry_id`, lien `generated_entry`). **⚠️ dernier numéro de la plage `750→759` : extension à demander.** + suite `759` enrôlée dans `ci.yml` | suite **12/12** sur base neuve · G2/G8/tenant/anon **OK** · rejouable | `467ee12` |
+| 2026-10-11 | A3.4 (P1) | **P1 — le SQL** : migration `770` (`chain_certificat_integrite` → `jsonb` de FAITS : invariants / écarts nommés / banc (`non_joue` compris) / empreinte NF-525 ; **garde de société** ; **lecture pure** ; aucun « tenu » inventé). **Plage `770`→`779` inscrite** au registre. + suite `770` enrôlée dans `ci.yml` sous `plan6:a3` | suite **770 7/7** sur base neuve · SOC-06 **0 collision** (269 numéros) · suites **167/167 branchées** | _(ce lot)_ |
