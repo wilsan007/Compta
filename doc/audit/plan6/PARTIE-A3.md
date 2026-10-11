@@ -35,7 +35,7 @@ le **comportement** peut se contrer. Garde-fous :
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | A3.1 | Recompter L16 → L22 : inventaire de ce que `415` → `422` ont réellement posé (L23 tranche 1, L17 capacité ↔ absence, L18 consommation chantier, L19, L20, métriques, retour arrière) et ce qu'il reste par lot du plan d'implémentation | A.6 | 1 j | ✅ fait le 05/10 (voir §Recomptage) |
-| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **7 maillons livrés** : L16 **Commercial** — devis → commande (`493`, **19/19**), commande → livraison (`494`, **14/14**), livraison → facture (`495`, **14/14**), facture → règlement (`497`, **14/14**) ; L16 **Achats** — commande d'achat → réception (`498`, **14/14**) ; L16 **Trésorerie** — ordre de paiement → virement (`499`, **16/16**) ; L16 **Stock** — proposition MRP → commande d'achat (`751`, **15/15**) — voir §A3.2 lots 1 à 7 ; l'**avoir** est différé (cf. lot 4) |
+| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **8 maillons livrés** : L16 **Commercial** — devis → commande (`493`, **19/19**), commande → livraison (`494`, **14/14**), livraison → facture (`495`, **14/14**), facture → règlement (`497`, **14/14**) ; L16 **Achats** — commande d'achat → réception (`498`, **14/14**), facture fournisseur → règlement (`753`, **14/14**) ; L16 **Trésorerie** — ordre de paiement → virement (`499`, **16/16**) ; L16 **Stock** — proposition MRP → commande d'achat (`751`, **15/15**) — voir §A3.2 lots 1 à 8 ; l'**avoir** est différé (cf. lot 4) |
 | A3.3 | L23 (événements et webhooks unifiés, suite de la tranche 1) ; L24 (explicabilité, régularisation guidée) | A.7 | plafond du plan | 🟡 **L23-b livré le 06/10** : le **moteur d'automatisations** (`752`, suite **10/10**) — voir §A3.3 ; restent **L23-c** (lecture écran), **L24** |
 | A3.4 | P1 certificat d'intégrité, P3 audit de reprise, P2 banc sur données du prospect, puis P4, P5, P7, P8, P6 | A.8 (propositions P1 → P8) | ≈ 25 j | 🟢 **débloqué le 05/10** — les cinq questions du §6 sont **tranchées** et l'expert-comptable référent est **désigné** (dossier `doc/validation-expert-comptable/DOSSIER-EXPERT-COMPTABLE-2026-10-05.md`, lot A1) ; ordre d'exécution : P1 → P3 → P2 → P4 → P5 → P7 → P8 → P6 |
 
@@ -330,6 +330,35 @@ un effet non déclaré posé par une règle ne serait refusé par personne. Suje
 porter (catalogue d'effets par action, ou contrôle à l'exécution) — c'est le prix
 d'un moteur de règles, et il est écrit ici plutôt que tu.
 
+## A3.2 — lot 8 : le règlement rattaché à la facture fournisseur (migration `753`)
+
+**Le miroir fournisseur du lot 4** (facture client → règlement), dans la famille
+**Achats** — « commande ↔ réception ↔ **facture ↔ règlement** » (§B.3). Mesuré
+avant d'écrire : `supplier_payments.purchase_invoice_id` et `invoice_number`
+**existaient** et **personne ne les écrivait**.
+
+**Ce qui est livré** — migration `753_chain_l16_reglement_fournisseur.sql` :
+contrat d'effet `purchase.invoice.to_payment` + maillon
+`chain_l16_supplier_invoice_payment` — même fournisseur, ni la facture ni le
+règlement n'est annulé, un règlement déjà affecté est refusé ; **idempotent** ;
+`supplier_payments.purchase_invoice_id` **écrit** ; **lien** `link_documents`
+(`paid_by`).
+
+**Éprouvé** — suite `753` **14/14** sur base neuve : T01 nominal (3), T02
+idempotence (2), T03 quatre refus (4), T04 frise (2), T05 isolation (3).
+
+**Harnais assumé** : la suite monte une **facture fournisseur approuvée** (helper
+`_mk_approved_pi` — saisie `pending`, une ligne, puis approbation), parce que les
+gardes l'exigent : `192` (une facture fournisseur se saisit puis s'approuve) et
+`354` (**un règlement exige une facture approuvée**). C'est le même genre de
+harnais que celui que l'**avoir** réclame (cf. lot 4) — ici, il a été monté.
+
+Portes : G2 **67 constats, 0 au registre** ; G8 / `check_tenant_guard` /
+`check_anon_grants` **OK** ; rejouable ; enrôlée dans `ci.yml` (G5).
+
+**Reste de la famille Achats** : réception → facture fournisseur, avoir
+fournisseur (`purchase_credit_notes`, même garde que l'avoir client).
+
 ## Demandes reçues (R3) — transmises par l'intégration du 05/10/2026
 
 | # | Demande | De | Ce qu'elle débloque |
@@ -349,4 +378,5 @@ d'un moteur de règles, et il est écrit ici plutôt que tu.
 | 2026-10-06 | A3.2 (lot 5) | **L16 · Achats · commande d'achat → réception** : migration `498` (`purchase_orders` au registre, contrat `purchase.order.to_receipt`, maillon `chain_l16_receipt_order` — cohérence fournisseur/statut, idempotent, écrit `goods_receipts.purchase_order_id`, lien `delivered_by`) + suite `498` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2 **OK** · G8 15 maillons **OK** · tenant/anon **OK** · rejouable | `61f0ee7` |
 | 2026-10-06 | A3.2 (lot 6) | **L16 · Trésorerie · ordre de paiement → virement** : migration `499` (`payment_orders` au registre, contrat `treasury.order.to_payment`, maillon `chain_l16_order_payment` — auto-détection achat/vente, cohérence compte/montant, marque l'ordre `executed`, lien `paid_by`) + suite `499` enrôlée dans `ci.yml` | suite **16/16** sur base neuve · G2 65 constats **0 au registre** · G8/tenant/anon **OK** · rejouable | `560477c` |
 | 2026-10-06 | A3.2 (lot 7) | **L16 · Stock · proposition (MRP) → commande d'achat** : migration `751` (`mrp_proposals` au registre, contrat `purchase.proposal.to_order`, maillon `chain_l16_proposal_order` — type `purchase` seul, même fournisseur, marque la proposition `converted`, lien `created_from`) + suite `751` enrôlée dans `ci.yml` | suite **15/15** sur base neuve · G2 67 constats **0 au registre** · G8/tenant/anon **OK** · rejouable | `4bc9567` |
-| 2026-10-06 | A3.3 (L23-b) | **L23-b · le MOTEUR D'AUTOMATISATIONS** : migration `752` (`automation_actions` catalogue fermé, `automation_rules`, `automation_runs` — idempotence `(tenant, règle, événement)`, moteur `chain_l23_automatiser`, déclencheur `zz_l23_automatiser` sur `domain_events`) + suite `752` enrôlée dans `ci.yml` | suite **10/10** sur base neuve · G2/G8/tenant/anon/composite-FK **OK** · **plafond FORCE RLS 318→320 inscrit** · rejouable | _(ce lot)_ |
+| 2026-10-06 | A3.3 (L23-b) | **L23-b · le MOTEUR D'AUTOMATISATIONS** : migration `752` (`automation_actions` catalogue fermé, `automation_rules`, `automation_runs` — idempotence `(tenant, règle, événement)`, moteur `chain_l23_automatiser`, déclencheur `zz_l23_automatiser` sur `domain_events`) + suite `752` enrôlée dans `ci.yml` | suite **10/10** sur base neuve · G2/G8/tenant/anon/composite-FK **OK** · **plafond FORCE RLS 318→320 inscrit** · rejouable | `fd9a11b` |
+| 2026-10-11 | A3.2 (lot 8) | **L16 · Achats · facture fournisseur → règlement** : migration `753` (contrat `purchase.invoice.to_payment`, maillon `chain_l16_supplier_invoice_payment` — même fournisseur, statuts valides, idempotent, écrit `supplier_payments.purchase_invoice_id`, lien `paid_by`) + suite `753` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2 67 constats **0 au registre** · G8/tenant/anon **OK** · rejouable | _(ce lot)_ |

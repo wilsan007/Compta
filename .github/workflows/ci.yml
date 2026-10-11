@@ -2388,6 +2388,13 @@ jobs:
       - name: 'L23-b : automatisations sur le journal d''événements, tracées (752)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/752_chain_l23_automatisations_tests.sql
 
+      # L16 — chaînage interne ACHATS : le RÈGLEMENT d'une FACTURE FOURNISSEUR lui
+      # est rattaché et tracé (effet `purchase.invoice.to_payment`) ; miroir de 497.
+      # 14 verdicts : nominal, idempotence (D1), quatre refus (facture/règlement
+      # annulés, autre fournisseur, règlement déjà affecté), frise (I-01), isolation (D8).
+      - name: 'L16 : facture fournisseur → règlement, rattachée et tracée (753)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/753_chain_l16_reglement_fournisseur_tests.sql
+
       # --- plan6:b --- règles d'état, paie française ---
       # Territoire : règles d'état par module ; app/src/lib/payroll*, écrans de paie
       # Plage : 500→559
