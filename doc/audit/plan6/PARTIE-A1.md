@@ -95,6 +95,7 @@ sont **lues**). A2 n'a donc, a priori, qu'à **brancher la page**.
 | 1 | Ajouter une colonne numérique à `dsn_declarations` (ex. `gross_declared`), **écrite par la génération DSN** | **B** (paie) | rend **INV-10** mesurable |
 | 2 | **Choisir le calcul de marge projet unique** (PROJ-02), puis le figer | **E/F** | rend **INV-12** mesurable |
 | 3 | Bâtir le lien `lettrage_groups` ↔ `journal_lines` | **A3** (lettrage, L16 → L22) | rend **INV-07** mesurable |
+| 4 | **Tracer le lien devis → commande** (`document_links`) — aujourd'hui la transformation écrit dans `document_transformations` seul | **A3** (L16, chaînages internes) | rend la **frise du devis** utile (sinon « isolée ») ; le registre `475` est déjà prêt |
 
 ## Ce que cette ligne débloque (à transmettre par l'intégration)
 
@@ -136,12 +137,40 @@ trois invariants encore non mesurables sont **arbitrés** (une part revient à A
 deux sont **demandées** à B et E/F, R3). **Reste à l'intégration** : réconcilier
 la note `414` « T07 rouge » (non reproduite) et transmettre les demandes.
 
+## 475 — le devis entre au registre des types (I-01), et ce que ça **ne** débloque pas
+
+**Tâche A1 nouvelle, née d'une demande d'A2** (la frise du devis). Migration
+**`475_chain_document_types_quotes.sql`** (plage A1 `475` → `486`, numéro pris
+par `migration:prendre`) : le **devis** entre au registre `chain_document_types`
+(code `quotes`, table `quotes`, lignes `quote_lines`, libellé « Devis »), posé en
+`ON CONFLICT DO UPDATE` donc **rejouable**. Suite **`475` : 3/3 verts**.
+
+**La mesure, et c'est le point.** La Vue Chaîne `460` traverse par
+`document_links` et **n'utilise le registre que pour le libellé**
+(`LEFT JOIN … d.libelle_fr`). Inscrire `quotes` donne donc le **nom** des nœuds
+devis — il **ne crée aucun lien**. Or la transformation devis → commande
+(`transformQuoteToSalesOrder`, écran) écrit dans `document_transformations`,
+**pas** dans `document_links` (mesuré : aucun pont en base). **La frise d'un
+devis reste donc « isolée »** — et la suite le **dit** (T03 : `liens_quotes = 0`)
+plutôt que de le laisser croire.
+
+**Conséquence.** Ce n'est pas un enregistrement au registre qui débloque la
+frise du devis, c'est un **maillon neuf** (devis → commande) — **territoire
+A3**, lot **L16**. **Demande n° 4** ci-dessus. Ce que `475` débloque **déjà** :
+dès que le maillon existera, les nœuds devis porteront leur nom **sans autre
+changement**.
+
+**Preuves** : `migration:verifier` (SOC-06) **0 collision** sur 253 numéros ·
+`check-test-suites` **151/151 branchées**, aucune fantôme · suite `475` **3/3**
+(jouée sur base complète, migration appliquée).
+
 ## Journal
 
 | Date | Lot | Ce qui est fait | Batterie | Commit |
 |---|---|---|---|---|
 | 2026-10-05 | A1.a | Croisement des 5 maillons RPC : **4 tracés**, `payroll_payment_inner` **rayé** (corps `_inner`, pas un maillon) ; G8 **15 = 7 tracés + 8 écartés**, aucun en attente | inventaire **G8 vert** | *(lot A1)* |
 | 2026-10-05 | A1.b | 3 invariants non mesurables arbitrés (INV-07 → A3, INV-10 → B, INV-12 → E/F) ; `414` relevé nocturne + alerte **7/7** (**T07 vert** — la note rouge non reproduite) | `414` **7/7** | *(lot A1)* |
+| 2026-10-05 | 475 | Le **devis** entre au registre `chain_document_types` (`quotes` / `quote_lines`, libellé « Devis »), rejouable ; constat dit en T03 : **aucun lien** devis → commande (maillon neuf → **A3/L16**, demande n° 4) | suite **475 3/3** · SOC-06 **0 collision** · suites **151/151 branchées** | *(ce lot)* |
 
 *(l'historique du 05/10 midi — recomptage A.1, rapport par maillon, A.2 — est dans
 [PARTIE-A.md](PARTIE-A.md), fichier de famille ; commit `3cf8132` puis `2c9663e`.)*

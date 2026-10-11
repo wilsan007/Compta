@@ -2318,6 +2318,11 @@ jobs:
       # Territoire : app/sql/*chain*, *metric*, ci/check_chain*, ci/check_effects*
       # Plage : 475→486 — branche plan6/a-chainages
 
+      - name: 'A1 (475) : le devis au registre des types de documents'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/475_chain_document_types_quotes_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:a2 --- Vue Chaîne, pages Robustesse/Cohérence, lecture écran de l'indice ---
       # Territoire : ChainTimeline.tsx, chainView.ts, chainCoherence.ts, pages hôtes — SQL en lecture
       # Plage : 487→492 — branche plan6/a2-vue-chaine
