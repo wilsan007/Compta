@@ -477,6 +477,39 @@ Deux constats, et ils comptent :
 `table tbody tr, h1, h2` — un titre suffisait, donc le comptage pouvait tomber
 avant le tableau. Elle attend désormais **une ligne**.
 
+### Base locale remontée — 11/10/2026
+
+Le stack local était **en retard (324 / 470)**. Il a été **remonté à neuf** :
+schéma `public` reconstruit depuis `sql/00_schema_dump.sql` puis **333 migrations
+appliquées — 0 erreur** (`node run-sql-migrations.mjs`). Le cache PostgREST a été
+rechargé, le compte de test recréé (société `E2E Test SARL`, **712 comptes, 10
+journaux, 1 exercice**).
+
+**Résultat des 4 parcours sur la base à jour :**
+
+| # | Parcours | Verdict |
+|---|---|---|
+| **C1** | inscription → le plan comptable porte des comptes | ✅ **vert** (4,2 s) |
+| C2 | la balance est équilibrée (débit = crédit) | 🔴 la balance est **vide** — société neuve |
+| C3 | bulletin : brut − retenues = net | ⏸ non joué (série) |
+| C4 | session de caisse : un total | ⏸ non joué (série) |
+
+**Ce que ça dit, et c'est le point.** C1 **passe** : le banc, le compte, la
+connexion et l'écran fonctionnent. C2 échoue **à juste titre** : une société
+neuve n'a **aucune écriture**, donc il n'y a **aucun chiffre à lire** — un test
+qui « passerait » là ne prouverait rien. Les parcours C2/C3/C4 exigent la
+**« société remplie »** de la recette (§4.6, 2 sociétés : remplie et vide).
+
+**Et le seed ne peut pas se faire en SQL.** Une première tentative d'écriture
+directe a été **refusée par `journal_entry_guard()`** : une écriture comptable ne
+s'écrit que par le **produit**. C'est exactement ce que l'essaim `/qa` fait à
+l'étape `npm run qa:amorce` (données métier par l'API du produit). C'est donc la
+suite naturelle — pas un contournement.
+
+> **État, sans enjolivure** : la base locale est **à jour et saine** ; le banc e2e
+> **fonctionne** ; **1 parcours sur 4 est certifié** ; les 3 autres attendent la
+> société remplie, que seule la tournée `/qa` sait produire.
+
 ## Journal
 
 | Date | Lot | Module | Ce qui est fait | Batterie | Commit |
@@ -496,4 +529,5 @@ avant le tableau. Elle attend désormais **une ligne**.
 | 05/10 | D.2 · tranche 8 | clôture | 3 états typés — `useState<any>` = **0** | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→854 (cumul 82) | `aaaddbe` |
 | 05/10 | D.5 | recette | 4 parcours qui lisent un chiffre (`e2e/chiffres.ts` + spec) — prêts, non joués (secrets absents) | `playwright --list` 78/6 ✅ · oxlint 0 | `78c7d63` |
 | 11/10 | D.5 · local | recette | compte de test local (`e2e@test.local`) + harnais **joué contre 127.0.0.1** ; C1 attend une ligne ; banc local **en retard (324/470)** | playwright C1 exécuté (échec documenté) · oxlint 0 | `ca345cd` |
+| 11/10 | D.5 · base locale | recette | base locale **remontée à neuf** (`00_schema_dump` + **333 migrations, 0 erreur**) + compte recréé ; **C1 vert** ; C2/C3/C4 attendent la « société remplie » (le seed SQL est refusé par `journal_entry_guard`) | runner 333/333 ✅ · playwright **C1 ✅** | `HASH_BASE` |
 | 05/10 | D.6 | recette | kit P0-08 : référentiel 14 parcours + PV + certificat (empreinte `ce92316f…`, 112 passages) | script OK · oxlint 0 | `56892d6` |
