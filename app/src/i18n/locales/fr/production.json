@@ -137,7 +137,13 @@
     "day": "Jour",
     "capacity": "Capacité",
     "load": "Charge",
-    "overload": "Surcharge"
+    "overload": "Surcharge",
+    "maintenance": "Interventions de maintenance",
+    "newMaintenance": "Nouvelle intervention",
+    "noMaintenance": "Aucune intervention",
+    "technician": "Technicien",
+    "duration": "Durée (h)",
+    "cost": "Coût"
   },
   "toolings": {
     "title": "Outillages",

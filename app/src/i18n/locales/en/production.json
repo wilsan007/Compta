@@ -137,7 +137,13 @@
     "day": "Day",
     "capacity": "Capacity",
     "load": "Load",
-    "overload": "Overload"
+    "overload": "Overload",
+    "maintenance": "Maintenance records",
+    "newMaintenance": "New record",
+    "noMaintenance": "No maintenance record",
+    "technician": "Technician",
+    "duration": "Duration (h)",
+    "cost": "Cost"
   },
   "toolings": {
     "title": "Toolings",

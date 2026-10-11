@@ -775,6 +775,45 @@ export async function getWorkCenterCapacityLoad(from: string, to: string) {
   return (data || []) as WorkCenterCapacityLoad[]
 }
 
+// PRD-11 / E.4 : les interventions de maintenance — branche la coquille
+// `maintenance_records` (planifiée, curative, coût, durée d'immobilisation).
+export interface MaintenanceRecord {
+  id: string
+  tenant_id: string
+  plan_id: string | null
+  machine_id: string | null
+  tool_id: string | null
+  maintenance_date: string
+  duration_hours: number | null
+  cost: number | null
+  technician: string | null
+  notes: string | null
+  status: string | null
+  created_at: string | null
+}
+
+export async function getMaintenanceRecords() {
+  const tid = await getTenantId()
+  let q = supabase.from('maintenance_records').select('*').order('maintenance_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as MaintenanceRecord[]
+}
+
+export async function createMaintenanceRecord(r: Omit<MaintenanceRecord, 'id' | 'created_at' | 'tenant_id'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('maintenance_records').insert(ti(r, 'maintenance_records', tid)).select().single()
+  if (error) throw error
+  return data as MaintenanceRecord
+}
+
+export async function deleteMaintenanceRecord(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('maintenance_records').delete(), 'maintenance_records', tid).eq('id', id)
+  if (error) throw error
+}
+
 
 // ============ Production Module: OF Labels ============
 export async function getOFLabels(moId: string) {

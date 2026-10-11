@@ -3,12 +3,12 @@ import { useTranslation } from 'react-i18next'
 import { Plus, Trash2, Cog, Download, Upload, AlertTriangle } from 'lucide-react'
 import { Card, Button, Input, Select, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { getMachines, createMachine, deleteMachine, getWorkCenters, createWorkCenter, deleteWorkCenter, getToolingWearAlerts, getWorkCenterCapacityLoad } from '@/lib/queries/stock'
+import { getMachines, createMachine, deleteMachine, getWorkCenters, createWorkCenter, deleteWorkCenter, getToolingWearAlerts, getWorkCenterCapacityLoad, getMaintenanceRecords, createMaintenanceRecord, deleteMaintenanceRecord } from '@/lib/queries/stock'
 import { exportToExcel, importFromExcel } from '@/lib/excel-utils'
 import type { Machine, WorkCenter } from '@/types'
 import { useStatusLabels } from '@/lib/statusUtils'
 import { confirmSync } from '@/lib/confirm'
-import { errorMessage } from '@/lib/utils'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { localDateString } from '@/lib/dateRange'
 
 export function MachinesPage() {
@@ -20,22 +20,31 @@ export function MachinesPage() {
   const [workCenters, setWorkCenters] = useState<WorkCenter[]>([])
   const [wearAlerts, setWearAlerts] = useState<Awaited<ReturnType<typeof getToolingWearAlerts>>>([])
   const [capacityLoad, setCapacityLoad] = useState<Awaited<ReturnType<typeof getWorkCenterCapacityLoad>>>([])
+  const [maintenance, setMaintenance] = useState<Awaited<ReturnType<typeof getMaintenanceRecords>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [showWcForm, setShowWcForm] = useState(false)
+  const [showMaintForm, setShowMaintForm] = useState(false)
 
   const loadData = useCallback(async () => {
     try {
       const from = localDateString(new Date())
       const to = localDateString(new Date(Date.now() + 6 * 86400000))
-      const [macs, wcs, alerts, cap] = await Promise.all([getMachines(), getWorkCenters(), getToolingWearAlerts(), getWorkCenterCapacityLoad(from, to)])
+      const [macs, wcs, alerts, cap, maint] = await Promise.all([getMachines(), getWorkCenters(), getToolingWearAlerts(), getWorkCenterCapacityLoad(from, to), getMaintenanceRecords()])
       setMachines(macs || [])
       setWorkCenters(wcs || [])
       setWearAlerts(alerts || [])
       setCapacityLoad(cap || [])
+      setMaintenance(maint || [])
     } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [tCommon, toast])
+
+  async function handleDeleteMaint(id: string) {
+    if (!confirmSync(t('machines.confirmDelete'))) return
+    try { await deleteMaintenanceRecord(id); await loadData() }
+    catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
+  }
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -169,8 +178,31 @@ export function MachinesPage() {
         </Card>
       )}
 
+      <Card className="mt-4">
+        <div className="p-4 border-b border-[var(--color-border)] flex items-center justify-between">
+          <h3 className="text-sm font-semibold">{t('machines.maintenance')}</h3>
+          <Button onClick={() => setShowMaintForm(true)}><Plus className="w-4 h-4" /> {t('machines.newMaintenance')}</Button>
+        </div>
+        {maintenance.length === 0 ? (
+          <EmptyState icon={<Cog className="w-8 h-8" />} title={t('machines.noMaintenance')} />
+        ) : (
+          <Table headers={[t('machines.day'), t('machines.technician'), t('machines.duration'), t('machines.cost'), t('common.actions')]}>
+            {maintenance.map((m) => (
+              <TableRow key={m.id}>
+                <TableCell className="text-xs">{m.maintenance_date}</TableCell>
+                <TableCell className="text-sm">{m.technician ?? '—'}</TableCell>
+                <TableCell className="font-mono text-xs">{Number(m.duration_hours ?? 0)}</TableCell>
+                <TableCell className="font-mono text-xs">{formatCurrency(Number(m.cost ?? 0))}</TableCell>
+                <TableCell><button onClick={() => handleDeleteMaint(m.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button></TableCell>
+              </TableRow>
+            ))}
+          </Table>
+        )}
+      </Card>
+
       {showForm && <MachineFormModal workCenters={workCenters} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); loadData() }} />}
       {showWcForm && <WorkCenterFormModal onClose={() => setShowWcForm(false)} onSaved={() => { setShowWcForm(false); loadData() }} />}
+      {showMaintForm && <MaintenanceFormModal machines={machines} onClose={() => setShowMaintForm(false)} onSaved={() => { setShowMaintForm(false); loadData() }} />}
     </div>
   )
 }
@@ -244,6 +276,47 @@ function WorkCenterFormModal({ onClose, onSaved }: { onClose: () => void; onSave
           <Input label={t('machines.name')} value={name} onChange={(e) => setName(e.target.value)} placeholder={t('machines.workCenterPlaceholder')} required />
           <Input label={t('machines.capHDay')} type="number" step="0.1" value={capacity} onChange={(e) => setCapacity(Number(e.target.value))} />
           <Input label={t('machines.costH')} type="number" step="0.01" value={costPerHour} onChange={(e) => setCostPerHour(Number(e.target.value))} />
+          <div className="flex gap-2 justify-end pt-2">
+            <Button type="button" variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
+            <Button type="submit">{t('common.create')}</Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function MaintenanceFormModal({ machines, onClose, onSaved }: { machines: Machine[]; onClose: () => void; onSaved: () => void }) {
+  const { t } = useTranslation('production')
+  const { toast } = useToast()
+  const [machineId, setMachineId] = useState('')
+  const [date, setDate] = useState(localDateString(new Date()))
+  const [duration, setDuration] = useState(0)
+  const [cost, setCost] = useState(0)
+  const [technician, setTechnician] = useState('')
+  const [status, setStatus] = useState('planned')
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    try {
+      await createMaintenanceRecord({ machine_id: machineId || null, tool_id: null, plan_id: null, maintenance_date: date, duration_hours: duration, cost, technician: technician || null, notes: null, status })
+      onSaved()
+    } catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="bg-[var(--color-surface)] rounded-xl shadow-xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-lg font-semibold mb-4">{t('machines.newMaintenance')}</h2>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <Select label={t('machines.name')} value={machineId} onChange={(e) => setMachineId(e.target.value)} options={[{ value: '', label: '—' }, ...machines.map((m) => ({ value: m.id, label: m.name }))]} />
+          <Input label={t('machines.day')} type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+          <div className="grid grid-cols-2 gap-3">
+            <Input label={t('machines.duration')} type="number" step="0.1" value={duration} onChange={(e) => setDuration(Number(e.target.value))} />
+            <Input label={t('machines.cost')} type="number" step="0.01" value={cost} onChange={(e) => setCost(Number(e.target.value))} />
+          </div>
+          <Input label={t('machines.technician')} value={technician} onChange={(e) => setTechnician(e.target.value)} />
+          <Input label={t('machines.status')} value={status} onChange={(e) => setStatus(e.target.value)} />
           <div className="flex gap-2 justify-end pt-2">
             <Button type="button" variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
             <Button type="submit">{t('common.create')}</Button>

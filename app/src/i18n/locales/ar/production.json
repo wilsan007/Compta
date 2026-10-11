@@ -137,7 +137,13 @@
     "day": "اليوم",
     "capacity": "الطاقة",
     "load": "الحمل",
-    "overload": "حمل زائد"
+    "overload": "حمل زائد",
+    "maintenance": "تدخلات الصيانة",
+    "newMaintenance": "تدخل جديد",
+    "noMaintenance": "لا توجد تدخلات",
+    "technician": "الفني",
+    "duration": "المدة (س)",
+    "cost": "التكلفة"
   },
   "toolings": {
     "title": "الأدوات",
