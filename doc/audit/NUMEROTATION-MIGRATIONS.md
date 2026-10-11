@@ -90,8 +90,6 @@ machine ; ces deux tables sont la vérité du dépôt.
 | `760` → `769` | plan6 A3 L16 (familles restantes) — suite de la plage précédente | 2026-10-11 |
 | **`770` → `779`** | **plan6 A3 (certificat d'intégrité, A3.4)** — **P1** : `chain_certificat_integrite`, l'attestation d'intégrité technique | **2026-10-11** |
 | `380` → `399` | **LIBRE** — à inscrire avant usage | — |
-| `750` → `759` | plan6 A3 L16 (familles restantes) — 1ʳᵉ extension, après saturation de `493` → `499` | 2026-10-06 |
-| `760` → `769` | plan6 A3 L16 (familles restantes) — 2ᵉ extension, après saturation de `750` → `759` (`760` : exercice clos → écriture d'affectation) | 2026-10-11 |
 
 
 *Numéros constatés hors de leur fichier de plan, au 02/10 : `414` alerte de
