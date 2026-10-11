@@ -22,7 +22,7 @@
 | D.2 | Typer les 80 états d'écran restants (RH, production, trésorerie, immobilisations, CRM) | DAT-02, suite de 2.16 | 5 j | ✅ **terminé — 80 états (05/10)** |
 | D.3 | Alignement des colonnes sur 10 écrans | étape 0.5 | 1 j | ✅ **4 restants faits (05/10) — 6 déjà en `main`** |
 | D.4 | Lectures du chemin de l'écran (159 fonctions non couvertes) ; immobilisations et tableaux de bord à l'écran | 4.5, 4.11, 4.12 | 5 j | ⬜ |
-| D.5 | Playwright sur chaque PR vers `main` ; 4 parcours qui lisent un chiffre | 4.3, 4.4, AUD-J01/J02 | 3 j | 🟡 **scénarios prêts (05/10) — attend les secrets** |
+| D.5 | Playwright sur chaque PR vers `main` ; 4 parcours qui lisent un chiffre | 4.3, 4.4, AUD-J01/J02 | 3 j | 🟢 **4 parcours verts en local (11/10)** — en CI, il reste les secrets E2E |
 | D.6 | Les 14 parcours à l'écran, 2 sociétés, 4 gabarits ; correction des écarts bloquants ; re-notation des modules | 4.6, 4.7, P0-08 | recette | 🟡 **kit prêt (05/10) — verdict attendu** |
 | D.7 | Rejeu sur copie de production (porte G7 sous le vrai propriétaire), relecture des paramètres globaux et de `banks` | 4.8, 4.9 | 2 j | ⬜ |
 | D.8 | Contraste : appliquer la décision D-7 | AUD-I05 | 1 j | ⬜ |
@@ -421,10 +421,11 @@ kit n'ajoute ni service, ni dépendance, ni étape — il **range** ce qui exist
 
 ## D.5 — les quatre parcours qui lisent un chiffre
 
-**Préparé, pas encore joué.** D.5 « attend les secrets E2E » (§7). Sans eux,
-l'application reste sur `/login` et tout test porterait sur l'écran de connexion :
-`e2e/helpers.ts` s'abstient alors explicitement (`E2E_CREDENTIALS_CONFIGURED`).
-Les scénarios sont donc **prêts à brancher**, pas exécutés.
+**Joué : 4 parcours sur 4 verts** (11/10/2026). En CI, D.5 « attend encore les
+secrets E2E » (§7) : sans eux, l'application reste sur `/login` et tout test
+porterait sur l'écran de connexion — `e2e/helpers.ts` s'abstient alors
+explicitement (`E2E_CREDENTIALS_CONFIGURED`). Les scénarios tournent donc
+**localement**, contre la pile Supabase de bout en bout.
 
 **Ce qui manquait.** `business-flows.spec.ts` (P1 → P10) ne fait que **nommer** les
 écrans (URL + `h1`). Aucun parcours ne **lit un montant**. Les quatre ajoutés le
@@ -438,15 +439,15 @@ font :
 | C4 | caisse → clôture | la session affiche un total |
 
 **L'outil** — `e2e/chiffres.ts` : lit le **texte visible** et en extrait les
-montants au format français (« 1 234,56 », « 1.234,56 »), puis cherche une
-relation `a + b = c` ou `a − b = c`. Volontairement robuste : pas de sélecteur de
-champ qui casse à chaque refonte d'écran.
+montants **dans les deux écritures** (« 1 234,56 » **et** « €100.00 »), en exigeant
+**deux décimales** pour qu'un code de compte (`401000`) ne passe pas pour une
+somme ; puis il cherche une relation `a + b = c` ou `a − b = c`. Volontairement
+robuste : pas de sélecteur de champ qui casse à chaque refonte d'écran.
 
-**Vérifié ici** : `playwright test --list` découvre **78 tests / 6 fichiers** (les
-4 parcours compris) ✅ · `oxlint` **0** ✅. **Non joués** : secrets absents.
+**Joué le 11/10/2026** contre la pile locale complète : **4 verts sur 4** ✅, et la
+suite entière (**78 tests, tous fichiers**) reste verte ✅ · `oxlint` **0** ✅.
 
-**Reste à faire (avec les secrets)** : confirmer les libellés d'écran C2/C3/C4 sur
-la société semée, puis **rendre le job `e2e-tests` obligatoire sur chaque PR vers
+**Reste à faire** : **rendre le job `e2e-tests` obligatoire sur chaque PR vers
 `main`** — aujourd'hui il est étiqueté `run-e2e`. ⚠️ Ce déclenchement ne doit
 arriver **qu'avec** les secrets : sans `VITE_SUPABASE_*`, l'application ne démarre
 pas et la PR rougirait.
@@ -485,27 +486,53 @@ appliquées — 0 erreur** (`node run-sql-migrations.mjs`). Le cache PostgREST a
 rechargé, le compte de test recréé (société `E2E Test SARL`, **712 comptes, 10
 journaux, 1 exercice**).
 
-**Résultat des 4 parcours sur la base à jour :**
+**Résultat des 4 parcours sur la base à jour — 11/10/2026 :**
 
-| # | Parcours | Verdict |
-|---|---|---|
-| **C1** | inscription → le plan comptable porte des comptes | ✅ **vert** |
-| **C2** | la balance est équilibrée (débit = crédit) | ✅ **vert** — après amorçage d'une écriture équilibrée (100 / 100) |
-| C3 | bulletin : brut − retenues = net | 🔴 **aucun bulletin** — la paie n'est pas amorcée |
-| C4 | session de caisse : un total | ⏸ non joué (série) |
+| # | Parcours | Verdict | Amorcé par le produit (jamais par SQL) |
+|---|---|---|---|
+| **C1** | inscription → le plan comptable porte des comptes | ✅ **vert** | — (le plan comptable est semé à l'inscription) |
+| **C2** | la balance est équilibrée (débit = crédit) | ✅ **vert** | une écriture équilibrée **100 / 100** |
+| **C3** | bulletin : brut − retenues = net | ✅ **vert** | un salarié + un lot → **le moteur** calcule le bulletin |
+| **C4** | session de caisse : un total | ✅ **vert** | terminal + session → **encaissement** 120 → clôture |
 
-**Deux corrections révélées par le passage réel** — c'est le but même de D.5 :
+**4 verts sur 4.** Mais ce que le passage réel a appris vaut plus que les verts —
+quatre défauts, tous dans **l'outillage de mesure**, aucun dans le produit :
 
 1. **L'extracteur de montants ne lisait que la virgule française.** L'écran rend
-   `€100.00` (point décimal, symbole devant), donc C2 voyait **0 montant** alors
-   que la balance affichait bel et bien 100 au débit et 100 au crédit.
-   `e2e/chiffres.ts` lit désormais **les deux écritures**, et exige **deux
-   décimales** pour ne pas prendre `401000` (un code de compte) pour un montant.
+   `€100.00` (point décimal, symbole devant) : C2 voyait **0 montant** alors que la
+   balance affichait bel et bien 100 au débit et 100 au crédit. `e2e/chiffres.ts`
+   lit désormais **les deux écritures**, et exige **deux décimales** pour ne pas
+   prendre `401000` (un code de compte) pour un montant.
 2. **Amorcer une écriture passe par le produit** : `post_journal_entry` crée un
    **brouillon**, `validate_journal_entries` le **valide** (`posted`,
    `VT-2026-000001`, débit = crédit = 100). Le garde refuse tout `posted` à
    l'insertion : la protection a tenu, exactement comme prévu — aucun
    contournement.
+3. **La visite guidée couvrait l'écran.** `Layout.tsx` affiche « Welcome to
+   Compta! » tant que `localStorage['compta-onboarded']` est absent — et **chaque
+   test ouvre un contexte neuf**, donc la visite revenait à chaque fois. Sur C3,
+   le tableau des bulletins **existait** mais était absent de l'arbre
+   d'accessibilité, derrière la fenêtre : on lisait la visite, pas la paie.
+   `navigateWithAuth` la congédie maintenant comme l'utilisateur (bouton
+   **Skip**), et pose la clé **que le produit pose lui-même** en fermant.
+4. **Un écran qui n'affiche rien n'est pas forcément un écran vide.** Les
+   bulletins sont **groupés par lot** et un groupe n'est déplié que s'il est
+   **sélectionné** (`PaySlipsPage.tsx`) : sans choisir le lot, l'écran est
+   légitimement vide. C3 fait donc le geste de l'utilisateur — **choisir le
+   lot** — et lit alors brut / retenues / net.
+
+**Ce que la paie a prouvé, chiffres du moteur** : `total_gross` **2400,00**,
+`total_deductions` **557,24**, `net_salary` **1 842,76** (2400 − 557,24 = 1842,76,
+au centime). Le moteur a **généré 1 bulletin sur 2 salariés** et a **refusé
+l'autre en le nommant** : *« e2e@test.local — salaire non renseigné — aucun
+bulletin »* — le compte technique « Admin » n'a pas de salaire, et il ne « touche
+0 » pas : il n'a rien à calculer. C'est le défaut que le banc écran X0 avait
+trouvé, et il se défend encore ici.
+
+**Ce que la caisse a prouvé** : ticket HT **100**, TVA **20**, TTC **120** ;
+clôture avec un tiroir compté à **220** → attendu **220**, **écart 0**. L'attendu,
+l'écart et l'écriture de clôture sont posés par le **déclencheur de clôture** ;
+l'écran ne fait que relire.
 
 **Un piège du banc, à savoir** : reconstruire un schéma `public` **efface les
 privilèges par défaut** que Supabase accorde aux nouvelles fonctions
@@ -549,5 +576,5 @@ suite naturelle — pas un contournement.
 | 05/10 | D.5 | recette | 4 parcours qui lisent un chiffre (`e2e/chiffres.ts` + spec) — prêts, non joués (secrets absents) | `playwright --list` 78/6 ✅ · oxlint 0 | `78c7d63` |
 | 11/10 | D.5 · local | recette | compte de test local (`e2e@test.local`) + harnais **joué contre 127.0.0.1** ; C1 attend une ligne ; banc local **en retard (324/470)** | playwright C1 exécuté (échec documenté) · oxlint 0 | `ca345cd` |
 | 11/10 | D.5 · base locale | recette | base locale **remontée à neuf** (`00_schema_dump` + **333 migrations, 0 erreur**) + compte recréé ; **C1 vert** ; C2/C3/C4 attendent la « société remplie » (le seed SQL est refusé par `journal_entry_guard`) | runner 333/333 ✅ · playwright **C1 ✅** | `420dff6` |
-| 11/10 | D.5 · parcours | recette | **C1 ✅ et C2 ✅** — extracteur corrigé (`€100.00` : point décimal) ; écriture équilibrée amorcée **par le produit** (`post_journal_entry` → `validate_journal_entries`) | playwright **2 passed** · oxlint | `a697ec5` |
+| 11/10 | D.5 · parcours | recette | **4 parcours sur 4 VERTS** (C1 → C4). Trois défauts d'**outillage** trouvés par la mesure et corrigés : extracteur de montants (point décimal), visite guidée qui couvrait l'écran, lot de paie à choisir. Paie et caisse amorcées **par le produit** (moteur `calculate_payslip` ; `create_pos_ticket` + clôture) | playwright **4/4** · suite complète **78 verts** · oxlint | `HASH_FINAL` |
 | 05/10 | D.6 | recette | kit P0-08 : référentiel 14 parcours + PV + certificat (empreinte `ce92316f…`, 112 passages) | script OK · oxlint 0 | `56892d6` |

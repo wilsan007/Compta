@@ -145,11 +145,38 @@ export async function loginViaUI(page: Page) {
   )
 }
 
+/**
+ * Congédie la visite guidée de bienvenue.
+ *
+ * `Layout.tsx` l'affiche tant que `localStorage['compta-onboarded']` est absent —
+ * et **chaque test Playwright ouvre un contexte neuf**, donc la visite revient à
+ * chaque fois et **couvre l'écran** : le premier écran lu était la visite, pas la
+ * page (mesuré sur C3 : le tableau des bulletins était absent de l'arbre
+ * d'accessibilité alors qu'il était bien à l'écran, derrière la fenêtre).
+ *
+ * On la ferme comme l'utilisateur : le bouton « Skip ». Si le clic n'aboutit pas
+ * (animation, traduction), on pose la clé **que le produit pose lui-même** en
+ * fermant — le test n'invente rien, il prend le même chemin.
+ */
+export async function dismissOnboarding(page: Page) {
+  const skip = page.getByRole('button', { name: /^(skip|passer|ignorer)$/i })
+  if (await skip.count() > 0) {
+    await skip.first().click({ timeout: 5000 }).catch(() => {})
+  }
+  await page.evaluate(() => {
+    try { localStorage.setItem('compta-onboarded', 'true') } catch { /* ignore */ }
+  }).catch(() => {})
+  // La fenêtre doit avoir disparu, sinon l'écran lu n'est pas celui visé.
+  await page.getByRole('heading', { name: /welcome to compta/i })
+    .waitFor({ state: 'detached', timeout: 5000 }).catch(() => {})
+}
+
 export async function navigateWithAuth(page: Page, _apiContext: APIRequestContext, path: string) {
   await loginViaUI(page)
   await page.goto(path)
   await page.waitForLoadState('domcontentloaded')
   await assertAuthenticated(page)
+  await dismissOnboarding(page)
   await assertWorkspaceReady(page)
 }
 

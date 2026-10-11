@@ -40,9 +40,19 @@ test('C2 : la balance est équilibrée — total débit = total crédit (au cent
 })
 
 // ── 3. Paie → le bulletin et l'écriture ─────────────────────
+// L'écran des bulletins ne montre RIEN tant qu'aucun lot n'est choisi : les
+// bulletins sont groupés par lot, et un groupe n'est déplié que s'il est
+// sélectionné (`PaySlipsPage.tsx`). Le geste de l'utilisateur — « choisir le
+// lot de paie » — fait partie du parcours, sinon on lirait un écran vide et on
+// en conclurait à tort que la paie est vide.
 test('C3 : un bulletin lit brut − retenues = net (au centime)', async ({ page, request }) => {
   await navigateWithAuth(page, request, '/hr/pay-slips')
-  await page.waitForSelector('table tbody tr, h1, h2', { timeout: 15000 })
+  const menu = page.getByLabel('Pay runs')
+  await menu.waitFor({ timeout: 20000 })
+  const valeur = await menu.locator('option').filter({ hasText: /\d{4}/ }).first().getAttribute('value')
+  expect(valeur, 'un lot de paie doit être proposé au choix (sinon aucune paie n’est amorcée)').toBeTruthy()
+  await menu.selectOption(valeur!)
+  await page.locator('table tbody tr').first().waitFor({ timeout: 20000 })
   const montants = await montantsVisibles(page)
   expect(montants.length, 'le bulletin doit afficher des montants').toBeGreaterThanOrEqual(1)
   if (montants.length >= 3) {
