@@ -2471,6 +2471,26 @@ jobs:
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/711_connecteurs_metier_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+      # F.6 / NOT-01 — les notifications sont PERSONNELLES, et c'est la base qui
+      # le tient. Un utilisateur ne voyait pas SES notifications : les quatre
+      # politiques RLS ne filtraient que la société, donc chacun lisait les
+      # vingt dernières de tout le monde, pouvait les marquer lues et les
+      # supprimer ; et le compteur de l'en-tête — appelé SANS argument par
+      # `NotificationCenter.tsx` — comptait la société entière, tandis que
+      # « tout marquer lu » marquait le courrier de tout le monde. Le correctif
+      # est ENTIÈREMENT EN BASE (le front n'est pas touché) : RLS bornée au
+      # destinataire, appel sans argument = « moi », `user_id IS NULL` =
+      # DIFFUSION qui reste visible, écriture par les seules fonctions, et le
+      # bulletin de paie adressé au COMPTE du salarié (`employees.auth_user_id`,
+      # plus `NEW.employee_id`). Mesuré : 10 rouges / 3 verts AVANT (les trois
+      # verts sont les non-régressions assumées — RLS forcée, diffusion
+      # visible, cloisonnement), 13/13 après.
+      - name: 'F.6 : notifications personnelles (NOT-01) — la RLS tient la boîte de chacun (712)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/712_notifications_personnelles_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+
 
   # ─────────────────────────────────────────────
   # Job 6: Build verification

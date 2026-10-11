@@ -23,7 +23,7 @@
 | F.3 | `generate-pdf`, voie A : convertisseur isolé, `GOTENBERG_URL`, un appelant | 1.13, D-4 | 1 j (code) + décision D-4 | 🔴 **attend de vous** — D‑4 §9 : le code est durci (503 honnête, bucket `317`), il reste A1 (convertisseur injoignable), le secret `GOTENBERG_URL`, un appelant, le déploiement |
 | F.4 | Groupe : structure, opérations intra-groupe, consolidation | GRP-01 → 03 | ≈ 5 j | ✅ **livré le 05/10** — `702` (structure + intra-groupe) et `703` (consolidation), + écran Paramètres → Groupes |
 | F.5 | CRM (séquences, scoring) ; projets (capacité par ressource, champs personnalisés, automatisations) | CRM-01/02, PRJ-02/04/08 | ≈ 5 j | ✅ **livré le 05/10** — PRJ‑04 (`706`), PRJ‑02 (`708`), CRM‑01 (`709`), CRM‑02 (`710`) ; **PRJ‑08 (automatisations)** est un **moteur de règles** : **transféré à la partie A** (L22/L23 — R3/R7, voir ci‑dessous) |
-| F.6 | Notifications et alertes ; rattachement universel de documents ; générateur d'états ; modèles de documents ; connecteurs métier | NOT-01/02, GED-01, BI-01, ADM-04, API-03 | ≈ 8 j | 🟡 **GED‑01 (`707`) et API‑03 (`711`) livrés le 05/10** ; **NOT‑01/02, BI‑01, ADM‑04 restent** |
+| F.6 | Notifications et alertes ; rattachement universel de documents ; générateur d'états ; modèles de documents ; connecteurs métier | NOT-01/02, GED-01, BI-01, ADM-04, API-03 | ≈ 8 j | 🟡 **GED‑01 (`707`) et API‑03 (`711`) livrés le 05/10, NOT‑01 (`712`) le 11/10** ; **NOT‑02, BI‑01, ADM‑04 restent** |
 | F.7 | RH hors paie : conventions collectives, recrutement ; mobile hors ligne | PAY-08, RH-03, PTL-03 | ≈ 4 j | ✅ **PAY‑08 et RH‑03 livrés le 05/10** (`704` conventions collectives + `705` recrutement, avec leurs écrans) ; **PTL‑03 (mobile hors ligne)** reste — hors lot base de données |
 | F.8 | Tables coquilles de son périmètre (les 25 autres), **brancher ou supprimer** | ORPH-02 | ≈ 5 j | 🟡 **premier lot livré le 05/10** — recomptage (5 tables réelles, pas 25) + `time_entries` supprimée (`701`) |
 
@@ -470,6 +470,96 @@ datés réinscrits : `check_bt_grid` `tables_tenant` 373 → **374** ;
 vers un Odoo **on‑premise en HTTP sera refusé**. C'est le prix de la garde SSRF, et
 c'est écrit dans la migration pour ne pas être découvert en production.
 
+## F.6 — troisième lot livré le 11/10 (NOT‑01, les notifications personnelles)
+
+**Le constat, mesuré sur base neuve.** `notifications` portait déjà **l'intention**
+d'une boîte personnelle : une colonne `user_id`, et l'index
+`idx_notifications_tenant_unread (tenant_id, user_id, read_at)`. Mais **les quatre
+politiques RLS ne filtraient que la société** — `tenant_id = current_tenant_id()` —
+et rien d'autre ne bornait :
+
+- **chacun lisait les vingt dernières notifications de tout le monde**
+  (`NotificationCenter.tsx` fait `from('notifications').select('*')…limit(20)`) ;
+- `mark_notification_read(p_id)` ne vérifiait **que la société** : un utilisateur
+  ouvrait le courrier d'un autre, **sans trace** ;
+- `get_unread_notification_count()` et `mark_all_notifications_read()`, appelés
+  **sans argument** par l'en-tête, lisaient `p_user_id IS NULL` comme « TOUT LE
+  MONDE » : le badge comptait la société entière (mesuré **4** au lieu de 3) et
+  « tout marquer lu » vidait la boîte de tout le monde (mesuré : la notification de
+  B marquée lue par A) ;
+- `create_notification` acceptait **n'importe quel destinataire** : un utilisateur
+  connecté pouvait écrire dans la boîte d'un autre, ou diffuser à toute la société ;
+- `notify_payslip_ready` (93) passait `NEW.employee_id` — un **salarié** — là où la
+  colonne attend un **compte** : le salarié ne voyait jamais son bulletin, et la
+  ligne ne désignait personne (`employees.auth_user_id` existait depuis le socle).
+
+**Livré** : migration `712`, correctif **entièrement en base** — le front n'est pas
+touché. Les quatre politiques sont bornées au **destinataire**, un appel sans
+argument veut dire « **moi** », `user_id IS NULL` = **DIFFUSION** à la société
+(l'alerte « facture en retard » concerne l'équipe, pas une personne : elle reste
+visible et marquable par chacun), `anon` est révoqué, `authenticated` passe en
+**lecture seule** (doctrine 271 — « une table personnelle ne s'écrit que par ses
+fonctions »), un déclencheur ramène à la DIFFUSION un destinataire qui n'est pas un
+membre de la société (jamais d'invisible : il rattrape les lignes déjà écrites par
+l'ancien `NEW.employee_id` **et** empêche que ça recommence, sans jamais annuler
+l'acte métier qui l'a provoqué), et le bulletin de paie est adressé au **compte**
+du salarié.
+
+Deux règles écrites une fois : `user_id IS NULL` = diffusion ; `auth.uid() IS NULL`
+= appel **serveur** (déclencheur, `SECURITY DEFINER`, `service_role`) — c'est ce qui
+laisse les onze déclencheurs du dépôt fonctionner sans être réécrits. Et un
+**marqueur serveur** (`app.notification_serveur`) que **seuls** les déclencheurs du
+dépôt posent : sans lui, la garde anti‑usurpation refusait la notification du
+bulletin de paie, qui s'exécute **pendant la requête** du gestionnaire de paie et
+écrit pour quelqu'un d'autre — défaut trouvé **en écrivant la suite**, corrigé dans
+la même migration.
+
+**Mesuré** : suite `712` **13/13**, et **10 rouges / 3 verts** sur l'état d'avant —
+reconstruit **verbatim depuis la 93**, jamais inventé. Les trois verts sont les
+non‑régressions **assumées** : RLS forcée, diffusion déjà visible, cloisonnement
+d'une société à l'autre. Les dix rouges (T02 `anon` avait `SELECT`, T03
+`authenticated` écrivait en direct, T04 les 4 politiques sans borne utilisateur, T05
+la fuite — **1** ligne de B visible, T07, T08, T09, T10, T11, T12) sont **refusés
+par le registre de la CI** (il est vide) : un défaut qui revient casse la CI.
+
+**Portes** : G5 `check-test-suites` → **163 suites, toutes jouées** (la 712 est
+branchée dans `ci.yml`) ; G1 `check_bt_grid` **inchangée** (aucune table en plus) ;
+`check_anon_grants` 0 relation modifiable par `anon` ; `check_policy_duplicates`
+0 doublon (table, commande) ; `check_tenant_guard` 189 fonctions `SECURITY DEFINER`
+écrivantes, **0** sans mention de la société ; `check_roles_opposables` OK. **Aucun
+changement de schéma** (politiques, fonctions, déclencheurs, droits seulement) :
+`db:types` est inchangé, `npm run db:types` n'a pas lieu d'être ici.
+
+⚠️ **Une mesure qui a coûté, et qu'il faut retenir.** Le premier jet de la suite
+faisait mourir son T09 sur « invalid input syntax for type json ». Cause : un **GUC
+personnalisé n'est jamais « désactivé »** — après le COMMIT d'un `SET LOCAL`, le
+placeholder reste à la chaîne **vide**, et `current_tenant_id()` fait
+`current_setting('request.headers', true)::json`. La doctrine du dépôt est écrite
+dans la 236 (lignes 36‑44) : **l'en-tête en session (`false`), le rôle en local
+(`true`)**. C'est ce que fait la suite 712 — l'en-tête de société est posé **en
+session** avant les deux transactions `authenticated`, et c'est T13 qui le
+surcharge **localement** (une requête forgée qui ne mène nulle part) : au COMMIT,
+l'en-tête de session revient, et T09 peut jouer juste après.
+
+⚠️ **Limites dites** : (1) `create_notification` **reste** appelable par un
+utilisateur connecté pour **lui‑même** (poser une notification depuis un écran) —
+c'est voulu, mais aucun écran ne le fait aujourd'hui : les producteurs sont des
+déclencheurs, et le marqueur serveur n'est posé que par `notify_payslip_ready` (les
+autres n'ont pas de destinataire à traverser — vérifié : `tu.auth_id` en 264/414,
+`employees.auth_user_id` en 93/188, ou NULL). (2) Les **canaux** restent dehors :
+`NOT‑02` (alertes/abonnements) et `NOT‑03` (e‑mail/push, reporté — Resend 👤 en
+attente) ne sont pas traités ici. (3) La suite mesure ce que la **base** rend à
+l'appel sans argument, pas le **rendu** de l'en-tête : le front n'étant pas touché,
+il n'y a rien à rejouer côté écran — mais rien ne **prouve** non plus l'affichage.
+(4) `plpgsql_check` est **absente de l'image locale** (contrôle non exécutable ici,
+comme pour les lots voisins) et les contrôles JS qui interrogent la base
+(`check-rpc-contract`, Vitest) ne tournent pas dans ce worktree (`node_modules`
+vide) : le contrat des quatre RPC a donc été vérifié **en SQL** contre `pg_proc` —
+signatures **identiques** à celles d'avant la 712, donc les trois appels du front
+(`get_unread_notification_count`, `mark_notification_read`,
+`mark_all_notifications_read`) sont intacts.
+
+
 ## PRJ‑08 (automatisations de projet) — **transféré à la partie A** (R3)
 
 Le suivi range `PRJ‑08` sous « ➜ **L22/L23** » : les automatisations de projet sont
@@ -518,3 +608,4 @@ autres. F n'est pas concernée, mais elle peut l'être indirectement par F.4
 | 05/10/2026 | F.5 scoring de lead (CRM‑02) | **livré** : `710` (règles pondérées à opérateur contraint + moteur `crm_lead_score` qui rend le total ET ses raisons ; fait absent non matché ; comparaisons numériques ; filtre société explicite) + suite 10/10 + écran CRM→Scoring de lead (simulateur) + i18n. Plafonds : `tables_tenant` 372→373 ; `unused-tables` 65→64 | 1 j | `plan6/f-plateforme` |
 | 05/10/2026 | F.5 PRJ‑08 (automatisations de projet) | **transféré à la partie A** (L22/L23, moteur de règles — R3/R7 : un second moteur serait un doublon). Demandé dans ce fichier, à transmettre par l'intégration | — | — |
 | 05/10/2026 | F.6 connecteurs métier (API‑03) | **livré** : `711` (connecteur à type/auth contraints, jamais de secret — seulement son nom, URL validée par la garde SSRF du dépôt : HTTPS + hôte public) + suite 8/8 + écran Paramètres→Connecteurs métier + i18n. Plafonds : `tables_tenant` 373→374 ; `unused-tables` 64→63 | 1 j | `plan6/f-plateforme` |
+| 11/10/2026 | F.6 notifications personnelles (NOT‑01) | **livré** : `712` — les 4 politiques RLS bornées au **DESTINATAIRE**, appel sans argument = « moi », `user_id IS NULL` = diffusion (visible de tous, marquable par chacun), `anon` révoqué, `authenticated` en **lecture seule**, destinataire non‑membre ramené à la diffusion (déclencheur), bulletin de paie adressé au **compte** du salarié, marqueur serveur pour les déclencheurs du dépôt. Correctif **entièrement en base** (front intact) + suite `712` **13/13** et **10 rouges / 3 verts** sur l'état d'avant (reconstruit verbatim depuis la 93). G5 **163/163** ; plafonds **inchangés** (aucune table, aucun changement de schéma) | 1 j | `plan6/f-plateforme` |
