@@ -123,6 +123,16 @@ jobs:
       - name: 'Dette : plafond des `console.error`'
         run: node scripts/check-console-error-ceiling.mjs
 
+      # LOC1-10 (partie C, lot K) — règle E01 de l'annexe E du cahier de
+      # localisation : un compte écrit en clair dans le front (`'641000'`,
+      # `'411000'`…) empêche une société djiboutienne de lire son propre plan.
+      # Plafond GELÉ (`app/.country-neutral-ceiling.json`), même doctrine que
+      # les deux ci-dessus : une hausse casse, une baisse abaisse.
+      # Ici le FRONT seul : le gisement SQL (`pg_proc.prosrc`) est mesuré dans le
+      # job `db-integration`, le seul qui ait une base.
+      - name: 'LOC1-10 : garde-fou anti-code-en-dur (E01) — front'
+        run: node scripts/check-country-neutral.mjs --front-only
+
       # L2 / G5 — le câblage ET le verdict des suites. Trois moitiés de la règle
       # du dépôt (« un défaut = un test rouge avant, le câblage CI dans le même
       # commit ») : le registre des échecs attendus (AUD-X01), le refus d'un
@@ -409,6 +419,18 @@ jobs:
 
       - name: Appliquer les migrations
         run: node run-sql-migrations.mjs
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Règle E01 de l'annexe E du cahier de localisation : un compte écrit en
+      # clair là où le pack doit répondre. Ici le gisement de FOND — les
+      # définitions effectives des fonctions (`pg_proc.prosrc`) : c'est un
+      # trigger qui choisit `'641000'`, le front ne fait que recopier son choix.
+      # Plafond gelé dans `app/.country-neutral-ceiling.json` : une hausse casse
+      # la CI, une baisse abaisse le plafond. Contrôle AVANT les suites, comme
+      # les autres (`check_bt_grid`) : ce sont elles qui créent des fixtures.
+      - name: 'LOC1-10 : garde-fou anti-code-en-dur (E01) — front + SQL'
+        run: node scripts/check-country-neutral.mjs
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 

@@ -18,7 +18,7 @@
 
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
-| C.1 | Phase 1 — **neutralité** : les comptes codés en dur (`310000`, `601000`, `355000`, `713500`, `641`/`645`/`421`/`431`…) passent par `resolve_account` ; pack fictif `ZZ` comme preuve | LOC1-01 → 58, S-10, AUD-F03, AUD-G10 | ≈ 48 j | 🟡 **LOC1-01 → 06 (+ LOC1-48) faits — `380`→`386`** ; **LOC1-07 : `387`/`388`** ; **LOC1-08 : `389`/`390`** ; **LOC1-09 : journaux en dur `391`/`392` (2/3)** ; reste → 58 à venir |
+| C.1 | Phase 1 — **neutralité** : les comptes codés en dur (`310000`, `601000`, `355000`, `713500`, `641`/`645`/`421`/`431`…) passent par `resolve_account` ; pack fictif `ZZ` comme preuve | LOC1-01 → 58, S-10, AUD-F03, AUD-G10 | ≈ 48 j | 🟡 **LOC1-01 → 06 (+ LOC1-48) faits — `380`→`386`** ; **LOC1-07 : `387`/`388`** ; **LOC1-08 : `389`/`390`** ; **LOC1-09 : journaux en dur `391`→`393` — TERMINÉ** ; **LOC1-10 : garde-fou E01 livré et câblé (`check-country-neutral.mjs`) — 41 occurrences front + 24 SQL mesurées et gelées** ; reste → 58 à venir |
 | C.2 | Barème ITS gelé, sous `370`, **sans les deux lignes extrapolées**, source provisoire dite | étape 0.5 | 1 j | 🟡 **fait le 05/10, à reprendre** |
 | C.3 | Phase 2 — pack Djibouti : plan comptable national, TVA, paie, états, mentions de facture, formats bancaires ; chaque valeur sourcée `SRC-DJ-nn` | LOC2-01 → 41 | ≈ 26 j | ⬜ |
 | C.4 | Pilote | — | hors charge | ⬜ |
@@ -270,6 +270,61 @@ journaux : `890000` (« Bilan d'ouverture »), `411000`, `401000`, `666000`,
 `766000`, `486000`, `487000`, et `603000` dans `resolve_variation_account`.
 Le prochain lot (`LOC1-10`) attaque précisément cette liste, **côté écritures**.
 
+### `LOC1-10` — les comptes en dur, et le garde-fou **E01**
+
+Le cahier demande de « supprimer les comptes en dur côté front » (annexe A.2) et
+donne pour **recette** : *le garde-fou E01 passe sur `app/src`*. Ce garde-fou
+**n'existait pas** — `scripts/check-country-neutral.mjs` est neuf, et c'est la
+première livraison de la tâche.
+
+**La règle, telle quelle (annexe E).** Un littéral de **3 à 6 chiffres**
+(`'[1-9]\d{2,5}'`) **utilisé comme compte** : affecté à un nom `*account*`,
+`*compte*`, `*collectif*`, ou passé à `getSolde`. Deux gisements, **deux
+compteurs** :
+
+* `front` — `app/src/**/*.{ts,tsx}` ;
+* `sql` — les définitions **effectives** (`pg_proc.prosrc`, schéma `public`).
+  C'est le gisement de fond : c'est un **trigger** qui choisit `'641000'`, le
+  front ne fait que recopier son choix.
+
+Plafond **GELÉ** dans `app/.country-neutral-ceiling.json` — même doctrine que
+`check-any-ceiling.mjs` : une hausse casse la CI, une baisse **abaisse** le
+plafond automatiquement ; le compteur ne peut que descendre. Branché **deux
+fois** : `--front-only` dans `lint-typecheck` (ce job n'a pas de base) et complet
+dans `db-integration`, **avant les suites** (ce sont elles qui créent des
+fixtures — même ordre que `check_bt_grid`).
+
+**Mesure du 11/10** (base neuve, 347 migrations) : **41** occurrences au front
+(20 fichiers) et **24** en SQL (14 fonctions).
+
+| Gisement | Le gros du compte |
+|---|---|
+| front (41) | `ProductsPage` 6, `FixedAssetsPage` 6, `queries/payroll.ts` 5, `RegularizationPage` 4, `InvoicesPage`/`CreditNotesPage`/`CustomersPage`/`SuppliersPage`/`FiscalYearClosurePage` 3, `ChartAccountsPage` 2 |
+| SQL (24) | `credit_note_guard` 3, `purchase_credit_note_guard` 3, `propagate_analytic_section` 3, `post_pos_session_on_close` 2, `post_exchange_gain_loss_on_payment` 2, `generate_depreciation_entry` 2, `treasury_for_payment` 2, `backfill_third_party_accounts` 2, puis `letter_advance_invoice`, `ensure_pos_payment_methods`, `sync_customer/supplier_third_party_account`, `sync_commitments_on_purchase_order` |
+
+**Deux registres d'exceptions motivées** (le dépôt a le même usage avec
+`sql/ci/expected_failures.sql` : une exception se déclare, avec sa raison) :
+côté front un `placeholder="12345"` — exemple de code banque, pas un compte ;
+côté SQL `seed_standard_chart(_unchecked)` — le **gabarit du plan comptable**,
+dont les littéraux **sont** le plan semé (colonnes `code`/`name`). On ne
+« résout » pas le plan par lui-même : **son propriétaire est `LOC1-13`**.
+
+**Ce qui manque pour vider les compteurs** (mesuré, pas supposé) :
+
+1. **Le résolveur côté front n'existe pas.** `resolveAccount` / `usePack` sont
+   absents de `app/src` (vérifié) : aucune des 41 occurrences ne peut être
+   remplacée avant qu'il existe. C'est la **tranche suivante** de `LOC1-10`, et
+   elle vaut pour toutes les autres tâches qui produisent des comptes (LOC1-13,
+   LOC1-26, LOC1-38…).
+2. **Les 24 occurrences SQL** sont dans les fonctions d'écriture — le territoire
+   de C. Elles se traitent **fonction par fonction**, comme `LOC1-09` : mêmes
+   rôles déjà en place, écritures à vérifier identiques, compteur qui **baisse**
+   à chaque tranche (le garde-fou le prouve).
+3. **Six fichiers du front ne sont pas à C** (R3) : `queries/payroll.ts` (paie →
+   **D1**, partie B), `ProductsPage` (**D2**, partie E), `InvoicesPage` /
+   `CreditNotesPage` (ventes), `SuppliersPage` / `CustomersPage` (tiers). Les
+   demandes sont écrites ci-dessous, elles ne se traitent pas ici.
+
 ### Ce qui reste dans C.1
 
 Le reste de `LOC1-07` (paie) puis `LOC1-08` → `58` : clôture, monnaie/arrondis,
@@ -318,6 +373,7 @@ reprise.
 |---|---|---|---|
 | **D1** | **Partie B** (paie) | Réécrire sur les **rôles** les comptes d'écriture de la paie, dans **`payroll_post_run`** — `create_journal_on_payroll_validate` n'est qu'une **enveloppe** qui l'appelle. Rôles prêts : `SALAIRES_BRUTS`(641000), `CHARGES_SOCIALES_PATRONALES`(645000), `PERSONNEL_REMUNERATIONS_DUES`(421000), `ORGANISME_SOCIAL`(431000), `ETAT_IMPOT_SALAIRES`(442000), `JOURNAL_PAIE`. | Le module paie est le **territoire de la Partie B** (`lib/payroll*`, écrans de paie). C a livré le catalogue, `resolve_account`/`resolve_journal` et les rôles du pack : il ne reste qu'à les appeler. ⚠ `JOURNAL_PAIE` n'est **pas encore mappé** dans le pack PCG (le cahier le note « à créer ») — B doit trancher son code de journal. |
 | **D2** | **Partie E** (opérations) | Si la **taxonomie d'article** (marchandise/matière/produit fini) est voulue, elle touche `products` — table d'E. C la consommerait par le rôle. | `products` est le territoire de la Partie E (stock, production). Décision du 06/10 : **pas de compte de stock par type** tant que la taxonomie n'existe pas. |
+| **D3** | **Partie E** (ventes/articles) et **Partie B** (paie) | Les comptes en dur **côté front** des écrans qui sont les vôtres : `ProductsPage.tsx` (`707000`/`607000`/`310000`), `InvoicesPage.tsx` et `CreditNotesPage.tsx` (`706000`/`707000`), `SuppliersPage.tsx`/`CustomersPage.tsx` (`401000`/`411000`) — 23 occurrences, mesurées par le garde-fou (`node scripts/check-country-neutral.mjs --front-only --list`). Le remplacement suppose le résolveur **`resolveAccount` côté front**, que C livre (LOC1-10, tranche suivante) : E et B n'ont ensuite qu'à appeler. | Ces écrans sont leur territoire (R3). C fournit **l'outil de mesure** (plafond gelé, la dette ne peut plus grossir) et le résolveur ; la substitution, elle, se fait chez le propriétaire de l'écran. |
 
 ## Trouvé en chemin (11/10) — ce que la validation élargie a mis au jour
 
@@ -433,4 +489,5 @@ git grep -l "FUNCTION <nom>" $(git branch --list 'plan6/*' --format='%(refname:s
 | 06/10 | LOC1-08 (clôture d'exercice) | `close_fiscal_year` | journaux `CL`/`AN` et comptes de résultat `120000`/`129000` par les rôles ; écritures identiques ; la sélection par CLASSE reste (`LOC1-11`) | base : `390` 4/4 ; suites `179`/`175` OK ; **10 portes CI vertes** | 424eeca |
 | 11/10 | LOC1-09 (tranche 1) | `bank_account_post_opening_balance`, `stock_initial_post_opening_entry`, `post_exchange_gain_loss_on_payment` | journaux `AN`/`OD` par les rôles ; écritures identiques ; **le reste (6 fonctions) est FIGÉ et gardé** par la suite `391` (T03) | base : `391` 4/4 ; suites `173`/`211`/`102` OK ; **10 portes CI vertes** | eb47800 |
 | 11/10 | LOC1-09 (tranche 3, **la dernière**) | `credit_note_guard`, `purchase_credit_note_guard`, `generate_depreciation_entry`, `revaluate_currency_balances` | journaux `VT`/`AC`/`OD` par les rôles ; écritures identiques ; **LOC1-09 TERMINÉ** — garde de `391` (T03) resserré à **liste blanche vide**, `392` (T02) borné, `393` (T02) constate **zéro restant** ; gardes rendus **insensibles aux fixtures** (`_…`, suites `325`/`462`) ; suites datées `383`/`384`/`385` réalignées sur l'état réel ; `105` doté d'un **semis dédié** à `legislation_packs` (son isolation est de nouveau **prouvée**) | base neuve : **347 migrations / 0 erreur** ; `393` 4/4, `391` 4/4, `392` 4/4, `383` 6/6, `384` 7/7, `385` 6/6, `105` 356/356 0 fuite ; suites d'écritures (`102`/`180`/`192`/`197`/`211`/`213`/`226`/`255`/`260`/`309`/`317`/`353`) et chaînes (`400`/`403`/`412`) OK ; **10 portes CI vertes** ; G5 164/164. ⚠ `check_bt_grid` **ROUGE** : dette de la `383` (`tenant_account_roles`, `tenant_journal_roles` non forcées), **à trancher** — voir « Trouvé en chemin » | 48a6c86 |
+| 11/10 | LOC1-10 (tranche 1) | `check-country-neutral.mjs` — garde-fou **E01** | Le cahier donne pour recette « le garde-fou E01 passe sur `app/src` » : il est **livré**. Règle E01 de l'annexe E sur **deux gisements** — `app/src/**/*.{ts,tsx}` et les définitions **effectives** (`pg_proc.prosrc`) ; plafond **gelé** (`app/.country-neutral-ceiling.json` : une hausse casse, une baisse abaisse) ; **deux registres d'exceptions motivées** (un `placeholder="12345"` côté front, le **gabarit de plan comptable** côté SQL → propriétaire `LOC1-13`) ; câblé dans `lint-typecheck` (`--front-only`) et `db-integration` (complet, **avant** les suites) | Mesure : **41 occurrences front / 24 SQL** (gelées) ; le garde-fou passe dans les deux modes et au 2ᵉ passage (idempotent) ; **347 migrations / 0 erreur** | à venir |
 | 11/10 | LOC1-09 (tranche 2) | `integrate_expense_report_on_approval`, `post_deferred_charge` | journal `OD` par le rôle ; le garde `391` (T03) **verrouille l'ensemble** et empêche toute nouvelle occurrence ; **reste 4 fonctions** (tranche 3) | base : `392` 4/4, `391` 4/4 ; suites `211`/`102` OK ; **10 portes CI vertes** | (ce commit) |
