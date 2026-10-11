@@ -461,6 +461,60 @@ comme le reste.
   que le workflow **se déclenche**. Mesure rouge avant (ancienne liste blanche →
   `exit 1`), verte après (`exit 0`).
 
+## Ce que la R3 a déterré (11/10/2026)
+
+Trois défauts sont sortis des contrôles **dès** que la CI a cessé d'être muette. Aucun
+des trois n'était visible par une suite de scénarios : il faut soit un contrôle de
+schéma, soit un **vrai PostgREST** devant un **vrai** schéma. Ils sont donc corrigés
+ici, avec leur mesure.
+
+### `ISO-01` — `run_mrp()` et `work_center_capacity()` prenaient la société du client (migration `664`)
+
+Les deux fonctions recevaient `p_tenant_id` (paramètre **client**) et **ne
+vérifiaient pas l'appartenance** de l'appelant : une session pouvait calculer les
+besoins ou la charge d'une société étrangère. Le reste du schéma est protégé par
+`current_tenant_id()` et la RLS ; ces deux fonctions, en `SECURITY DEFINER`,
+passaient à côté.
+
+**Mesuré** : `T01`/`T03` de la suite `664` — avant, la fonction **rendait** la
+capacité et les besoins de la société étrangère ; après, `SQLSTATE P0001`
+(« Société … hors de votre périmètre »). `T02`/`T04`/`T05` prouvent la
+non-régression : la société du contexte est toujours servie, et `run_mrp()` **sans
+paramètre** prend celle du contexte.
+
+Trouvé par l'étape `check_tenant_guard.sql` (ISO-01) du job DB.
+
+### `ISO-02` / `ISO-04` / `BUD-04` — les deux tables neuves de la partie E (migration `665`)
+
+`landed_cost_receipts` (`658`) et `stock_location_assignments` (`659`) étaient
+sorties avec une clé étrangère **mono-colonne** (`landed_cost_id` sans la société),
+**sans `FORCE ROW LEVEL SECURITY`** et **sans index** dont la première colonne est
+`tenant_id`.
+
+**Mesuré** — `check_composite_fks.sql` **échouait** (le job s'arrêtait là, il n'a
+jamais vu les deux lignes suivantes) ; après `665` : les trois contrôles passent.
+La suite `665` verrouille les quatre points : clé composite (`T01`), refus de
+rattacher la dépense d'une autre société `23503` (`T02`), `FORCE RLS` 2/2 (`T03`),
+index société 2/2 (`T04`).
+
+### `LOT7-04` — `/stock/transfers` ne pouvait pas afficher ses articles (migration `666`)
+
+`getStockTransferLines` (`app/src/lib/queries/stock.ts:347`, écrit par la `652`)
+demandait `select: '*, products(name, sku)'` — et `stock_transfer_lines.product_id`
+**n'avait aucune clé étrangère**. PostgREST répondait donc `PGRST200`
+(« Could not find a relationship… ») et l'écran des transferts s'ouvrait **sans ses
+articles**. La 237 n'avait pas pu la créer : elle ne compose que les clés
+mono-colonnes **déjà présentes**, et celle-ci manquait entièrement depuis la 125.
+
+**Mesuré** : `check-embeds` contre un vrai PostgREST — `❌ 1 requête refusée
+(PGRST200)` **avant**, `✅ Les 1582 requêtes vérifiées sont acceptées` **après**.
+La suite `666` prouve le comportement (`T02` : un article d'une autre société est
+refusé en `23503`) et la non-régression du moteur de transfert (`652` rejouée 5/5).
+
+C'est l'illustration du principe : **ni `tsc`, ni `oxlint`, ni les tests unitaires
+ne pouvaient voir celui-là** (Supabase y est simulé). Seul un vrai PostgREST devant
+un vrai schéma le dit — et c'est précisément ce que cette étape installe.
+
 ## Journal
 
 | Date | Chantier | Verdict (faire / reporter / écarter) | Charge estimée | Commit |
@@ -484,4 +538,7 @@ comme le reste.
 | 11/10/2026 | **E.5 / PRD-06** — déclaration d'atelier | `661` `mo_operations` branchée (`record_mo_operation` + `mo_operations_summary`) + onglet « Atelier » | `661` 3/3 (rouge avant) · `302` 8/8 · tsc 0 · oxlint 0 · i18n OK · vitest 1662 ✓ | `5a9fd96` |
 | 11/10/2026 | **E.5 / STK-13** — plans de contrôle qualité | `662` `quality_control_plans` + `points` branchées (plan applicable, échantillonnage, verdict) + carte à l'écran | `662` 5/5 (rouge avant, **1 bug NULL corrigé**) · tsc 0 · oxlint 0 · i18n OK · vitest 1662 ✓ | `8eec80b` |
 | 11/10/2026 | **E.5 / PRD-06** — écart de matière | `663` `mo_consumptions` branchée (`refresh_mo_consumptions` + `mo_consumption_variance`) + carte « Écart de matière » | `663` 4/4 (rouge avant) · tsc 0 · oxlint 0 · i18n OK · vitest 1662 ✓ | `6a40a99` |
-| 11/10/2026 | **R3** — la CI ne jouait pas les branches `plan6/*` | `push` joue **toutes** les branches (`['**']`), `pull_request` sans filtre ; `check-test-suites.mjs` (G5) refuse le retour d'une liste blanche | `gh run list --branch plan6/e-operations` : liste vide **avant**, passage déclenché **après** · G5 rouge avant (exit 1) / vert après (exit 0) · YAML valide | à committer |
+| 11/10/2026 | **R3** — la CI ne jouait pas les branches `plan6/*` | `push` joue **toutes** les branches (`['**']`), `pull_request` sans filtre ; `check-test-suites.mjs` (G5) refuse le retour d'une liste blanche | `gh run list --branch plan6/e-operations` : liste vide **avant**, passage déclenché **après** · G5 rouge avant (exit 1) / vert après (exit 0) · YAML valide | `ea72bc6` |
+| 11/10/2026 | **CI enfin déclenchée** — `ISO-01` : `run_mrp()`/`work_center_capacity()` prenaient la société du **client** (migration `664`) | Un session pouvait calculer les besoins ou la charge d'une société étrangère ; trouvé par `check_tenant_guard` | `664` 5/5 (T01/T03 rouges avant) · `check_tenant_guard` vert | `189aaa2` |
+| 11/10/2026 | **CI** — `ISO-02`/`ISO-04`/`BUD-04` : les 2 tables neuves de E (migration `665`) | Clé étrangère mono-colonne, pas de `FORCE RLS`, pas d'index société ; `check_composite_fks` échouait (le job s'arrêtait là) | `665` 4/4 (T02 prouve le refus `23503`) · `check_composite_fks`/`check_bt_grid` verts | `189aaa2` |
+| 11/10/2026 | **CI** — `LOT7-04` : `/stock/transfers` s'ouvrait **sans ses articles** (migration `666`) | L'embed `products(name, sku)` était impossible : `stock_transfer_lines.product_id` n'avait aucune clé étrangère (depuis la 125) → `PGRST200` | `check-embeds` : 1 requête refusée **avant** / 1582 acceptées **après** · `666` 3/3 · `652` 5/5 · non-régression 664/665 | `189aaa2` |
