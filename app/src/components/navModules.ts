@@ -281,6 +281,7 @@ export const navModules: NavModule[] = [
       { labelKey: 'items.stockTransfers', path: '/stock/transfers' },
       { labelKey: 'items.uoms', path: '/stock/uoms' },
       { labelKey: 'items.stockCounts', path: '/stock/counts' },
+      { labelKey: 'items.landedCosts', path: '/stock/landed-costs' },
       { labelKey: 'items.manufacturingOrders', path: '/stock/manufacturing' },
       { labelKey: 'items.warehouseLocations', path: '/stock/warehouse-locations' },
       { labelKey: 'items.qualityChecks', path: '/stock/quality-checks' },

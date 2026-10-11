@@ -129,6 +129,7 @@
     "stockTransfers": "Stock transfers",
     "uoms": "Units of measure",
     "stockCounts": "Cycle counts",
+    "landedCosts": "Landed costs",
     "manufacturingOrders": "Manufacturing orders",
     "productionManagement": "Production management",
     "productionDashboard": "Dashboard",

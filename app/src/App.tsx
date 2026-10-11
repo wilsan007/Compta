@@ -125,6 +125,7 @@ const BOMPage = lazy(() => import('@/pages/BOMPage').then(m => ({ default: m.BOM
 const StockTransfersPage = lazy(() => import('@/pages/StockTransfersPage').then(m => ({ default: m.StockTransfersPage })))
 const StockUomsPage = lazy(() => import('@/pages/StockUomsPage').then(m => ({ default: m.StockUomsPage })))
 const StockCountsPage = lazy(() => import('@/pages/StockCountsPage').then(m => ({ default: m.StockCountsPage })))
+const LandedCostsPage = lazy(() => import('@/pages/LandedCostsPage').then(m => ({ default: m.LandedCostsPage })))
 const ManufacturingOrdersPage = lazy(() => import('@/pages/ManufacturingOrdersPage').then(m => ({ default: m.ManufacturingOrdersPage })))
 const RoutingsPage = lazy(() => import('@/pages/RoutingsPage').then(m => ({ default: m.RoutingsPage })))
 const MachinesPage = lazy(() => import('@/pages/MachinesPage').then(m => ({ default: m.MachinesPage })))
@@ -456,6 +457,7 @@ function App() {
           <Route path="/stock/transfers" element={<StockTransfersPage />} />
           <Route path="/stock/uoms" element={<StockUomsPage />} />
           <Route path="/stock/counts" element={<StockCountsPage />} />
+          <Route path="/stock/landed-costs" element={<LandedCostsPage />} />
           <Route path="/stock/manufacturing" element={<ManufacturingOrdersPage />} />
 
           {/* Production */}

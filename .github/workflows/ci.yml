@@ -2384,6 +2384,13 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # STK-08 (658) — les frais accessoires ne se répartissent que sur leurs
+      # réceptions ciblées, avec idempotence.
+      - name: 'E : STK-08 — frais accessoires (658)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/658_landed_cost_receipts_and_fix_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:f --- plateforme : sécurité, groupe, CRM, projets, documents ---
       # Territoire : supabase/functions/, écrans CRM, projets, paramètres,
       #              notifications ; leurs tables coquilles

@@ -180,6 +180,38 @@
     "unitPrice": "Unit price",
     "validity": "Validity"
   },
+  "landed": {
+    "title": "Landed costs",
+    "subtitle": "Allocate purchase costs over receipts",
+    "new": "New cost",
+    "noCosts": "No landed cost",
+    "noCostsDescription": "Record a freight or customs invoice, target its receipts, then allocate.",
+    "invoice": "Invoice",
+    "amount": "Amount",
+    "method": "Allocation method",
+    "status": "Status",
+    "distribute": "Allocate",
+    "targetReceipt": "Target receipt",
+    "selectReceipt": "— Select a receipt —",
+    "targets": "Target receipts",
+    "noTargets": "No target receipt.",
+    "originalCost": "Original cost",
+    "distributedAmount": "Allocated amount",
+    "newCost": "New cost",
+    "confirmDistribute": "Allocate this cost over its target receipts?",
+    "confirmDelete": "Delete this cost?",
+    "methods": {
+      "value": "Value",
+      "quantity": "Quantity",
+      "weight": "Weight",
+      "volume": "Volume (value)"
+    },
+    "statuses": {
+      "pending": "Pending",
+      "distributed": "Allocated",
+      "cancelled": "Cancelled"
+    }
+  },
   "counts": {
     "title": "Cycle counts",
     "subtitle": "Perpetual inventory — A/B/C classes and variances",

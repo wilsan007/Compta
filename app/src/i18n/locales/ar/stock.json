@@ -180,6 +180,38 @@
     "unitPrice": "سعر الوحدة",
     "validity": "الصلاحية"
   },
+  "landed": {
+    "title": "التكاليف الإضافية",
+    "subtitle": "توزيع تكاليف الشراء على الاستلامات",
+    "new": "تكلفة جديدة",
+    "noCosts": "لا توجد تكاليف إضافية",
+    "noCostsDescription": "سجّل فاتورة نقل أو جمارك، حدّد استلاماتها، ثم وزّع.",
+    "invoice": "الفاتورة",
+    "amount": "المبلغ",
+    "method": "طريقة التوزيع",
+    "status": "الحالة",
+    "distribute": "توزيع",
+    "targetReceipt": "الاستلام المستهدف",
+    "selectReceipt": "— اختر استلامًا —",
+    "targets": "الاستلامات المستهدفة",
+    "noTargets": "لا يوجد استلام مستهدف.",
+    "originalCost": "التكلفة الأصلية",
+    "distributedAmount": "المبلغ الموزع",
+    "newCost": "التكلفة الجديدة",
+    "confirmDistribute": "توزيع هذه التكلفة على استلاماتها المستهدفة؟",
+    "confirmDelete": "حذف هذه التكلفة؟",
+    "methods": {
+      "value": "القيمة",
+      "quantity": "الكمية",
+      "weight": "الوزن",
+      "volume": "الحجم (القيمة)"
+    },
+    "statuses": {
+      "pending": "قيد الانتظار",
+      "distributed": "موزّع",
+      "cancelled": "ملغى"
+    }
+  },
   "counts": {
     "title": "الجرد الدوري",
     "subtitle": "الجرد المستمر — الفئات A/B/C والفروقات",

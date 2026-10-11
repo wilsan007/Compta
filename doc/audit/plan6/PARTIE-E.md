@@ -20,7 +20,7 @@
 |---|---|---|---|---|
 | E.1 | **Recompter** les chantiers ❓ de son périmètre et **estimer** les ⬜ ; décider pour chacun : faire, reporter, écarter | ACC-01, ACC-03, PRD-03/04/05/08/10, ACH-01/02, VTE-01/03 | à chiffrer | 🟡 **compté le 05/10** — voir « E.1 — le recomptage » |
 | E.2 | Restes à l'écran : transfert entre dépôts, étiquettes, MRP jamais testés ; action « Modifier » d'une nomenclature | D13, reste de 2.5 | ≈ 3 j | ✅ **livré le 05/10** — « Modifier » une nomenclature ; **transferts inter-dépôts** (`652` + requêtes + écran `/stock/transfers`, suite 5/5) ; MRP testé (`651`) ; étiquettes OF déjà câblées (`of_labels`) |
-| E.3 | Stock avancé : FIFO/LIFO, unités de mesure, frais accessoires, réapprovisionnement et inventaire tournant, emplacements, transferts et variantes | STK-03/07/08/09/11/14 | ≈ 5 sem. | 🔶 **`STK-07`** (unités), **`STK-09`** (réappro `653` + inventaire `654`), **`STK-14`** (transferts, E.2) et **`STK-11`** (stock par emplacement `655`, socle) livrés le 05/10 · restent `STK-08` (moteur à corriger) et le reste de `STK-11` (arbre/capacité à l'écran, rangement) |
+| E.3 | Stock avancé : FIFO/LIFO, unités de mesure, frais accessoires, réapprovisionnement et inventaire tournant, emplacements, transferts et variantes | STK-03/07/08/09/11/14 | ≈ 5 sem. | 🔶 **`STK-07`**, **`STK-08`** (`658`), **`STK-09`** (`653`/`654`), **`STK-11`** (socle `655`), **`STK-14`** livrés · reste le **stock par casier** de `STK-11` (changement de moteur) et rangement/prélèvement |
 | E.4 | Production : capacité finie, maintenance, sous-OF (`parent_mo_id` inutilisé) | PRD-07, PRD-11 | ≈ 1,5 sem. | 🔶 `PRD-07` (capacité `657`) et `PRD-11` (usure `656` + interventions, `maintenance_records` branchée) livrés le 06/10 · reste le sous-OF (`parent_mo_id`) |
 | E.5 | Tables coquilles de son périmètre — **brancher ou supprimer** : `uom_categories`, `landed_cost_lines`, `reorder_rules`, `stock_count_cycles`, `stock_transfer_lines`, `mo_consumptions`, `mo_operations`, `maintenance_records`, `work_center_calendars`, `quality_control_*`, `fixed_asset_components`, `resource_capacities` | ORPH-02 | ≈ 0,5 j | 🔶 **6 branchées** (`uom_categories`, `reorder_rules`, `stock_count_cycles`, `stock_transfer_lines`, `maintenance_records`, `work_center_calendars`) · les autres **décidées** (voir §E.5) |
 
@@ -165,9 +165,22 @@ porte `location_id` (la clé d'unicité de `stock_quantities` est encore
 `(produit, dépôt)`) — c'est un changement de moteur, **dit et non fait**. Restent
 aussi les règles de **rangement/prélèvement** et l'**alerte de capacité**.
 
-**Reste de `E.3`.** `STK-08` frais accessoires (moteur `distribute_landed_cost` à
-corriger + lien aux réceptions). `STK-07`, `STK-09` (réappro et inventaire),
-`STK-11` (socle) et `STK-14` sont traités ; `STK-03` (FIFO/LIFO) est écarté.
+### `STK-08` — frais accessoires : moteur corrigé, `landed_cost_lines` branchée (migration `658`)
+
+**Mesuré.** `distribute_landed_cost` (`125`) répartissait sur **toutes** les
+réceptions de la société, sans lien avec les réceptions concernées ; elle divisait
+par la quantité **sans garde**, mettait à jour **tous** les dépôts du produit, sans
+écriture ni idempotence ; et `landed_costs` n'avait **aucune** cible.
+
+**Livré.** `landed_cost_receipts` (les réceptions ciblées) et un moteur réécrit :
+il ne répartit que sur **ses** réceptions, ajuste le CUMP du couple (article,
+dépôt) de chaque réception, efface une répartition antérieure et **refuse un
+second appel**. Écran **`/stock/landed-costs`** (créer, cibler une réception,
+répartir, lire les lignes). Suite `658` : **4/4**, rouge avant.
+
+**Reste de `E.3`.** Le **stock par casier** de `STK-11` (le moteur de mouvement
+doit porter `location_id` : la clé d'unicité de `stock_quantities` est encore
+`(produit, dépôt)`) et les règles de **rangement/prélèvement**.
 
 ## E.4 — production : alerte d'usure d'outillage (`PRD-11`, migration `656`)
 
@@ -216,7 +229,7 @@ une fonction) :
 
 | Table | Décision | Motif |
 |---|---|---|
-| `landed_cost_lines` | **brancher** (STK-08) | le moteur `distribute_landed_cost` est à corriger d'abord (il répartit sur **toutes** les réceptions de la société) |
+| `landed_cost_lines` (+ `landed_cost_receipts`) | **branchée** (STK-08, `658`) | le moteur corrigé et l'écran `/stock/landed-costs` |
 | `mo_consumptions`, `mo_operations` | **brancher** (PRD-06) | déclaration de production par opération (quantités réelles, rebuts, temps) |
 | `quality_control_plans`, `quality_control_points` | **brancher** (STK-13) | plans de contrôle et échantillonnage |
 | `fixed_asset_components` | **hors périmètre E** | immobilisations (`ACC-07`) — à l'intégration |
@@ -319,4 +332,5 @@ comme le reste.
 | 06/10/2026 | **E.4** — `PRD-11` usure outillage | `656` `tooling_wear_alert` + carte « Usure des outillages » sur `/production/machines` | `656` 3/3 · tsc 0 · oxlint 0 · i18n OK | `0cf025c` |
 | 06/10/2026 | **E.4** — `PRD-07` capacité finie | `657` `work_center_capacity`/`work_center_capacity_load` + carte « Charge / capacité » | `657` 4/4 · tsc 0 · oxlint 0 · i18n OK | `9b5f493` |
 | 06/10/2026 | **E.4** — `PRD-11` interventions de maintenance | requêtes + carte « Interventions » sur `/production/machines` ; branche `maintenance_records` | tsc 0 · oxlint 0 · i18n OK · vitest 86/86 | `b80d729` |
-| 06/10/2026 | **E.5** — décision par coquille | 6 branchées, 5 décidées (brancher via leur chantier / hors périmètre E) | doc seule | à committer |
+| 06/10/2026 | **E.5** — décision par coquille | 6 branchées, 5 décidées (brancher via leur chantier / hors périmètre E) | doc seule | `2d09df5` |
+| 11/10/2026 | **E.3** — `STK-08` frais accessoires | `658` `landed_cost_receipts` + moteur corrigé + écran `/stock/landed-costs` | `658` 4/4 · tsc 0 · oxlint 0 · i18n OK | à committer |

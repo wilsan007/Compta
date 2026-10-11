@@ -814,6 +814,103 @@ export async function deleteMaintenanceRecord(id: string) {
   if (error) throw error
 }
 
+// STK-08 / E.3 : les frais accessoires d'achat (landed costs) — branche
+// `landed_cost_lines` via le moteur corrigé de la 658.
+export interface LandedCost {
+  id: string
+  tenant_id: string
+  invoice_number: string | null
+  supplier_id: string | null
+  total_amount: number
+  distribution_method: string
+  status: string | null
+  created_at: string | null
+}
+
+export interface LandedCostReceipt {
+  id: string
+  tenant_id: string
+  landed_cost_id: string
+  receipt_id: string
+  created_at: string | null
+}
+
+export interface LandedCostLine {
+  id: string
+  tenant_id: string
+  landed_cost_id: string
+  product_id: string | null
+  distributed_amount: number
+  original_unit_cost: number | null
+  new_unit_cost: number | null
+  created_at: string | null
+}
+
+export async function getLandedCosts() {
+  const tid = await getTenantId()
+  let q = supabase.from('landed_costs').select('*').order('created_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as LandedCost[]
+}
+
+export async function createLandedCost(c: Omit<LandedCost, 'id' | 'created_at' | 'tenant_id'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('landed_costs').insert(ti(c, 'landed_costs', tid)).select().single()
+  if (error) throw error
+  return data as LandedCost
+}
+
+export async function deleteLandedCost(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('landed_costs').delete(), 'landed_costs', tid).eq('id', id)
+  if (error) throw error
+}
+
+export async function getLandedCostReceipts(landedCostId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('landed_cost_receipts').select('*').eq('landed_cost_id', landedCostId)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as LandedCostReceipt[]
+}
+
+export async function addLandedCostReceipt(landedCostId: string, receiptId: string) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('landed_cost_receipts')
+    .insert(ti({ landed_cost_id: landedCostId, receipt_id: receiptId }, 'landed_cost_receipts', tid)).select().single()
+  if (error) throw error
+  return data as LandedCostReceipt
+}
+
+export async function getLandedCostLines(landedCostId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('landed_cost_lines').select('*').eq('landed_cost_id', landedCostId)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as LandedCostLine[]
+}
+
+/** STK-08 (658) : répartit la dépense sur ses réceptions ciblées. */
+export async function distributeLandedCost(id: string) {
+  const { data, error } = await supabase.rpc('distribute_landed_cost', { p_landed_cost_id: id })
+  if (error) throw error
+  return data
+}
+
+/** Les réceptions, pour cibler une dépense de frais. */
+export async function listGoodsReceipts() {
+  const tid = await getTenantId()
+  let q = supabase.from('goods_receipts').select('id, number, receipt_date').order('receipt_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as { id: string; number: string; receipt_date: string | null }[]
+}
+
 
 // ============ Production Module: OF Labels ============
 export async function getOFLabels(moId: string) {

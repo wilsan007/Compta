@@ -180,6 +180,38 @@
     "unitPrice": "Prix unitaire",
     "validity": "Validité"
   },
+  "landed": {
+    "title": "Frais accessoires",
+    "subtitle": "Répartition des frais d'achat sur les réceptions",
+    "new": "Nouveau frais",
+    "noCosts": "Aucun frais accessoire",
+    "noCostsDescription": "Enregistrez une facture de transport ou de douane, ciblez ses réceptions, puis répartissez.",
+    "invoice": "Facture",
+    "amount": "Montant",
+    "method": "Méthode de répartition",
+    "status": "Statut",
+    "distribute": "Répartir",
+    "targetReceipt": "Réception cible",
+    "selectReceipt": "— Sélectionner une réception —",
+    "targets": "Réceptions ciblées",
+    "noTargets": "Aucune réception ciblée.",
+    "originalCost": "Coût d'origine",
+    "distributedAmount": "Montant réparti",
+    "newCost": "Nouveau coût",
+    "confirmDistribute": "Répartir ce frais sur ses réceptions ciblées ?",
+    "confirmDelete": "Supprimer ce frais ?",
+    "methods": {
+      "value": "Valeur",
+      "quantity": "Quantité",
+      "weight": "Poids",
+      "volume": "Volume (valeur)"
+    },
+    "statuses": {
+      "pending": "En attente",
+      "distributed": "Réparti",
+      "cancelled": "Annulé"
+    }
+  },
   "counts": {
     "title": "Comptages cycliques",
     "subtitle": "Inventaire tournant — classes A/B/C et écarts",
