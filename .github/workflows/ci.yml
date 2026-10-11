@@ -2482,6 +2482,12 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # R-016 (partie B, lot Achats) — facture fournisseur annulée : avoir fournisseur.
+      - name: 'plan6 B — R-016 : facture fournisseur annulée → avoir (526)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/526_regle_r016_avoir_fournisseur_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:c --- lot K, localisation Djibouti ---
       # Territoire : legislation_packs, chart_*, resolve_account, grilles fiscales ;
       #              app/src/lib/countries.ts ; écrans Paramètres ; doc/localisation/
