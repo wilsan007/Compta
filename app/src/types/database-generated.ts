@@ -19544,6 +19544,13 @@ export interface Database {
       }
       Relationships: [
         {
+          foreignKeyName: "stock_transfer_lines_product_fk",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
           foreignKeyName: "stock_transfer_lines_transfer_id_fkey",
           columns: ["tenant_id", "transfer_id"],
           isOneToOne: false,
