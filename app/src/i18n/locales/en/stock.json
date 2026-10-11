@@ -384,7 +384,17 @@
     "unassigned": "Unassigned",
     "assign": "Assign",
     "ventilation": "Stock by bin",
-    "noVentilation": "No assignment."
+    "noVentilation": "No assignment.",
+    "suggest": "Where to put away / pick?",
+    "suggestBtn": "Suggest",
+    "warehouse": "Warehouse",
+    "putaway": "Put away",
+    "pick": "Pick",
+    "reasons": {
+      "consolidate": "consolidate with existing",
+      "empty": "empty bin",
+      "least_loaded": "least loaded bin"
+    }
   },
   "quality": {
     "title": "Quality checks",

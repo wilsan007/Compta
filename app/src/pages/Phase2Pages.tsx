@@ -5,7 +5,7 @@ import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState
 import { useToast } from '@/lib/toast'
 import { Plus, Trash2 } from 'lucide-react'
 import { getProspects, createProspect, deleteProspect, convertProspectToCustomer, getSalesRepresentatives, createSalesRepresentative, deleteSalesRepresentative, getDeliverySchedules, createDeliverySchedule, deleteDeliverySchedule, getDocumentTemplates, createDocumentTemplate, deleteDocumentTemplate } from '@/lib/queries/misc'
-import { getStockQuantities, getWarehouseLocations, createWarehouseLocation, deleteWarehouseLocation, getStockByLocation, getLocationStock, assignStockToLocation, getProducts, getProductSerialNumbers, createProductSerialNumber, deleteProductSerialNumber, getProductBatches, createProductBatch, deleteProductBatch, getProductSubstitutes, createProductSubstitute, deleteProductSubstitute } from '@/lib/queries/stock'
+import { getStockQuantities, getWarehouseLocations, createWarehouseLocation, deleteWarehouseLocation, getStockByLocation, getLocationStock, assignStockToLocation, suggestPutawayLocation, suggestPickLocation, getProducts, getWarehouses, getProductSerialNumbers, createProductSerialNumber, deleteProductSerialNumber, getProductBatches, createProductBatch, deleteProductBatch, getProductSubstitutes, createProductSubstitute, deleteProductSubstitute } from '@/lib/queries/stock'
 import { getQualityChecks, createQualityCheck, updateQualityCheck, getPickLists, createPickList, updatePickList } from '@/lib/queries/production'
 import type { QualityCheck, PickList } from '@/types'
 import { errorMessage } from '@/lib/utils'
@@ -124,6 +124,10 @@ export function WarehouseLocationsPage() {
   const [stock, setStock] = useState<Awaited<ReturnType<typeof getStockByLocation>>>([])
   const [locStock, setLocStock] = useState<Awaited<ReturnType<typeof getLocationStock>>>([])
   const [products, setProducts] = useState<Awaited<ReturnType<typeof getProducts>>>([])
+  const [warehouses, setWarehouses] = useState<Awaited<ReturnType<typeof getWarehouses>>>([])
+  const [suggProduct, setSuggProduct] = useState('')
+  const [suggWarehouse, setSuggWarehouse] = useState('')
+  const [suggText, setSuggText] = useState('')
   const [assignLoc, setAssignLoc] = useState<string | null>(null)
   const [assignProduct, setAssignProduct] = useState('')
   const [assignQty, setAssignQty] = useState(0)
@@ -131,7 +135,17 @@ export function WarehouseLocationsPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ warehouse_id: '', zone: '', aisle: '', shelf: '', code: '', description: '', location_type: '' })
 
-  const loadData = useCallback(async () => { setLoading(true); try { const [locs, st, ls, prods] = await Promise.all([getWarehouseLocations(), getStockByLocation(), getLocationStock(), getProducts()]); setItems(locs || []); setStock(st || []); setLocStock(ls || []); setProducts(prods || []) } catch (e) { console.error('catch:', e); toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [toast, tCommon])
+  const loadData = useCallback(async () => { setLoading(true); try { const [locs, st, ls, prods, whs] = await Promise.all([getWarehouseLocations(), getStockByLocation(), getLocationStock(), getProducts(), getWarehouses()]); setItems(locs || []); setStock(st || []); setLocStock(ls || []); setProducts(prods || []); setWarehouses(whs || []) } catch (e) { console.error('catch:', e); toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [toast, tCommon])
+
+  async function handleSuggest() {
+    if (!suggProduct || !suggWarehouse) return
+    try {
+      const [put, pick] = await Promise.all([suggestPutawayLocation(suggProduct, suggWarehouse), suggestPickLocation(suggProduct, suggWarehouse)])
+      const putTxt = put ? `${t('locations.putaway')} : ${put.location_code} (${t('locations.reasons.' + put.reason)})` : `${t('locations.putaway')} : —`
+      const pickTxt = pick ? `${t('locations.pick')} : ${pick.location_code} (${Number(pick.quantity)})` : `${t('locations.pick')} : —`
+      setSuggText(`${putTxt} · ${pickTxt}`)
+    } catch (e) { toast('error', tCommon('toast.error'), errorMessage(e)) }
+  }
 
   async function handleAssign() {
     const loc = items.find((l) => l.id === assignLoc)
@@ -185,6 +199,32 @@ export function WarehouseLocationsPage() {
           </Table>
         )}
       </Card>
+      <Card className="mt-6">
+        <div className="p-4 border-b border-[var(--color-border)]"><h3 className="font-semibold">{t('locations.suggest')}</h3></div>
+        <div className="p-4 space-y-3">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('reorder.product')}</label>
+              <select className="input" value={suggProduct} onChange={(e) => setSuggProduct(e.target.value)}>
+                <option value="">—</option>
+                {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('locations.warehouse')}</label>
+              <select className="input" value={suggWarehouse} onChange={(e) => setSuggWarehouse(e.target.value)}>
+                <option value="">—</option>
+                {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+              </select>
+            </div>
+            <div className="flex items-end">
+              <Button variant="secondary" onClick={handleSuggest} disabled={!suggProduct || !suggWarehouse}>{t('locations.suggestBtn')}</Button>
+            </div>
+          </div>
+          {suggText && <p className="text-sm text-[var(--color-text-secondary)]">{suggText}</p>}
+        </div>
+      </Card>
+
 
       {assignLoc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setAssignLoc(null)}>

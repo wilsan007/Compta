@@ -936,6 +936,22 @@ export async function assignStockToLocation(productId: string, warehouseId: stri
   if (error) throw error
 }
 
+// STK-11 (660) : où ranger (put-away) et où prélever (removal).
+export interface PutawaySuggestion { location_id: string; location_code: string; reason: string }
+export interface PickSuggestion { location_id: string; location_code: string; quantity: number }
+
+export async function suggestPutawayLocation(productId: string, warehouseId: string) {
+  const { data, error } = await supabase.rpc('suggest_putaway_location', { p_product_id: productId, p_warehouse_id: warehouseId })
+  if (error) throw error
+  return ((data || []) as PutawaySuggestion[])[0] ?? null
+}
+
+export async function suggestPickLocation(productId: string, warehouseId: string) {
+  const { data, error } = await supabase.rpc('suggest_pick_location', { p_product_id: productId, p_warehouse_id: warehouseId })
+  if (error) throw error
+  return ((data || []) as PickSuggestion[])[0] ?? null
+}
+
 
 // ============ Production Module: OF Labels ============
 export async function getOFLabels(moId: string) {

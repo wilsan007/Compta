@@ -384,7 +384,17 @@
     "unassigned": "غير مُخصص",
     "assign": "تخصيص",
     "ventilation": "المخزون حسب الخانة",
-    "noVentilation": "لا يوجد تخصيص."
+    "noVentilation": "لا يوجد تخصيص.",
+    "suggest": "أين يُرتَّب / من أين يُسحَب؟",
+    "suggestBtn": "اقتراح",
+    "warehouse": "المستودع",
+    "putaway": "الترتيب",
+    "pick": "السحب",
+    "reasons": {
+      "consolidate": "الدمج مع الموجود",
+      "empty": "خانة فارغة",
+      "least_loaded": "الخانة الأقل امتلاءً"
+    }
   },
   "quality": {
     "title": "فحوصات الجودة",

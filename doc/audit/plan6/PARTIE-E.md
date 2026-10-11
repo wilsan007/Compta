@@ -20,7 +20,7 @@
 |---|---|---|---|---|
 | E.1 | **Recompter** les chantiers ❓ de son périmètre et **estimer** les ⬜ ; décider pour chacun : faire, reporter, écarter | ACC-01, ACC-03, PRD-03/04/05/08/10, ACH-01/02, VTE-01/03 | à chiffrer | 🟡 **compté le 05/10** — voir « E.1 — le recomptage » |
 | E.2 | Restes à l'écran : transfert entre dépôts, étiquettes, MRP jamais testés ; action « Modifier » d'une nomenclature | D13, reste de 2.5 | ≈ 3 j | ✅ **livré le 05/10** — « Modifier » une nomenclature ; **transferts inter-dépôts** (`652` + requêtes + écran `/stock/transfers`, suite 5/5) ; MRP testé (`651`) ; étiquettes OF déjà câblées (`of_labels`) |
-| E.3 | Stock avancé : FIFO/LIFO, unités de mesure, frais accessoires, réapprovisionnement et inventaire tournant, emplacements, transferts et variantes | STK-03/07/08/09/11/14 | ≈ 5 sem. | ✅ **`STK-07`**, **`STK-08`** (`658`), **`STK-09`** (`653`/`654`), **`STK-11`** (`655` socle + `659` ventilation par casier), **`STK-14`** livrés · `STK-03` écarté ; restent rangement/prélèvement (non bloquants) |
+| E.3 | Stock avancé : FIFO/LIFO, unités de mesure, frais accessoires, réapprovisionnement et inventaire tournant, emplacements, transferts et variantes | STK-03/07/08/09/11/14 | ≈ 5 sem. | ✅ **`STK-07`**, **`STK-08`** (`658`), **`STK-09`** (`653`/`654`), **`STK-11`** (`655` socle + `659` casiers + `660` rangement/prélèvement), **`STK-14`** livrés · `STK-03` écarté |
 | E.4 | Production : capacité finie, maintenance, sous-OF (`parent_mo_id` inutilisé) | PRD-07, PRD-11 | ≈ 1,5 sem. | ✅ `PRD-07` (`657`), `PRD-11` (`656` + interventions) et le **sous-OF** (déjà câblé — onglet « sous-niveaux » ; colonne produit corrigée) |
 | E.5 | Tables coquilles de son périmètre — **brancher ou supprimer** : `uom_categories`, `landed_cost_lines`, `reorder_rules`, `stock_count_cycles`, `stock_transfer_lines`, `mo_consumptions`, `mo_operations`, `maintenance_records`, `work_center_calendars`, `quality_control_*`, `fixed_asset_components`, `resource_capacities` | ORPH-02 | ≈ 0,5 j | 🔶 **6 branchées** (`uom_categories`, `reorder_rules`, `stock_count_cycles`, `stock_transfer_lines`, `maintenance_records`, `work_center_calendars`) · les autres **décidées** (voir §E.5) |
 
@@ -178,9 +178,19 @@ dépôt) de chaque réception, efface une répartition antérieure et **refuse u
 second appel**. Écran **`/stock/landed-costs`** (créer, cibler une réception,
 répartir, lire les lignes). Suite `658` : **4/4**, rouge avant.
 
-**Reste de `E.3`.** Les règles de **rangement/prélèvement** (proposer un casier à
-la réception, FIFO/FEFO au prélèvement) — **non bloquantes** : le stock par casier
-est livré (`659`, ci-dessous).
+**Rangement et prélèvement (migration `660`).** Deux règles, sur les affectations
+de la `659` :
+
+- `suggest_putaway_location(article, dépôt)` — où **ranger** un article reçu :
+  d'abord un casier qui le contient **déjà** (on regroupe : `consolidate`), sinon
+  un casier de stockage **vide** (`empty`), sinon le **moins occupé**
+  (`least_loaded`) ;
+- `suggest_pick_location(article, dépôt)` — où **prélèver** : le casier qui en
+  détient **le plus** (on ne disperse pas les prélèvements).
+
+Écran `/stock/warehouse-locations` : carte **« Où ranger / où prélever ? »**
+(article + dépôt → « Suggérer »). Suite `660` : **3/3**, rouge avant ; et
+**non-régression** : `659` 3/3.
 
 ### `STK-11` — stock par casier : ventilation par affectations (migration `659`)
 
@@ -355,4 +365,5 @@ comme le reste.
 | 06/10/2026 | **E.5** — décision par coquille | 6 branchées, 5 décidées (brancher via leur chantier / hors périmètre E) | doc seule | `2d09df5` |
 | 11/10/2026 | **E.3** — `STK-08` frais accessoires | `658` `landed_cost_receipts` + moteur corrigé + écran `/stock/landed-costs` | `658` 4/4 · tsc 0 · oxlint 0 · i18n OK | `e238842` |
 | 11/10/2026 | **E.4** — sous-OF (recomptage) | déjà câblé (onglet « sous-niveaux ») ; colonne produit corrigée | tsc 0 · oxlint 0 · i18n OK · vitest 86/86 | `444d70d` |
-| 11/10/2026 | **E.3** — `STK-11` stock par casier | `659` affectations + `location_stock` + « Affecter » à l'écran | `659` 3/3 · non-régression 254/652/653/654/655 · tsc 0 · oxlint 0 · i18n OK | à committer |
+| 11/10/2026 | **E.3** — `STK-11` stock par casier | `659` affectations + `location_stock` + « Affecter » à l'écran | `659` 3/3 · non-régression 254/652/653/654/655 · tsc 0 · oxlint 0 · i18n OK | `3b17bf9` |
+| 11/10/2026 | **E.3** — `STK-11` rangement/prélèvement | `660` `suggest_putaway_location` + `suggest_pick_location` + carte à l'écran | `660` 3/3 (rouge avant) · `659` 3/3 · tsc 0 · oxlint 0 · i18n OK · vitest 1662 ✓ | à committer |

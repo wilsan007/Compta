@@ -2397,6 +2397,12 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # STK-11 (660) — rangement (put-away) et prélèvement (removal).
+      - name: 'E : STK-11 — rangement et prélèvement (660)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/660_location_putaway_pick_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:f --- plateforme : sécurité, groupe, CRM, projets, documents ---
       # Territoire : supabase/functions/, écrans CRM, projets, paramètres,
       #              notifications ; leurs tables coquilles

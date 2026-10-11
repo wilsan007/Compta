@@ -384,7 +384,17 @@
     "unassigned": "Non affecté",
     "assign": "Affecter",
     "ventilation": "Ventilation par casier",
-    "noVentilation": "Aucune affectation."
+    "noVentilation": "Aucune affectation.",
+    "suggest": "Où ranger / où prélever ?",
+    "suggestBtn": "Suggérer",
+    "warehouse": "Dépôt",
+    "putaway": "Ranger",
+    "pick": "Prélever",
+    "reasons": {
+      "consolidate": "regrouper avec l'existant",
+      "empty": "casier vide",
+      "least_loaded": "casier le moins chargé"
+    }
   },
   "quality": {
     "title": "Contrôles qualité",
