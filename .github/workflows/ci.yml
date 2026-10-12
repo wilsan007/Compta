@@ -2339,6 +2339,8 @@ jobs:
       # Branche : plan6/a3-l16-projets.
       - name: 'L16 : la clôture de projet est tracée et annoncée (496)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/496_chain_l16_cloture_projet_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # L16 — chaînage interne de la PRODUCTION : le DÉMARRAGE de l'OF cesse
       # d'être muet (R-044). 12 verdicts : trace « applique » + contrat déclaré,
@@ -2347,6 +2349,8 @@ jobs:
       # Branche : plan6/a3-l16-production (plage 750→759).
       - name: 'L16 : le démarrage d''un OF est tracé et annoncé (750)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/750_chain_l16_demarrage_of_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # L16 — chaînage interne COMMERCIAL : le devis accepté devient une COMMANDE,
       # tracé (effet `sale.quote.to_order`). 19 verdicts : nominal, prix gelé,
@@ -2354,6 +2358,8 @@ jobs:
       # isolation (D8).
       - name: 'L16 : devis accepté → commande, tracé (493)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/493_chain_l16_devis_commande_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # L16 — chaînage interne COMMERCIAL (tronçon 2) : la LIVRAISON issue d'une
       # COMMANDE est rattachée et tracée (effet `sale.order.to_delivery`).
@@ -2361,6 +2367,8 @@ jobs:
       # client, annulé, inexistant), la frise des deux côtés (I-01), isolation (D8).
       - name: 'L16 : commande → livraison, rattachée et tracée (494)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/494_chain_l16_commande_livraison_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # L16 — chaînage interne COMMERCIAL (tronçon 3) : la FACTURE d'un bon de
       # livraison lui est rattachée et tracée (effet `sale.delivery.to_invoice`).
@@ -2368,6 +2376,8 @@ jobs:
       # facture annulée, autre client), la frise des deux côtés (I-01), isolation (D8).
       - name: 'L16 : livraison → facture, rattachée et tracée (495)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/495_chain_l16_livraison_facture_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # L16 — chaînage interne COMMERCIAL (tronçon 4) : le RÈGLEMENT d'une FACTURE
       # lui est rattaché et tracé (effet `sale.invoice.to_payment`).
@@ -2375,6 +2385,8 @@ jobs:
       # annulés, autre client, règlement déjà affecté), frise (I-01), isolation (D8).
       - name: 'L16 : facture → règlement, rattachée et tracée (497)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/497_chain_l16_facture_reglement_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # L16 — chaînage interne ACHATS : la RÉCEPTION issue d'une COMMANDE D'ACHAT
       # lui est rattachée et tracée (effet `purchase.order.to_receipt`) ; `purchase_orders`
@@ -2383,6 +2395,8 @@ jobs:
       # fournisseur), frise (I-01), isolation (D8).
       - name: 'L16 : commande d''achat → réception, rattachée et tracée (498)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/498_chain_l16_reception_commande_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # L16 — chaînage interne TRÉSORERIE : le VIREMENT (règlement fournisseur ou
       # client) exécuté par un ORDRE DE PAIEMENT lui est rattaché et tracé
@@ -2391,6 +2405,8 @@ jobs:
       # déjà exécuté/introuvable/montant), frise (I-01), isolation (D8).
       - name: 'L16 : ordre de paiement → virement, rattaché et tracé (499)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/499_chain_l16_ordre_virement_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # L16 — chaînage interne STOCK/ACHATS : la COMMANDE D'ACHAT issue d'une
       # PROPOSITION (MRP) lui est rattachée et tracée (effet `purchase.proposal.to_order`) ;
@@ -2399,6 +2415,8 @@ jobs:
       # fabrication/annulée/autre fournisseur), frise (I-01), isolation (D8).
       - name: 'L16 : proposition (MRP) → commande d''achat, rattachée et tracée (751)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/751_chain_l16_proposition_commande_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # L23-b — LES AUTOMATISATIONS branchées sur le journal d'événements unifié :
       # le moteur `chain_l23_automatiser` joue, pour chaque événement entrant,
@@ -2408,6 +2426,8 @@ jobs:
       # failed (erreur tracée, transaction survit), isolation (D8).
       - name: 'L23-b : automatisations sur le journal d''événements, tracées (752)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/752_chain_l23_automatisations_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # L16 — chaînage interne ACHATS : le RÈGLEMENT d'une FACTURE FOURNISSEUR lui
       # est rattaché et tracé (effet `purchase.invoice.to_payment`) ; miroir de 497.
@@ -2415,6 +2435,8 @@ jobs:
       # annulés, autre fournisseur, règlement déjà affecté), frise (I-01), isolation (D8).
       - name: 'L16 : facture fournisseur → règlement, rattachée et tracée (753)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/753_chain_l16_reglement_fournisseur_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # L16 — chaînage interne COMMERCIAL : l'AVOIR qui annule une FACTURE lui est
       # rattaché et tracé (effet `sale.invoice.to_credit_note`) ; le lot différé
@@ -2423,6 +2445,8 @@ jobs:
       # brouillon/autre client/déjà rattaché), frise (I-01), isolation (D8).
       - name: 'L16 : facture → avoir, rattachée et tracée (754)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/754_chain_l16_facture_avoir_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # L16 — chaînage interne ACHATS : la FACTURE FOURNISSEUR d'une RÉCEPTION lui
       # est rattachée et tracée (effet `purchase.receipt.to_invoice`) ; le maillon
@@ -2432,6 +2456,8 @@ jobs:
       # annulées, autre fournisseur, facture déjà rattachée), frise (I-01), isolation (D8).
       - name: 'L16 : réception → facture fournisseur, rattachée et tracée (755)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/755_chain_l16_reception_facturefournisseur_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # L16 — chaînage interne ACHATS : l'AVOIR FOURNISSEUR qui annule une FACTURE
       # FOURNISSEUR lui est rattaché et tracé (effet `purchase.invoice.to_credit_note`) ;
@@ -2441,6 +2467,8 @@ jobs:
       # brouillon/autre fournisseur/déjà rattaché), frise (I-01), isolation (D8).
       - name: 'L16 : facture fournisseur → avoir, rattachée et tracée (756)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/756_chain_l16_avoir_fournisseur_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # L16 — chaînage interne COMMERCIAL : la RELANCE d'une FACTURE lui est
       # rattachée et tracée (effet `sale.invoice.to_reminder`) ; `collection_reminders`
@@ -2449,6 +2477,8 @@ jobs:
       # annulée/autre client/déjà portée), frise (I-01), isolation (D8).
       - name: 'L16 : facture → relance, rattachée et tracée (757)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/757_chain_l16_relance_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # L16 — chaînage interne COMPTABILITÉ : chaque LIGNE DE JOURNAL d'un groupe de
       # lettrage est tracée vers son GROUPE (effet `rev.line.lettered`) ; `lettrage_groups`
@@ -2459,6 +2489,8 @@ jobs:
       # frise (I-01) dans les deux sens, isolation (D8).
       - name: 'L16 : groupe de lettrage → ses lignes de journal, tracé (758)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/758_chain_l16_lettrage_groupes_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # L16 — chaînage interne RH/PAIE : le BULLETIN DE PAIE rattache son ÉCRITURE
       # comptable (effet `payroll.slip.posted`) ; `pay_slips` entre au registre.
@@ -2466,6 +2498,8 @@ jobs:
       # non comptabilisé), frise (I-01), isolation (D8).
       - name: 'L16 : bulletin de paie → son écriture, tracé (759)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/759_chain_l16_bulletin_ecriture_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # L16 — chaînage interne COMPTABILITÉ : l'EXERCICE CLOS rattache son ÉCRITURE
       # d'affectation du résultat (effet `rev.fiscal_year.result_allocated`) ;
@@ -2474,6 +2508,8 @@ jobs:
       # non affecté), frise (I-01), isolation (D8).
       - name: 'L16 : exercice clos → son écriture d''affectation, tracé (760)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/760_chain_l16_cloture_resultat_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # P1 (A3.4) — l'ATTESTATION D'INTÉGRITÉ TECHNIQUE : un `jsonb` de FAITS
       # (dernier relevé des invariants, écarts nommés, rapport du banc — non_joue
@@ -2481,6 +2517,8 @@ jobs:
       # garde de société. 7 verdicts.
       - name: 'P1 : attestation d''intégrité technique (770)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/770_chain_certificat_integrite_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # --- plan6:b --- règles d'état, paie française ---
       # Territoire : règles d'état par module ; app/src/lib/payroll*, écrans de paie
