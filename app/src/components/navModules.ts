@@ -520,6 +520,7 @@ export const navModules: NavModule[] = [
           { labelKey: 'items.auditLog', path: '/system/audit-log' },
           { labelKey: 'items.coherence', path: '/system/coherence' },
           { labelKey: 'items.robustesse', path: '/system/robustesse' },
+          { labelKey: 'items.certificat', path: '/system/certificat' },
         ],
       },
     ],
