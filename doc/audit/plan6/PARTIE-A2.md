@@ -32,6 +32,7 @@ D vis-à-vis de nous).
 | A2.2 | Héberger la frise sur les types de documents restants : devis, commandes (ventes/achats), réceptions, bulletins, tickets de caisse, ordres de fabrication, notes de frais | A.5 (I-01) | ≈ 4 j | ✅ **fait le 05/10** — **10 pages ajoutées** (11 au total avec `InvoicesPage`) ; **tous les types listés** sont hébergés (un constat de registre subsiste : `purchase_orders`) — voir §Livré |
 | A2.3 | Pages « Robustesse » et « Cohérence » (L5) | A.4 | 3 j | ✅ **fait le 05/10** — « Cohérence » (`CoherencePage.tsx`, A2.4) et « Robustesse » (`RobustessePage.tsx`) livrées ; voir §A2.3 |
 | A2.4 | Lecture écran de l'indice de cohérence (`chainCoherence.ts` → page) | 3.10 | 0,5 j | ✅ **fait le 05/10** (`CoherencePage.tsx` : route `/system/coherence`, nav, i18n fr/en/ar) |
+| A2.5 | Écran **P1** — le certificat d'intégrité : page `/system/certificat` (mention + page 1 dirigeant + annexe expert-comptable), appel `chain_certificat_integrite` (`770`, A3) | A.8 (P1) | ≈ 1,5 j | ✅ **fait le 11/10** — voir §A2.5 |
 
 ## Recomptage (05/10/2026) — mesuré, pas supposé
 
@@ -205,6 +206,26 @@ dernier passage.
 Vitest **1 661 verts** · `any` **1 735/1 735** · `console.error` **488/488** ·
 `check-unchecked-writes` **0**.
 
+## A2.5 — l'écran P1 : le certificat d'intégrité (11/10)
+
+`app/src/pages/CertificatPage.tsx` + requête `lib/queries/chainCertificat.ts`
+(`getCertificatIntegrite()` → RPC `chain_certificat_integrite`, migration
+**`770` d'A3**). Route `/system/certificat` (`AdminRoute`), entrée `items.certificat`,
+i18n **fr/en/ar**.
+
+- **Mention toujours visible** (Q1) : « attestation d'intégrité technique —
+  ne constitue ni un audit, ni une attestation de l'expert-comptable, ni une
+  certification légale » ;
+- **deux lectures** (Q2) : page 1 dirigeant (date, version de la base, qui
+  signe / qui endosse) + **annexe** expert-comptable : les **écarts nommés**,
+  le banc (tenues/rompues/**non jouées** sur `maillons × 8`), l'**empreinte
+  NF-525** avec **« sans objet »** quand elle est vide ;
+- **aucun chiffre recalculé**, **pas de journal console d'erreur**.
+
+**Vérifications** : `tsc` 0 · `oxlint` 0/0 · i18n parité + clés littérales ·
+`console.error` **488/488** · `any` **1 735** · unchecked-writes **0** ·
+a11y boutons-icône **vert** · Vitest **1 661 verts**.
+
 ## Journal
 
 | Date | Lot | Ce qui est fait | Batterie | Commit |
@@ -218,4 +239,5 @@ Vitest **1 661 verts** · `any` **1 735/1 735** · `console.error` **488/488** �
 | 2026-10-05 | A2.2 (lot 4) | Frise sur le **devis** (ligne dépliable) ; le type `quotes` est désormais au registre (`475` A1 / `493` A3) et le lien devis → commande est **tracé par A3** | `tsc` 0 · `oxlint` 0/0 · i18n vert · a11y vert · Vitest **1 661** · plafonds conformes | `ceffdcc` |
 | 2026-10-05 | A2.2 (lot 5) | Frise sur la **campagne de paie** : vue détail créée (bulletins du lot, frise `pay_runs`) | `tsc` 0 · `oxlint` 0/0 · i18n vert · a11y vert · Vitest **1 661** · plafonds conformes | `f706352` |
 | 2026-10-05 | A2.2 (lot 6) | Frise sur le **ticket de caisse** (`PosSessionsPage`) : bouton « Voir le ticket » + modal avec frise `pos_tickets` | `tsc` 0 · `oxlint` 0/0 · i18n vert · a11y vert · Vitest **1 661** · plafonds conformes | `dc774fe` |
-| 2026-10-05 | A2.2 (lot 7) | Frise sur la **commande d'achat** : vue détail créée (lignes + frise `purchase_orders`). Constat : `purchase_orders` hors registre (demande). Vitest **1 660 + 1 instable** (`BankReconciliationState`, vert en isolation) | `tsc` 0 · `oxlint` 0/0 · i18n vert · a11y vert · plafonds conformes | _(ce lot)_ |
+| 2026-10-05 | A2.2 (lot 7) | Frise sur la **commande d'achat** : vue détail créée (lignes + frise `purchase_orders`). Constat : `purchase_orders` hors registre (demande). Vitest **1 660 + 1 instable** (`BankReconciliationState`, vert en isolation) | `tsc` 0 · `oxlint` 0/0 · i18n vert · a11y vert · plafonds conformes | `d1e592a` |
+| 2026-10-11 | A2.5 | Écran **P1** : `CertificatPage.tsx` + `chainCertificat.ts` (RPC `chain_certificat_integrite` de `770`) — mention Q1, deux lectures Q2, route `/system/certificat`, i18n fr/en/ar | `tsc` 0 · `oxlint` 0/0 · i18n vert · plafonds conformes · Vitest **1 661** | _(ce lot)_ |

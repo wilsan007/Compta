@@ -23,6 +23,7 @@ export * from './sprintH'
 export * from './projectManagement'
 export * from './chainCoherence'
 export * from './chainRobustness'
+export * from './chainCertificat'
 export {
   calculatePayslip,
   generateDsn,
