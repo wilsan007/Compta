@@ -35,12 +35,12 @@
 ## 0. Mesures (recalculées par le script)
 
 <!-- MESURES:DEBUT -->
-*Mesuré le **2026-10-11** par `node app/scripts/suivi-chantiers.mjs --write` — ne pas éditer à la main.*
+*Mesuré le **2026-10-13** par `node app/scripts/suivi-chantiers.mjs --write` — ne pas éditer à la main.*
 
 | Mesure | Valeur | Chantier |
 |---|---|---|
-| Branche de la copie de travail | `integration/plan6-b` @ `7f0a50c` | — |
-| Migrations / suites SQL dans `app/sql` | 280 / 198 | — |
+| Branche de la copie de travail | `integration/plan6-b` @ `02d6141` | — |
+| Migrations / suites SQL dans `app/sql` | 283 / 200 | — |
 | **Numéros de migration en collision entre branches** (SOC-06) | ✅ 0 | alerte |
 | Registre SQL `ci/expected_failures.sql` (lignes `INSERT`) | 1 | registre |
 | Registre écran `__screen__/expected_failures.json` | ✅ vide | registre |
@@ -52,7 +52,7 @@
 | `get_vat_codes` (correctif TVA 198) présent en base | ✅ | 1.7 |
 | e2e Playwright sur chaque PR vers `main` | ⬜ sur étiquette seulement | AUD-J01 · 4.3 |
 | `any` explicites (plafond gelé : production / tests) | 936 / 799 (gelé le 2026-10-05) | AUD-J07 · DAT-02 |
-| Tables non lues par l'écran (plafond) | 75 (gelé le 2026-10-03) | SOC-05 |
+| Tables non lues par l'écran (plafond) | 78 (gelé le 2026-10-11) | SOC-05 |
 | **Tables coquilles** (ni écran, ni Edge, SQL = DDL seul) | 38 | ORPH-02 · SOC-05 |
 | Suites SQL qui exercent `user_totp` / `api_keys` | 0 | ORPH-01 · SEC-02 |
 
