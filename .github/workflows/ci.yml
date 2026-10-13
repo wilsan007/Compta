@@ -2512,7 +2512,26 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # BI-01 (714) — le générateur d'états : `custom_report_templates` n'avait
+      # AUCUN `CHECK` (n'importe quelle valeur passait) et ses politiques
+      # n'avaient pas de `can_perform` (PERM-01) ; `reporting_plans` non plus.
+      # Reprise des données hors liste AVANT les CHECK. Suite mesurée 13/10 :
+      # 25/25 verts sur base dédiée.
+      - name: 'F.6 : générateur d états (BI-01) — CHECK, can_perform, reprise (714)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/714_bi_generateur_etats_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # NOT-02 (715) — les alertes métier : règles + abonnements + moteur
+      # (`evaluate_business_alert_rules`). Rouges-avant mesurés le 13/10 :
+      # suite cassée (le `END` du bloc T03 perdu → « syntax error at or near
+      # DECLARE ») et sans `_audit_assert` (G5) — corrigé, T07→T12 ajoutés
+      # (déclencheur non-membre, unicité, moteur, livraison à l'abonné,
+      # idempotence journalière, cloisonnement) : 21/21 verts.
+      - name: 'F.6 : alertes métier — règles, abonnements, moteur (715)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/715_alertes_metier_abonnements_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
   # ─────────────────────────────────────────────
   # Job 6: Build verification
