@@ -31,25 +31,24 @@
 -- diagnostic**, exécutable en une commande.
 --
 -- LA RÈGLE DU PLAFOND (celle de G1). Mesuré sur base neuve, 02/10/2026 :
---     * **322** tables sous `FORCE ROW LEVEL SECURITY` (13/10/2026, fusion
---       plan6 E + intégration — de 318, +4) : +2 le 06/10 : `automation_rules`
---       et `automation_runs` de la 752 (L23-b) — deux tables NEUVES, RLS FORCÉE
---       dès leur création, une politique d'écriture chacune ; +2 le 11/10 :
---       `landed_cost_receipts` (658) et `stock_location_assignments` (659),
---       mises sous FORCE par la 665 — le lot BUD-04/ISO-04 de la partie E. Les
---       quatre ONT une politique d'écriture : ce sont des tables de plus
---       protégées, PAS des tables muettes de plus (`muettes` reste à 18
---       ci-dessous, la mesure le confirme) ;
---       318 le 03/10/2026 : 461 metric_definitions,
---       puis à l'harmonisation 414 chain_invariant_alertes et 433 chain_banc_maillons,
---       chain_banc_resultats ;
---       314 le 02/10 avec la 415 : webhook_delivery_queue) ;
---     * dont **18** (03/10/2026, harmonisation : +1 `chain_invariant_alertes` de la 414,
---       +2 `chain_banc_maillons` / `chain_banc_resultats` de la 433 ;
---       +1 `metric_definitions` de la 461 — dictionnaire en
---       lecture seule pour l'écran, écrit par les seules migrations ; 14 le 02/10)
---       sans AUCUNE politique d'écriture — c'est l'exposition : leur
---       propriétaire ne peut pas écrire dès qu'il n'est ni super ni bypass ;
+--     * **338** tables sous `FORCE ROW LEVEL SECURITY` (13/10/2026, fusion E + F +
+--       intégration — de 322 à 338, +16 pour la partie F, mesuré sur base
+--       migrations seules) : +14 le 05/10 (plan6 F) — 702 (groups, group_members,
+--       intra_group_transactions), 704 (collective_agreements,
+--       collective_classifications — ISO-04 rattrapé), 705 (job_postings,
+--       job_applications), 706 (custom_field_definitions, custom_field_values),
+--       708 (resource_capacities), 709 (crm_sequences, crm_sequence_steps),
+--       710 (crm_scoring_rules), 711 (business_connectors) ; +2 (715 :
+--       business_alert_rules, alert_subscriptions). Avant (322) : +2 le 06/10
+--       (intégration, 752 : automation_rules/automation_runs) +2 le 11/10
+--       (plan6 E : 658/659 via la 665). Chaque table neuve est créée sous
+--       FORCE : la hausse est la doctrine du dépôt appliquée aux tables neuves ;
+--     * dont **21** (13/10/2026, mesuré) sans AUCUNE politique d'écriture : les
+--       18 d'avant, +3 le 05/10 par la 702 — groups, group_members et
+--       intra_group_transactions, MUETTES par dessein : leurs colonnes ne
+--       s'écrivent que par les RPC `SECURITY DEFINER` du groupe, jamais par le
+--       client — c'est l'exposition : leur propriétaire ne peut pas écrire dès
+--       qu'il est ni super ni bypass ;
 --     * les **six** tables du socle en font partie, et c'est le lien avec L3.
 --     * +2 et +2 pour la **413** (L4, invariants) : `chain_invariants` et
 --       `chain_invariant_results`. Elles sont volontairement muettes — le
@@ -97,8 +96,8 @@ SELECT (SELECT count(*) FROM g7_exposition) AS tables_forcees,
 -- Plafond DATÉ (une ligne à mettre à jour, jamais à relever sans la mesurer)
 CREATE TEMP TABLE g7_plafond (nom text PRIMARY KEY, plafond int);
 INSERT INTO g7_plafond VALUES
-  ('tables_forcees', 322),
-  ('muettes',         18);
+  ('tables_forcees', 338),
+  ('muettes',         21);
 
 DO $$
 DECLARE

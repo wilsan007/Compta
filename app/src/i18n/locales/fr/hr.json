@@ -1,5 +1,24 @@
 {
   "title": "Ressources humaines",
+  "recruitment": {
+    "title": "Recrutement",
+    "subtitle": "Publiez vos postes et suivez les candidatures.",
+    "createPosting": "Créer un poste",
+    "postingTitle": "Intitulé du poste",
+    "department": "Service",
+    "contractType": "Type de contrat",
+    "location": "Lieu",
+    "create": "Créer",
+    "empty": "Aucun poste pour l'instant",
+    "posting": "Poste",
+    "candidate": "Candidat",
+    "email": "E-mail",
+    "addApplication": "Ajouter la candidature",
+    "applications": "Candidatures",
+    "moveTo": "Statut",
+    "contractTypes": { "cdi": "CDI", "cdd": "CDD", "stage": "Stage", "alternance": "Alternance", "interim": "Intérim", "freelance": "Freelance" },
+    "statuses": { "draft": "Brouillon", "open": "Ouvert", "closed": "Clôturé", "filled": "Pourvu", "received": "Reçue", "screening": "Présélection", "interview": "Entretien", "offer": "Offre", "hired": "Recruté", "rejected": "Refusée" }
+  },
   "dashboard": {
     "title": "Tableau de bord RH",
     "subtitle": "Vue d'ensemble de vos ressources humaines",
