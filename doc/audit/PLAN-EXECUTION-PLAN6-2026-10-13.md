@@ -26,7 +26,7 @@
 | PR **#14** (`integration/plan6-b` → `main`) | 🟠 ouverte depuis le 11/10, derniers runs **verts** — le remède au job DB |
 | `npm run suivi:check` | 🟢 **réparé en Phase 0** (éraflait `280/198` vs `283/200`) **[MESURÉ]** |
 | Travail non commité | 🟢 **réparé** : `seed.mjs`, suppression `530` (doublon identique de `780`) |
-| Numérotation | 🟢 **réparée** : `780` hors plage → **renumérotée `457`** dans `450→459` + `inscrire`, `verifier` 0 collision/303 |
+| Numérotation | 🟢 **réparée (v2)** : plage **`780-789` déclarée** + `inscrire`, `530` (doublon identique) supprimé — ⚠️ **leçon payée** : une 1ʳᵉ tentative (`780` → `457`) a **rougi** la CI (`450 T11`, run `38424071395`) : **le numéro est aussi un ORDRE** (voir 0.B3) |
 | 3 worktrees avec du travail en vol | 🟢 **finis et committés** (§0.C1) |
 | Dépôt | 🟢 `brag*/` ignoré |
 
@@ -55,7 +55,7 @@
 | **0.A3** | Rattacher le compte E2E à une société | ⬜ **hors dépôt** (console) | run `114727725953` : 3 failed / 61 passed |
 | **0.B1** | Committer le travail en suspens | ✅ | voir §0.E |
 | **0.B2** | Bloc de suivi (étape **0.9**) | ✅ | `--write` puis **`suivi:check` ✅** |
-| **0.B3** | Numérotation `780` | ✅ | `780` → **`457`** (`git mv`, conforme à `8b41fe0`), `inscrire`, `530` retiré, `verifier` ✅ |
+| **0.B3** | Numérotation `780` | ✅ **(v2)** | **Tentative 1 rouge, mesurée** : `780 → 457` a cassé la CI — suite `450` **T11 hors registre** (run `38424071395`) : la boucle de garde ne couvre que le registre **à son passage**, et en `457` les types des lots `475`→`758` n'existent pas encore — **le numéro est aussi un ORDRE**. **Correction** : plage **`780-789` par l'outil**, fichier remis en **`780`** (dernière position), `inscrire`, prise `457` retirée, `530` (doublon) supprimé ; `verifier` ✅ (0/303) ; preuve du bon ordre : `450` **OK** en batterie locale (`780` dernier) |
 | **0.B4** | Ignorer `brag*/` | ✅ | `.gitignore` |
 | **0.C1** | Finir les 3 lots en vol | ✅ | A3 `9b2771f`, C `62d22e0`, F `a80d377` |
 | **0.D** | Gate : 3 schedules verts d'affilée | 🟡 locales vertes ; **CI après push** | — |
@@ -77,7 +77,7 @@
 | Commit | Contenu |
 |---|---|
 | gitleaks | `.gitleaks.toml` — allowlist datée et justifiée |
-| ménage | `.gitignore` (`brag*/`), renommage `780` → `457`, suppression du doublon `530`, `SUIVI-CHANTIERS.md` régénéré |
+| ménage | `.gitignore` (`brag*/`), plage `780-789` + `780` en **dernière** position (après l'échec de la tentative `457`), suppression du doublon `530`, `SUIVI-CHANTIERS.md` régénéré |
 | qa | `app/scripts/qa/seed.mjs` — clic sur le libellé exact « Créer mon entreprise » |
 | plan | **ce document** |
 

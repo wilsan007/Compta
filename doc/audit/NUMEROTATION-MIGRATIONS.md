@@ -89,6 +89,7 @@ machine ; ces deux tables sont la vérité du dépôt.
 | `750` → `759` | plan6 A3 L16 (familles restantes) | 2026-10-06 |
 | `760` → `769` | plan6 A3 L16 (familles restantes) — suite de la plage précédente | 2026-10-11 |
 | **`770` → `779`** | **plan6 A3 (certificat d'intégrité, A3.4)** — **P1** : `chain_certificat_integrite`, l'attestation d'intégrité technique | **2026-10-11** |
+| **`780` → `789`** | **garde de suppression des types récents** (suite de la `450` T11) — ⚠️ **ordre** : sa boucle couvre le registre **tel qu'il est à son passage** → elle doit tourner **après toutes les inscriptions de types**. Prise le 13/10 après échec de la tentative `457` (suite `450` T11 rouge, run `38424071395`) | **2026-10-13** |
 | `380` → `399` | **LIBRE** — à inscrire avant usage | — |
 
 
