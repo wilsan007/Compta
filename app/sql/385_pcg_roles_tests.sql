@@ -24,15 +24,16 @@ DECLARE v_cpt int; v_jrn int;
 BEGIN
   SELECT count(*) INTO v_cpt FROM pack_account_roles WHERE pack_code = 'PCG';
   SELECT count(*) INTO v_jrn FROM pack_journal_roles WHERE pack_code = 'PCG';
-  PERFORM _rec('T01', 'le référentiel PCG porte 65 rôles de comptes (67 moins IMMOBILISATIONS et AMORTISSEMENTS)',
-    v_cpt = 65, format('%s rôle(s) de comptes (65 attendus)', v_cpt));
+  -- 397 (LOC1-10) ajoute les QUATRE rôles d'amortissement par nature : 65 → 69.
+  PERFORM _rec('T01', 'le référentiel PCG porte 69 rôles de comptes (71 moins IMMOBILISATIONS et AMORTISSEMENTS)',
+    v_cpt = 69, format('%s rôle(s) de comptes (69 attendus)', v_cpt));
   -- 385 pose 7 rôles de journaux au référentiel PCG (JOURNAL_PAIE reste ABSENT :
   -- la paie est le sujet de la partie B). 387 en ajoute deux (POS, PRODUCTION)
   -- et 389 un (CLOTURE) → 10. Le référentiel est un SUPER-ENSEMBLE daté.
   PERFORM _rec('T02', 'le référentiel PCG porte 10 rôles de journaux (JOURNAL_PAIE absent)',
     v_jrn = 10, format('%s rôle(s) de journaux (10 attendus)', v_jrn));
 EXCEPTION WHEN OTHERS THEN
-  PERFORM _rec('T01', 'le référentiel PCG porte 65 rôles de comptes (67 moins IMMOBILISATIONS et AMORTISSEMENTS)', false, SQLERRM);
+  PERFORM _rec('T01', 'le référentiel PCG porte 69 rôles de comptes (71 moins IMMOBILISATIONS et AMORTISSEMENTS)', false, SQLERRM);
   PERFORM _rec('T02', 'le référentiel PCG porte 10 rôles de journaux (JOURNAL_PAIE absent)', false, SQLERRM);
 END $$;
 
@@ -91,7 +92,7 @@ BEGIN
   ON CONFLICT (pack_code, role) DO NOTHING;
   SELECT count(*) INTO v_ap FROM pack_account_roles WHERE pack_code = 'PCG';
   PERFORM _rec('T06', 'rejouable : un second chargement n''ajoute aucun rôle',
-    v_av = v_ap AND v_ap = 65, format('%s → %s rôle(s)', v_av, v_ap));
+    v_av = v_ap AND v_ap = 69, format('%s → %s rôle(s)', v_av, v_ap));
 EXCEPTION WHEN OTHERS THEN
   PERFORM _rec('T06', 'rejouable : un second chargement n''ajoute aucun rôle', false, SQLERRM);
 END $$;

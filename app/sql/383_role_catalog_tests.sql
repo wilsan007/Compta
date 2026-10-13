@@ -24,8 +24,11 @@ DECLARE v_comptes int; v_journaux int;
 BEGIN
   SELECT count(*) INTO v_comptes FROM account_role_catalog;
   SELECT count(*) INTO v_journaux FROM journal_role_catalog;
-  PERFORM _rec('T01', 'account_role_catalog porte les 67 rôles de l''annexe B.1',
-    v_comptes = 67, format('%s rôle(s) de comptes (67 attendus)', v_comptes));
+  -- 397 (LOC1-10) ajoute QUATRE rôles : la paire d'amortissement par NATURE
+  -- (incorporel / corporel), parce que le plan sépare les deux et qu'un rôle
+  -- unique écrivait une paire incohérente. 67 → 71.
+  PERFORM _rec('T01', 'account_role_catalog porte les 71 rôles de l''annexe B.1 et des tranches suivantes',
+    v_comptes = 71, format('%s rôle(s) de comptes (71 attendus)', v_comptes));
   -- 383 pose les 8 rôles de l'annexe B.2 ; 387 en ajoute DEUX (JOURNAL_POS,
   -- JOURNAL_PRODUCTION : le POS et la fabrication écrivaient déjà, sans rôle)
   -- et 389 un troisième (JOURNAL_CLOTURE, pour la clôture). Le catalogue est un
@@ -33,7 +36,7 @@ BEGIN
   PERFORM _rec('T02', 'journal_role_catalog porte les 11 rôles de journaux (8 de l''annexe B.2, +3 par 387 et 389)',
     v_journaux = 11, format('%s rôle(s) de journaux (11 attendus)', v_journaux));
 EXCEPTION WHEN OTHERS THEN
-  PERFORM _rec('T01', 'account_role_catalog porte les 67 rôles de l''annexe B.1', false, SQLERRM);
+  PERFORM _rec('T01', 'account_role_catalog porte les 71 rôles de l''annexe B.1 et des tranches suivantes', false, SQLERRM);
   PERFORM _rec('T02', 'journal_role_catalog porte les 11 rôles de journaux (8 de l''annexe B.2, +3 par 387 et 389)', false, SQLERRM);
 END $$;
 
@@ -115,7 +118,7 @@ BEGIN
   ON CONFLICT (role) DO NOTHING;
   SELECT count(*) INTO v_ap FROM account_role_catalog;
   PERFORM _rec('T06', 'rejouable : un second chargement n''ajoute aucun rôle',
-    v_av = v_ap AND v_ap = 67, format('%s → %s rôle(s)', v_av, v_ap));
+    v_av = v_ap AND v_ap = 71, format('%s → %s rôle(s)', v_av, v_ap));
 EXCEPTION WHEN OTHERS THEN
   PERFORM _rec('T06', 'rejouable : un second chargement n''ajoute aucun rôle', false, SQLERRM);
 END $$;

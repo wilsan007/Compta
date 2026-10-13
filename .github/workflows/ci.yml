@@ -2423,6 +2423,26 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # LOC1-10 (tranche 4) — les TROIS dernières fonctions que le garde-fou E01
+      # nomme encore : elles comparaissent en dur, la suite prouve qu'elles
+      # passent par `resolve_account` — reprise des valeurs existantes incluse.
+      - name: 'LOC1-10 (tranche 4) : les 3 dernières fonctions du garde-fou E01 (396)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/396_roles_comptes_3_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # LOC1-10 (tranche 5, LOT FINAL) — les 2 derniers comptes en dur : les
+      # rôles d'amortissement (681200/281000) et le compte d'encaissement
+      # (511200). T01 (E01 tenu sur tout le schéma) : le PRÉDICAT est celui du
+      # garde-fou (`check-country-neutral.mjs`, scanSql) — un littéral entre
+      # guillemets sur une ligne qui parle d'un compte. Mesuré le 13/10 : le
+      # motif brut comptait 195 fonctions (faux écart du test), le prédicat
+      # contextualisé mesure 0, comme le garde-fou.
+      - name: 'LOC1-10 (tranche 5) : les 2 derniers comptes en dur — E01 SQL = 0 (397)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/397_roles_comptes_4_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:d --- qualité des écrans, recette, livraison ---
       # Territoire : app/src/pages, app/src/components, e2e/, scripts/qa,
       #              app/src/__screen__, job Playwright
