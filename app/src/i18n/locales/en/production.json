@@ -129,7 +129,21 @@
       "inactive": "Inactive"
     },
     "namePlaceholder": "Machine name",
-    "workCenterPlaceholder": "Work center name"
+    "workCenterPlaceholder": "Work center name",
+    "toolingWear": "Tooling wear",
+    "toolingCounter": "Counter / life",
+    "toolingWearRatio": "Wear",
+    "capacityLoad": "Work center load / capacity",
+    "day": "Day",
+    "capacity": "Capacity",
+    "load": "Load",
+    "overload": "Overload",
+    "maintenance": "Maintenance records",
+    "newMaintenance": "New record",
+    "noMaintenance": "No maintenance record",
+    "technician": "Technician",
+    "duration": "Duration (h)",
+    "cost": "Cost"
   },
   "toolings": {
     "title": "Toolings",
@@ -188,7 +202,8 @@
         "labels": "Quantity tracking",
         "lots": "Lots & Expiry",
         "consumptions": "Consumption",
-        "sublevels": "Sub-levels"
+        "sublevels": "Sub-levels",
+        "shopfloor": "Shop floor"
       },
       "info": {
         "number": "Number",
@@ -275,6 +290,40 @@
         "quantity": "Quantity",
         "status": "Status",
         "view": "View"
+      },
+      "shopfloor": {
+        "summary": "Shop floor summary",
+        "add": "Declare an operation",
+        "noOperations": "No operation declared",
+        "noOperationsDescription": "Declare shop floor operations: actual time, produced quantities and scrap.",
+        "operation": "Operation",
+        "operationRequired": "The operation name is required",
+        "plannedMinutes": "Planned minutes",
+        "actualMinutes": "Actual minutes",
+        "produced": "Quantity produced",
+        "scrapped": "Quantity scrapped",
+        "scrapReason": "Scrap reason",
+        "nbOperations": "Operations",
+        "totalPlanned": "Planned minutes (total)",
+        "totalActual": "Actual minutes (total)",
+        "totalProduced": "Produced (total)",
+        "totalScrapped": "Scrapped (total)",
+        "scrapRate": "Scrap rate",
+        "saved": "Operation declared",
+        "savedMsg": "The MO summary is up to date.",
+        "hint": "Replaying an operation with the same name corrects its values. No stock movement is created."
+      },
+      "variance": {
+        "title": "Material variance (planned / actual)",
+        "refresh": "Recalculate",
+        "product": "Item",
+        "theoretical": "Planned",
+        "actual": "Actual",
+        "variance": "Variance",
+        "variancePercent": "Variance %",
+        "empty": "No variance computed yet — click \"Recalculate\".",
+        "refreshed": "Variance recomputed",
+        "refreshedMsg": "Planned and actual are up to date."
       }
     },
     "number": "MO no.",

@@ -19,18 +19,31 @@ on:
     # si elle est bonne — c'est-à-dire trop tard. La règle vaut pour toute
     # branche de travail, pas seulement pour celles dont le nom commence par
     # « partie ».
+    # ⚠️ 11/10/2026 — TROISIÈME occurrence, et cette fois la liste blanche est
+    # SUPPRIMÉE au lieu d'être rallongée.
+    #
+    # Les dix branches `plan6/*` (`a-chainages` … `f-plateforme`) n'y figuraient
+    # pas. Mesuré sur `plan6/e-operations` : `gh run list --branch
+    # plan6/e-operations` ne renvoyait **rien**, alors que la branche portait
+    # quatorze suites de tests — toutes vertes, et toutes branchées dans ce même
+    # fichier. Le **câblage** des suites était vérifié (`check-test-suites.mjs`,
+    # G5) ; le **déclenchement** du workflow ne l'était pas. Une suite que
+    # personne ne joue ne protège rien, et un workflow qui ne démarre pas joue
+    # ses étapes pour personne.
+    #
+    # Deux fois déjà on a rallongé cette liste (`qa/**`, `partie-*`) ; la
+    # troisième branche oubliée serait une quatrième. `push` joue donc TOUTES les
+    # branches : c'est la règle du dépôt — « une branche de travail qui n'est pas
+    # jouée n'est pas vérifiée » — appliquée **sans exception**. Et pour qu'elle
+    # ne puisse pas se reperdre, `check-test-suites.mjs` refuse désormais toute
+    # liste blanche à cet endroit (quatrième moitié de G5), avec une mesure
+    # rouge avant / verte après.
     branches:
-      - main
-      - master
-      - develop
-      - commercial-hr-paie
-      - 'qa/**'
-      - 'partie-*'
-      - 'fusion-*'
-      - 'plan6/**'
-      - harmonisation
+      - '**'
   pull_request:
-    branches: [main, master, develop, commercial-hr-paie, 'qa/**', 'partie-*', 'fusion-*', 'plan6/**']
+    # `branches` filtre la branche **cible**, pas la branche poussée : la limiter
+    # à `main`/`develop` laissait sans CI les PR d'une branche de travail vers une
+    # autre (`integration/plan6-b` → `plan6/b-regles-etat`). On ne filtre plus.
   schedule:
     # Every night at 2:00 AM UTC (regular regression testing)
     - cron: '0 2 * * *'
@@ -2728,6 +2741,127 @@ jobs:
       # Territoire : écrans et requêtes stock, production, achats, ventes ;
       #              leurs tables coquilles
       # Plage : 650→699
+
+      # STK-03 (650) — le LIFO est interdit (IAS 2, PCG art. 213-1, SYSCOHADA) :
+      # `stock_valuation_method` n'admet plus que cump (défaut) et fifo (PEPS).
+      - name: 'E : STK-03 — méthode de valorisation, LIFO refusé (650)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/650_stock_valuation_method_lifo_rejected_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # PRD-03 (651) — consommation des prévisions (Sage/Odoo) : une commande
+      # ferme de la période consomme la prévision, elle n'est plus comptée deux fois.
+      - name: 'E : PRD-03 — consommation des prévisions (651)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/651_mrp_consommation_previsions_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # STK-14 (652) — les transferts inter-dépôts : expédier sort du dépôt source,
+      # réceptionner fait entrer au dépôt destination (le stock bouge enfin).
+      - name: 'E : STK-14 — transferts inter-dépôts (652)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/652_stock_transfer_execute_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # STK-09 (653) — suggestions de réapprovisionnement à partir de `reorder_rules`
+      # (minimum, maximum, multiple de conditionnement).
+      - name: 'E : STK-09 — règles de réapprovisionnement (653)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/653_reorder_suggestions_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # STK-09 (654) — inventaire tournant : liste des comptages dus + enregistrement
+      # d'un écart physique (mouvement valorisé).
+      - name: 'E : STK-09 — inventaire tournant (654)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/654_stock_count_cycles_engine_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # STK-11 (655) — le stock ventilé par emplacement (socle du WMS par casier).
+      - name: 'E : STK-11 — stock par emplacement (655)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/655_stock_by_location_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # PRD-11 (656) — alerte d'usure d'outillage à 95 % de la durée de vie.
+      - name: 'E : PRD-11 — alerte usure outillage (656)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/656_tooling_wear_alert_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # PRD-07 (657) — la capacité des postes (calendrier) croisée avec la charge.
+      - name: 'E : PRD-07 — capacité des postes (657)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/657_work_center_capacity_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # STK-08 (658) — les frais accessoires ne se répartissent que sur leurs
+      # réceptions ciblées, avec idempotence.
+      - name: 'E : STK-08 — frais accessoires (658)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/658_landed_cost_receipts_and_fix_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # STK-11 (659) — la ventilation du stock par casier (affectations).
+      - name: 'E : STK-11 — stock par casier (659)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/659_stock_location_assignments_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # STK-11 (660) — rangement (put-away) et prélèvement (removal).
+      - name: 'E : STK-11 — rangement et prélèvement (660)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/660_location_putaway_pick_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # PRD-06 (661) — déclaration d'atelier : temps réel, quantités, rebuts.
+      - name: 'E : PRD-06 — déclaration d''atelier (661)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/661_mo_operations_shop_floor_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # STK-13 (662) — plans de contrôle : plan applicable, échantillonnage, verdict d'un point.
+      - name: 'E : STK-13 — plans de contrôle qualité (662)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/662_quality_control_plans_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # PRD-06 (663) — écart de matière : prévu (nomenclature) contre réel (mouvements).
+      - name: 'E : PRD-06 — écart de matière (663)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/663_mo_consumptions_variance_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R3 / ISO-01 — la CI (`ci/check_tenant_guard.sql`) a trouvé deux fonctions
+      # de la partie E qui prenaient la société DU CLIENT : `work_center_capacity`
+      # (657) et `run_mrp` (651). Un appelant lisait l'atelier, les stocks et les
+      # commandes d'une société dont il n'est pas membre. Le trou a vécu des
+      # semaines : les suites 651 et 657 étaient vertes — ce qui l'a vu, c'est la
+      # CI enfin déclenchée sur la branche (R3). Cette suite exige désormais que
+      # la lecture ÉCHOUE (P0001) et que l'usage légitime continue de marcher.
+      - name: 'E : ISO-01 — garde de société sur le MRP et la capacité (664)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/664_tenant_guard_mrp_capacity_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+
+      # R3 / ISO-02, ISO-04, BUD-04 — la CI, une fois la garde de société franchie,
+      # a trouvé trois défauts de FORME dans les deux tables neuves de la partie E
+      # (658 landed_cost_receipts, 659 stock_location_assignments) : une clé
+      # étrangère mono-colonne entre deux tables cloisonnées, la RLS activée mais
+      # non forcée, aucun index de société. Aucun n'est visible par un scénario.
+      - name: 'E : ISO-02/04 + BUD-04 — les deux tables neuves de la partie E (665)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/665_landed_cost_location_guards_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # LOT7-04 — la suite n'a pas d'étape propre : elle est jouée ici, après les
+      # contrôles de schéma, parce que son défaut (PGRST200) ne se voit que devant
+      # un vrai PostgREST — précisément ce que ce job installe.
+      - name: 'E : LOT7-04 — la ligne de transfert tient son article (666)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/666_stock_transfer_lines_product_fk_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # --- plan6:f --- plateforme : sécurité, groupe, CRM, projets, documents ---
       # Territoire : supabase/functions/, écrans CRM, projets, paramètres,

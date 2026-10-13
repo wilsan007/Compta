@@ -31,10 +31,15 @@
 -- diagnostic**, exécutable en une commande.
 --
 -- LA RÈGLE DU PLAFOND (celle de G1). Mesuré sur base neuve, 02/10/2026 :
---     * **320** tables sous `FORCE ROW LEVEL SECURITY` (06/10/2026 : `automation_rules`
---       et `automation_runs` de la 752 (L23-b) — deux tables NEUVES, RLS FORCÉE dès
---       leur création, une politique d'écriture chacune : ce n'est pas une exposition,
---       c'est la doctrine §3.5 appliquée à des tables qui n'existaient pas ;
+--     * **322** tables sous `FORCE ROW LEVEL SECURITY` (13/10/2026, fusion
+--       plan6 E + intégration — de 318, +4) : +2 le 06/10 : `automation_rules`
+--       et `automation_runs` de la 752 (L23-b) — deux tables NEUVES, RLS FORCÉE
+--       dès leur création, une politique d'écriture chacune ; +2 le 11/10 :
+--       `landed_cost_receipts` (658) et `stock_location_assignments` (659),
+--       mises sous FORCE par la 665 — le lot BUD-04/ISO-04 de la partie E. Les
+--       quatre ONT une politique d'écriture : ce sont des tables de plus
+--       protégées, PAS des tables muettes de plus (`muettes` reste à 18
+--       ci-dessous, la mesure le confirme) ;
 --       318 le 03/10/2026 : 461 metric_definitions,
 --       puis à l'harmonisation 414 chain_invariant_alertes et 433 chain_banc_maillons,
 --       chain_banc_resultats ;
@@ -92,7 +97,7 @@ SELECT (SELECT count(*) FROM g7_exposition) AS tables_forcees,
 -- Plafond DATÉ (une ligne à mettre à jour, jamais à relever sans la mesurer)
 CREATE TEMP TABLE g7_plafond (nom text PRIMARY KEY, plafond int);
 INSERT INTO g7_plafond VALUES
-  ('tables_forcees', 320),
+  ('tables_forcees', 322),
   ('muettes',         18);
 
 DO $$

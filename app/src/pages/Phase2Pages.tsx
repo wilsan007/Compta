@@ -5,8 +5,8 @@ import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState
 import { useToast } from '@/lib/toast'
 import { Plus, Trash2 } from 'lucide-react'
 import { getProspects, createProspect, deleteProspect, convertProspectToCustomer, getSalesRepresentatives, createSalesRepresentative, deleteSalesRepresentative, getDeliverySchedules, createDeliverySchedule, deleteDeliverySchedule, getDocumentTemplates, createDocumentTemplate, deleteDocumentTemplate } from '@/lib/queries/misc'
-import { getStockQuantities, getWarehouseLocations, createWarehouseLocation, deleteWarehouseLocation, getProductSerialNumbers, createProductSerialNumber, deleteProductSerialNumber, getProductBatches, createProductBatch, deleteProductBatch, getProductSubstitutes, createProductSubstitute, deleteProductSubstitute } from '@/lib/queries/stock'
-import { getQualityChecks, createQualityCheck, updateQualityCheck, getPickLists, createPickList, updatePickList } from '@/lib/queries/production'
+import { getStockQuantities, getWarehouseLocations, createWarehouseLocation, deleteWarehouseLocation, getStockByLocation, getLocationStock, assignStockToLocation, suggestPutawayLocation, suggestPickLocation, getProducts, getWarehouses, getProductSerialNumbers, createProductSerialNumber, deleteProductSerialNumber, getProductBatches, createProductBatch, deleteProductBatch, getProductSubstitutes, createProductSubstitute, deleteProductSubstitute } from '@/lib/queries/stock'
+import { getQualityChecks, createQualityCheck, updateQualityCheck, getQualityPlanFor, getQualitySampleSize, getQualityPlanPoints, getPickLists, createPickList, updatePickList } from '@/lib/queries/production'
 import type { QualityCheck, PickList } from '@/types'
 import { errorMessage } from '@/lib/utils'
 
@@ -121,25 +121,131 @@ export function WarehouseLocationsPage() {
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [items, setItems] = useState<Awaited<ReturnType<typeof getWarehouseLocations>>>([])
+  const [stock, setStock] = useState<Awaited<ReturnType<typeof getStockByLocation>>>([])
+  const [locStock, setLocStock] = useState<Awaited<ReturnType<typeof getLocationStock>>>([])
+  const [products, setProducts] = useState<Awaited<ReturnType<typeof getProducts>>>([])
+  const [warehouses, setWarehouses] = useState<Awaited<ReturnType<typeof getWarehouses>>>([])
+  const [suggProduct, setSuggProduct] = useState('')
+  const [suggWarehouse, setSuggWarehouse] = useState('')
+  const [suggText, setSuggText] = useState('')
+  const [assignLoc, setAssignLoc] = useState<string | null>(null)
+  const [assignProduct, setAssignProduct] = useState('')
+  const [assignQty, setAssignQty] = useState(0)
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ warehouse_id: '', zone: '', aisle: '', shelf: '', code: '', description: '' })
+  const [form, setForm] = useState({ warehouse_id: '', zone: '', aisle: '', shelf: '', code: '', description: '', location_type: '' })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getWarehouseLocations() || []) } catch (e) { console.error('catch:', e); toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [toast, tCommon])
+  const loadData = useCallback(async () => { setLoading(true); try { const [locs, st, ls, prods, whs] = await Promise.all([getWarehouseLocations(), getStockByLocation(), getLocationStock(), getProducts(), getWarehouses()]); setItems(locs || []); setStock(st || []); setLocStock(ls || []); setProducts(prods || []); setWarehouses(whs || []) } catch (e) { toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [toast, tCommon])
+
+  async function handleSuggest() {
+    if (!suggProduct || !suggWarehouse) return
+    try {
+      const [put, pick] = await Promise.all([suggestPutawayLocation(suggProduct, suggWarehouse), suggestPickLocation(suggProduct, suggWarehouse)])
+      const putTxt = put ? `${t('locations.putaway')} : ${put.location_code} (${t('locations.reasons.' + put.reason)})` : `${t('locations.putaway')} : —`
+      const pickTxt = pick ? `${t('locations.pick')} : ${pick.location_code} (${Number(pick.quantity)})` : `${t('locations.pick')} : —`
+      setSuggText(`${putTxt} · ${pickTxt}`)
+    } catch (e) { toast('error', tCommon('toast.error'), errorMessage(e)) }
+  }
+
+  async function handleAssign() {
+    const loc = items.find((l) => l.id === assignLoc)
+    if (!loc || !assignProduct) return
+    try { await assignStockToLocation(assignProduct, loc.warehouse_id, loc.id, assignQty); setAssignLoc(null); setAssignProduct(''); setAssignQty(0); await loadData() }
+    catch (e) { toast('error', tCommon('toast.error'), errorMessage(e)) }
+  }
   useEffect(() => { loadData() }, [loadData])
 
-  async function handleCreate() { try { await createWarehouseLocation(form as Parameters<typeof createWarehouseLocation>[0]); toast('success', tCommon('common.success'), t('locations.created')); setShowForm(false); setForm({ warehouse_id: '', zone: '', aisle: '', shelf: '', code: '', description: '' }); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
+  async function handleCreate() { try { await createWarehouseLocation(form as Parameters<typeof createWarehouseLocation>[0]); toast('success', tCommon('common.success'), t('locations.created')); setShowForm(false); setForm({ warehouse_id: '', zone: '', aisle: '', shelf: '', code: '', description: '', location_type: '' }); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
   async function handleDelete(id: string) { if (!(await confirmDialog(tCommon('form.confirmDelete')))) return; try { await deleteWarehouseLocation(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
 
   return (
     <div>
       <Breadcrumb items={[{ label: t('locations.breadcrumb1'), path: '/stock' }, { label: t('locations.title') }]} />
       <PageHeader title={t('locations.title')} action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('locations.new')}</Button>} />
-      {showForm && (<Card className="p-4 mb-4 space-y-3"><div className="grid grid-cols-3 gap-3"><Input placeholder={t('locations.code')} value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} /><Input placeholder={t('locations.zone')} value={form.zone} onChange={e => setForm({ ...form, zone: e.target.value })} /><Input placeholder={t('locations.aisle')} value={form.aisle} onChange={e => setForm({ ...form, aisle: e.target.value })} /><Input placeholder={t('locations.shelf')} value={form.shelf} onChange={e => setForm({ ...form, shelf: e.target.value })} /></div><div className="flex gap-2"><Button onClick={handleCreate}>{tCommon('actions.save')}</Button><Button variant="secondary" onClick={() => setShowForm(false)}>{tCommon('common.cancel')}</Button></div></Card>)}
+      {showForm && (<Card className="p-4 mb-4 space-y-3"><div className="grid grid-cols-3 gap-3"><Input placeholder={t('locations.code')} value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} /><Input placeholder={t('locations.zone')} value={form.zone} onChange={e => setForm({ ...form, zone: e.target.value })} /><Input placeholder={t('locations.aisle')} value={form.aisle} onChange={e => setForm({ ...form, aisle: e.target.value })} /><Input placeholder={t('locations.shelf')} value={form.shelf} onChange={e => setForm({ ...form, shelf: e.target.value })} /><Input placeholder={t('locations.type')} value={form.location_type} onChange={e => setForm({ ...form, location_type: e.target.value })} /></div><div className="flex gap-2"><Button onClick={handleCreate}>{tCommon('actions.save')}</Button><Button variant="secondary" onClick={() => setShowForm(false)}>{tCommon('common.cancel')}</Button></div></Card>)}
       {loading ? <SkeletonTable /> : items.length === 0 ? <EmptyState title={t('locations.empty')} /> : (
         <Table headers={[t('locations.code'), t('locations.zone'), t('locations.aisle'), t('locations.shelf'), tCommon('table.actions')]}>
-          {items.map(l => (<TableRow key={l.id}><TableCell>{l.code}</TableCell><TableCell>{l.zone || '-'}</TableCell><TableCell>{l.aisle || '-'}</TableCell><TableCell>{l.shelf || '-'}</TableCell><TableCell><Button size="sm" variant="danger" onClick={() => handleDelete(l.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></Button></TableCell></TableRow>))}
+          {items.map(l => (<TableRow key={l.id}><TableCell>{l.code}</TableCell><TableCell>{l.zone || '-'}</TableCell><TableCell>{l.aisle || '-'}</TableCell><TableCell>{l.shelf || '-'}</TableCell><TableCell><Button size="sm" variant="secondary" onClick={() => { setAssignLoc(l.id); setAssignProduct(''); setAssignQty(0) }}>{t('locations.assign')}</Button> <Button size="sm" variant="danger" onClick={() => handleDelete(l.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></Button></TableCell></TableRow>))}
         </Table>
+      )}
+      {stock.length > 0 && (
+        <Card className="mt-6">
+          <div className="p-4 border-b border-[var(--color-border)]"><h3 className="font-semibold">{t('locations.stockByLocation')}</h3></div>
+          <Table headers={[t('reorder.product'), t('locations.code'), t('locations.type'), t('reorder.currentStock')]}>
+            {stock.map((s, i) => (
+              <TableRow key={`${s.product_id}-${s.location_id ?? 'none'}-${i}`}>
+                <TableCell>{s.product_name}</TableCell>
+                <TableCell className="font-mono text-xs">{s.location_code ?? t('locations.unassigned')}</TableCell>
+                <TableCell className="text-xs">{s.location_type ?? '-'}</TableCell>
+                <TableCell className="font-mono text-xs">{Number(s.quantity)}</TableCell>
+              </TableRow>
+            ))}
+          </Table>
+        </Card>
+      )}
+      <Card className="mt-6">
+        <div className="p-4 border-b border-[var(--color-border)]"><h3 className="font-semibold">{t('locations.ventilation')}</h3></div>
+        {locStock.length === 0 ? (
+          <p className="p-4 text-xs text-[var(--color-text-secondary)]">{t('locations.noVentilation')}</p>
+        ) : (
+          <Table headers={[t('reorder.product'), t('locations.code'), t('reorder.currentStock')]}>
+            {locStock.map((s, i) => (
+              <TableRow key={`${s.product_id}-${s.location_id ?? 'none'}-${i}`}>
+                <TableCell>{s.product_name}</TableCell>
+                <TableCell className="font-mono text-xs">{s.location_code ?? t('locations.unassigned')}</TableCell>
+                <TableCell className="font-mono text-xs">{Number(s.quantity)}</TableCell>
+              </TableRow>
+            ))}
+          </Table>
+        )}
+      </Card>
+      <Card className="mt-6">
+        <div className="p-4 border-b border-[var(--color-border)]"><h3 className="font-semibold">{t('locations.suggest')}</h3></div>
+        <div className="p-4 space-y-3">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('reorder.product')}</label>
+              <select className="input" value={suggProduct} onChange={(e) => setSuggProduct(e.target.value)}>
+                <option value="">—</option>
+                {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('locations.warehouse')}</label>
+              <select className="input" value={suggWarehouse} onChange={(e) => setSuggWarehouse(e.target.value)}>
+                <option value="">—</option>
+                {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+              </select>
+            </div>
+            <div className="flex items-end">
+              <Button variant="secondary" onClick={handleSuggest} disabled={!suggProduct || !suggWarehouse}>{t('locations.suggestBtn')}</Button>
+            </div>
+          </div>
+          {suggText && <p className="text-sm text-[var(--color-text-secondary)]">{suggText}</p>}
+        </div>
+      </Card>
+
+
+      {assignLoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setAssignLoc(null)}>
+          <div className="bg-[var(--color-surface)] rounded-xl shadow-xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold mb-4">{t('locations.assign')}</h2>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('reorder.product')}</label>
+                <select className="input" value={assignProduct} onChange={(e) => setAssignProduct(e.target.value)}>
+                  <option value="">—</option>
+                  {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+              <Input label={t('uoms.quantity')} type="number" step="0.01" value={assignQty} onChange={(e) => setAssignQty(Number(e.target.value))} />
+              <div className="flex gap-2 justify-end pt-2">
+                <Button variant="secondary" onClick={() => setAssignLoc(null)}>{tCommon('actions.cancel')}</Button>
+                <Button onClick={handleAssign}>{tCommon('actions.save')}</Button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
@@ -157,9 +263,29 @@ export function QualityCheckPage() {
   // 251 (S-13) : la quantité rebutée se saisit sur la ligne, au moment du
   // verdict — c'est elle qui décide de ce qui sort du stock.
   const [rejets, setRejets] = useState<Record<string, string>>({})
+  // STK-13 (662) : quel plan de contrôle s'applique, et sur combien d'unités.
+  const [qcProduct, setQcProduct] = useState('')
+  const [qcLotQty, setQcLotQty] = useState(0)
+  const [qcPlan, setQcPlan] = useState<Awaited<ReturnType<typeof getQualityPlanFor>> | null>(null)
+  const [qcSample, setQcSample] = useState<number | null>(null)
+  const [qcPoints, setQcPoints] = useState<Awaited<ReturnType<typeof getQualityPlanPoints>>>([])
+  const [qcChecked, setQcChecked] = useState(false)
+  const [products, setProducts] = useState<Awaited<ReturnType<typeof getProducts>>>([])
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getQualityChecks() || []) } catch (e) { console.error('catch:', e); toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [tCommon, toast])
+  const loadData = useCallback(async () => { setLoading(true); try { const [qc, prods] = await Promise.all([getQualityChecks(), getProducts()]); setItems(qc || []); setProducts(prods || []) } catch (e) { toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [tCommon, toast])
   useEffect(() => { loadData() }, [loadData])
+
+  async function handlePlanCheck() {
+    if (!qcProduct) return
+    try {
+      const plan = await getQualityPlanFor(qcProduct)
+      setQcPlan(plan); setQcChecked(true)
+      if (plan) {
+        const [size, pts] = await Promise.all([getQualitySampleSize(plan.plan_id, qcLotQty), getQualityPlanPoints(plan.plan_id)])
+        setQcSample(size); setQcPoints(pts)
+      } else { setQcSample(null); setQcPoints([]) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
+  }
 
   async function handleCreate() {
     const payload = {
@@ -185,6 +311,53 @@ export function QualityCheckPage() {
     <div>
       <Breadcrumb items={[{ label: t('quality.breadcrumb1'), path: '/stock' }, { label: t('quality.title') }]} />
       <PageHeader title={t('quality.title')} action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('quality.new')}</Button>} />
+      <Card className="p-4 mb-4 space-y-3">
+        <h3 className="font-semibold">{t('quality.plan.title')}</h3>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('quality.product')}</label>
+            <select className="input" value={qcProduct} onChange={(e) => setQcProduct(e.target.value)}>
+              <option value="">—</option>
+              {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+          <Input label={t('quality.plan.lotQuantity')} type="number" step="0.01" value={qcLotQty} onChange={(e) => setQcLotQty(Number(e.target.value))} />
+          <div className="flex items-end">
+            <Button variant="secondary" onClick={handlePlanCheck} disabled={!qcProduct}>{t('quality.plan.check')}</Button>
+          </div>
+        </div>
+        {qcChecked && (qcPlan ? (
+          <div className="space-y-2">
+            <p className="text-sm">
+              <span className="font-medium">{qcPlan.plan_name}</span>{' '}
+              <span className="text-[var(--color-text-secondary)]">
+                ({qcPlan.is_product_specific ? t('quality.plan.specific') : t('quality.plan.generic')} · {t('quality.plan.method')} : {t('quality.plan.methods.' + qcPlan.sampling_method)})
+              </span>
+            </p>
+            <p className="text-sm">{t('quality.plan.sampleSize')} : <span className="font-mono">{Number(qcSample ?? 0)}</span></p>
+            {qcPoints.length === 0 ? (
+              <p className="text-xs text-[var(--color-text-secondary)]">{t('quality.plan.noPoints')}</p>
+            ) : (
+              <ul className="text-sm space-y-1">
+                {qcPoints.map((pt) => (
+                  <li key={pt.point_id} className="flex items-center gap-2">
+                    <span>{pt.point_name}</span>
+                    <span className="text-xs text-[var(--color-text-secondary)]">
+                      {t('quality.plan.types.' + pt.check_type)}
+                      {pt.tolerance_min != null || pt.tolerance_max != null
+                        ? ` · ${pt.tolerance_min ?? '−∞'} … ${pt.tolerance_max ?? '+∞'} ${pt.unit || ''}`
+                        : ''}
+                    </span>
+                    {pt.is_mandatory && <Badge variant="warning">{t('quality.plan.mandatory')}</Badge>}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-[var(--color-text-secondary)]">{t('quality.plan.none')}</p>
+        ))}
+      </Card>
       {showForm && (<Card className="p-4 mb-4 space-y-3">
         <Input placeholder={t('quality.productId')} value={form.product_id} onChange={e => setForm({ ...form, product_id: e.target.value })} />
         <div className="grid grid-cols-2 gap-3">
