@@ -71,4 +71,17 @@ regexes = [
 
   # Clé d'exemple d'un test unitaire.
   '''sk_test_[a-zA-Z0-9]+''',
+
+  # Jeton anon de DÉMO Supabase (iss: supabase-demo, rôle anon) — la clé
+  # anonyme standard de `supabase start`, publique par conception : elle sert
+  # les visiteurs non connectés et se trouve dans chaque dépôt démarré en
+  # local. Elle apparaît en fallback de `app/scripts/qa/amorce-chiffres.mjs`
+  # (branche plan6/d-ecrans, commits 18f77e1/020b94e) ; gitleaks scanne
+  # l'historique complet, la voit toujours, et la Security Audit échouait
+  # chaque nuit (mesuré le 13/10/2026 : runs 38224245276 et 38372460495).
+  # La portion décodée du jeton portée ci-dessous vaut
+  # {"iss":"supabase-demo","role":"anon" — SEULE cette variante est dispensée :
+  # une vraie clé (iss = référence de projet, ou rôle service_role) déclenche
+  # toujours la règle `jwt` par défaut.
+  '''eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24i''',
 ]
