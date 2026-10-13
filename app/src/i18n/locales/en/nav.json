@@ -188,6 +188,8 @@
     "dataExport": "Data export",
     "auditLog": "Audit log",
     "coherence": "Chain coherence",
+    "robustesse": "Chain robustness",
+    "certificat": "Integrity certificate",
     "prospects": "Prospects",
     "representatives": "Representatives",
     "deliverySchedules": "Delivery schedules",

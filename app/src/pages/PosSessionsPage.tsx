@@ -6,6 +6,7 @@ import { useToast } from '@/lib/toast'
 import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { Clock, Eye } from 'lucide-react'
 import type { PosSession, PosTicket, PosTerminal } from '@/types'
+import { ChainTimeline } from '@/components/ChainTimeline'
 
 type SessionWithTerminal = PosSession & { terminal: { name: string } | null }
 
@@ -27,6 +28,7 @@ export function PosSessionsPage() {
   // D5 (stk-014) : corriger une vente. Session ouverte → annulation (`void_pos_ticket`) ;
   // session clôturée → avoir (`pos_refund_ticket`). Dans les deux cas un motif est demandé.
   const [ticketAction, setTicketAction] = useState<{ ticket: PosTicket; kind: 'cancel' | 'refund' } | null>(null)
+  const [detailTicket, setDetailTicket] = useState<PosTicket | null>(null)
   const [ticketReason, setTicketReason] = useState('')
 
   const load = useCallback(async () => {
@@ -200,6 +202,9 @@ export function PosSessionsPage() {
                       <Badge variant={ticket.status === 'completed' ? 'success' : 'danger'}>
                         {t(`sessions.ticketStatus.${ticket.status}`, { defaultValue: ticket.status })}
                       </Badge>
+                      <div className="mt-2">
+                        <Button size="sm" variant="secondary" onClick={() => setDetailTicket(ticket)}>{t('sessions.viewTicket')}</Button>
+                      </div>
                       {ticket.status === 'completed' && (
                         <div className="mt-2">
                           <Button size="sm" variant="secondary"
@@ -270,6 +275,39 @@ export function PosSessionsPage() {
           </Card>
         </div>
       )}
+
+      {detailTicket && <PosTicketDetailModal ticket={detailTicket} onClose={() => setDetailTicket(null)} />}
+    </div>
+  )
+}
+
+// ============================================================
+// I-01 — la Vue Chaîne sur le TICKET DE CAISSE : le ticket est le nœud de
+// DÉPART de la chaîne caisse → stock → comptabilité (sortie de stock, écriture
+// de caisse), et son annulation (`void_pos_ticket`) ou son avoir
+// (`pos_refund_ticket`) la ferment. Le composant de frise est générique : il lit
+// `document_links` (460) et le registre `chain_document_types` (`pos_tickets`,
+// 450). On n'affiche aucun montant recalculé — le total est celui du ticket.
+function PosTicketDetailModal({ ticket, onClose }: { ticket: PosTicket; onClose: () => void }) {
+  const { t } = useTranslation('pos')
+  const { t: tCommon } = useTranslation('common')
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] p-4 overflow-y-auto">
+      <Card title={`${t('sessions.viewTicket')} — ${ticket.number}`} className="w-full max-w-2xl my-8">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-[var(--color-text-secondary)]">{formatDate(ticket.date)}</span>
+            <span className="font-mono font-bold">{formatCurrency(ticket.total)}</span>
+          </div>
+          <div className="pt-2 border-t border-[var(--color-border)]">
+            <ChainTimeline type="pos_tickets" id={ticket.id} libelle={ticket.number} />
+          </div>
+          <div className="flex justify-end">
+            <Button variant="secondary" onClick={onClose}>{tCommon('actions.close')}</Button>
+          </div>
+        </div>
+      </Card>
     </div>
   )
 }

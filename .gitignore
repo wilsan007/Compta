@@ -69,5 +69,8 @@ yarn.lock.bak
 # Claude Code (worktrees locaux, 266 Mo)
 .claude/
 
+# Sorties d'outils de session « brag » — 5 dossiers non versionnés vus le 13/10/2026
+brag*/
+
 # Outillage local de session (réglages d'une autre session, non versionné)
 claude/

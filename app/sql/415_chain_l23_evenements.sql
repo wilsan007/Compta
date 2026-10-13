@@ -294,7 +294,60 @@ VALUES
   ('chain.enforcement_changed', 'Le mode d''application des chaînages d''une société change (observe, avertit, refuse). Payload : mode.', 'chain', true),
   ('chain.regenerated', 'Un effet de chaîne a été régénéré (cause : taux, compte, prix de revient, diviseur…). Payload : effet, cause, regeneration_id.', 'chain', true),
   ('chain.link_broken', 'Un lien de chaîne est rompu : l''effet aval a été retiré ou contre-passé. Payload : effet, motif.', 'chain', true),
-  ('chain.link_superseded', 'Un lien de chaîne est remplacé par un nouveau tour : l''ancien reste lisible pour l''historique. Payload : effet, tour.', 'chain', true)
+  ('chain.link_superseded', 'Un lien de chaîne est remplacé par un nouveau tour : l''ancien reste lisible pour l''historique. Payload : effet, tour.', 'chain', true),
+  -- ── LES ÉVÉNEMENTS DES LOTS RÉCENTS (intégration) ──
+  --   Mesuré : le contrôle T05 de cette suite exige que le catalogue couvre EXACTEMENT
+  --   ce que le code produit — « ni promesse morte, ni effet invisible ». Les lots
+  --   fusionnés depuis la 415 (partie B 500-529, L16/L23 497-499 et 750-759, A2, P1)
+  --   émettent 42 événements qui n''y figuraient pas. Les voici, avec leur portée.
+  -- ── ventes (partie B) ──
+  ('quotes.accepted', 'Un devis client est ACCEPTÉ : la commande peut naître du lien devis → commande (R-001, partie B). Payload : number, total.', 'sales', true),
+  ('quotes.expired', 'Un devis arrive à expiration : son état le dit, la vente ne suivra pas (R-004, partie B). Payload : valid_until.', 'sales', true),
+  ('sales_orders.invoiced', 'Une commande client est FACTURÉE : sa facture est rattachée à la commande (R-002, partie B). Payload : invoice_id.', 'sales', true),
+  ('invoices.cancelled', 'Une facture de vente est ANNULÉE : la chaîne en tire ses conséquences — avoir, sortie du CA (R-019, partie B). Payload : number.', 'sales', true),
+  ('credit_notes.created_from_invoice', 'Un avoir client naît d''une facture annulée : le lien l''attache à sa facture (R-019, partie B). Payload : invoice_id.', 'sales', true),
+  ('delivery_notes.returned', 'Un RETOUR client est constaté : le bon de livraison revient, le stock rentre (R-021, partie B). Payload : number.', 'sales', true),
+  ('delivery_notes.transformed', 'Un bon de livraison est TRANSFORMÉ : sa facture suit (R-022, partie B). Payload : invoice_id.', 'sales', true),
+  ('collection_reminders.paid', 'Une relance client se solde : la facture est réglée, la relance s''arrête (R-059, partie B). Payload : invoice_id.', 'sales', true),
+  ('collection_reminders.cancelled', 'Une relance client est ANNULÉE : l''état le dit (partie B). Payload : number.', 'sales', true),
+  -- ── achats (partie B) ──
+  ('purchase_orders.received', 'Une commande d''achat est REÇUE : la réception suit, le stock entre (R-011, partie B). Payload : receipt_id.', 'purchases', true),
+  ('goods_receipts.partial', 'Une réception est PARTIELLE : le reliquat est dit, rien n''est perdu (R-012, partie B). Payload : remaining.', 'purchases', true),
+  ('goods_receipts.pending', 'Une réception attend son contrôle : son état est observable (R-014, partie B). Payload : number.', 'purchases', true),
+  ('purchase_invoices.cancelled', 'Une facture d''achat est ANNULÉE : sa contrepartie est tracée (R-018, partie B). Payload : number.', 'purchases', true),
+  ('purchase_invoices.overdue', 'Une facture d''achat est ÉCHUE : la relance fournisseur devient possible (R-005, partie B). Payload : due_date.', 'purchases', true),
+  ('purchase_invoices.rejected', 'Une facture d''achat est REJETÉE : le motif est tracé (R-015, partie B). Payload : motif.', 'purchases', true),
+  ('purchase_credit_notes.created_from_invoice', 'Un avoir fournisseur naît d''une facture d''achat : le lien l''attache (R-016, partie B). Payload : invoice_id.', 'purchases', true),
+  ('supplier_payments.cancelled', 'Un décaissement fournisseur est ANNULÉ : l''état le dit (R-020, partie B). Payload : number.', 'purchases', true),
+  ('expense_reports.rejected', 'Une note de frais est REJETÉE : l''état le dit, rien n''est payé (R-038, partie B). Payload : number.', 'hr', true),
+  -- ── trésorerie (partie B) ──
+  ('customer_payments.cancelled', 'Un encaissement client est ANNULÉ : l''état le dit (R-024, partie B). Payload : number.', 'banking', true),
+  ('sepa_payment_orders.processed', 'Un ordre de prélèvement SEPA est EXÉCUTÉ : son virement suit (R-031, partie B). Payload : transfer_id.', 'banking', true),
+  ('sepa_payment_orders.rejected', 'Un ordre SEPA est REJETÉ : la trésorerie le dit (R-032, partie B). Payload : motif.', 'banking', true),
+  ('treasury_transfers.executed', 'Un virement interne est EXÉCUTÉ : ses deux côtés sont tracés (R-034, partie B). Payload : amount.', 'banking', true),
+  ('treasury_transfers.cancelled', 'Un virement interne est ANNULÉ : l''état le dit (R-035, partie B). Payload : number.', 'banking', true),
+  -- ── production (partie B et L16) ──
+  ('manufacturing_orders.started', 'Un ordre de fabrication DÉMARRE : l''état est franchi et tracé (L16, 750). Payload : number.', 'production', true),
+  ('manufacturing_orders.components_reserved', 'Un OF planifié RÉSERVE ses composants, pour la quantité lancée (R-045, partie B). Payload : composants.', 'production', true),
+  ('manufacturing_orders.components_consumed', 'Un OF en cours SOLDE ses réservations ; la sortie de stock est produite à la CLÔTURE par la chaîne 81/229 (R-044, partie B). Payload : reservations_soldees.', 'production', true),
+  ('manufacturing_orders.cancelled', 'Un ordre de fabrication est ANNULÉ : l''état le dit, avant toute contre-passation (R-043, partie B). Payload : number.', 'production', true),
+  ('manufacturing_orders.cancelled_reversed', 'Un OF annulé est CONTRE-PASSÉ : ses mouvements de stock sont inversés (R-043, partie B). Payload : mouvements_inverses.', 'production', true),
+  ('manufacturing_orders.mrp_linked', 'Un OF est RATTACHÉ à sa proposition MRP : le lien est posé (R-046, partie B). Payload : proposal_id.', 'production', true),
+  ('manufacturing_orders.mrp_sourced', 'Un OF est SOURCÉ par le calcul MRP (R-046/L16). Payload : mrp_run_id.', 'production', true),
+  -- ── stock et projets (partie B) ──
+  ('stock.transfer', 'Un TRANSFERT de stock entre dépôts est décidé (R-047, partie B). Payload : from, to.', 'stock', true),
+  ('stock_movements.transfer', 'Un mouvement de TRANSFERT est posé sur le dépôt de départ (R-047, partie B). Payload : quantity.', 'stock', true),
+  ('stock_movements.transfer_paired', 'Le mouvement de transfert est APPARIÉ à sa contrepartie : le dépôt d''arrivée reçoit (R-047, partie B). Payload : paired_id.', 'stock', true),
+  ('projects.completed', 'Un projet est TERMINÉ : la clôture de projet est tracée (R-040, portée par la 496). Payload : number.', 'projects', true),
+  -- ── paie, RH et fiscal (partie B) ──
+  ('contracts.created', 'Un contrat de travail est CRÉÉ : l''état le dit, ses échéances suivent (R-027/R-036, partie B). Payload : employee_id.', 'hr', true),
+  ('pay_runs.approved', 'Un lot de paie est APPROUVÉ : l''état le dit, l''écriture peut naître (R-026, partie B). Payload : period.', 'hr', true),
+  ('social_declarations.rejected', 'Une déclaration sociale est REJETÉE : l''état le dit, le motif est tracé (R-039, partie B). Payload : motif.', 'hr', true),
+  ('dsn_declarations.rejected', 'Une DSN est REJETÉE : l''état le dit, le motif est tracé (R-039, partie B). Payload : motif.', 'hr', true),
+  ('vat_returns.submitted', 'Une déclaration de TVA est DÉPOSÉE : l''état le dit (R-033, partie B). Payload : period.', 'tax', true),
+  ('vat_returns.paid', 'Une déclaration de TVA est PAYÉE : l''état le dit (R-033, partie B). Payload : amount.', 'tax', true),
+  ('vat_returns.edi_rejected', 'Une déclaration de TVA est REJETÉE par l''EDI : l''état le dit (R-033, partie B). Payload : motif.', 'tax', true),
+  ('budget_commitments.cancelled', 'Un engagement budgétaire est ANNULÉ : l''état le dit, l''enveloppe se libère (R-007, partie B). Payload : amount.', 'accounting', true)
 ON CONFLICT (event_name) DO UPDATE
 SET description = EXCLUDED.description,
     category    = EXCLUDED.category,

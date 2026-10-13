@@ -2319,6 +2319,11 @@ jobs:
       # Territoire : app/sql/*chain*, *metric*, ci/check_chain*, ci/check_effects*
       # Plage : 475→486 — branche plan6/a-chainages
 
+      - name: 'A1 (475) : le devis au registre des types de documents'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/475_chain_document_types_quotes_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:a2 --- Vue Chaîne, pages Robustesse/Cohérence, lecture écran de l'indice ---
       # Territoire : ChainTimeline.tsx, chainView.ts, chainCoherence.ts, pages hôtes — SQL en lecture
       # Plage : 487→492 — branche plan6/a2-vue-chaine
@@ -2334,6 +2339,8 @@ jobs:
       # Branche : plan6/a3-l16-projets.
       - name: 'L16 : la clôture de projet est tracée et annoncée (496)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/496_chain_l16_cloture_projet_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # L16 — chaînage interne de la PRODUCTION : le DÉMARRAGE de l'OF cesse
       # d'être muet (R-044). 12 verdicts : trace « applique » + contrat déclaré,
@@ -2342,6 +2349,8 @@ jobs:
       # Branche : plan6/a3-l16-production (plage 750→759).
       - name: 'L16 : le démarrage d''un OF est tracé et annoncé (750)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/750_chain_l16_demarrage_of_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # L16 — chaînage interne COMMERCIAL : le devis accepté devient une COMMANDE,
       # tracé (effet `sale.quote.to_order`). 19 verdicts : nominal, prix gelé,
@@ -2349,6 +2358,8 @@ jobs:
       # isolation (D8).
       - name: 'L16 : devis accepté → commande, tracé (493)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/493_chain_l16_devis_commande_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # L16 — chaînage interne COMMERCIAL (tronçon 2) : la LIVRAISON issue d'une
       # COMMANDE est rattachée et tracée (effet `sale.order.to_delivery`).
@@ -2356,6 +2367,8 @@ jobs:
       # client, annulé, inexistant), la frise des deux côtés (I-01), isolation (D8).
       - name: 'L16 : commande → livraison, rattachée et tracée (494)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/494_chain_l16_commande_livraison_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # L16 — chaînage interne COMMERCIAL (tronçon 3) : la FACTURE d'un bon de
       # livraison lui est rattachée et tracée (effet `sale.delivery.to_invoice`).
@@ -2363,10 +2376,343 @@ jobs:
       # facture annulée, autre client), la frise des deux côtés (I-01), isolation (D8).
       - name: 'L16 : livraison → facture, rattachée et tracée (495)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/495_chain_l16_livraison_facture_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L16 — chaînage interne COMMERCIAL (tronçon 4) : le RÈGLEMENT d'une FACTURE
+      # lui est rattaché et tracé (effet `sale.invoice.to_payment`).
+      # 14 verdicts : nominal, idempotence (D1), quatre refus (facture/règlement
+      # annulés, autre client, règlement déjà affecté), frise (I-01), isolation (D8).
+      - name: 'L16 : facture → règlement, rattachée et tracée (497)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/497_chain_l16_facture_reglement_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L16 — chaînage interne ACHATS : la RÉCEPTION issue d'une COMMANDE D'ACHAT
+      # lui est rattachée et tracée (effet `purchase.order.to_receipt`) ; `purchase_orders`
+      # entre au registre chain_document_types.
+      # 14 verdicts : nominal, idempotence (D1), quatre refus (brouillon/annulée/annulée/autre
+      # fournisseur), frise (I-01), isolation (D8).
+      - name: 'L16 : commande d''achat → réception, rattachée et tracée (498)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/498_chain_l16_reception_commande_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L16 — chaînage interne TRÉSORERIE : le VIREMENT (règlement fournisseur ou
+      # client) exécuté par un ORDRE DE PAIEMENT lui est rattaché et tracé
+      # (effet `treasury.order.to_payment`) ; `payment_orders` entre au registre.
+      # 16 verdicts : nominal achat + vente, idempotence (D1), quatre refus (annulé/
+      # déjà exécuté/introuvable/montant), frise (I-01), isolation (D8).
+      - name: 'L16 : ordre de paiement → virement, rattaché et tracé (499)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/499_chain_l16_ordre_virement_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L16 — chaînage interne STOCK/ACHATS : la COMMANDE D'ACHAT issue d'une
+      # PROPOSITION (MRP) lui est rattachée et tracée (effet `purchase.proposal.to_order`) ;
+      # `mrp_proposals` entre au registre chain_document_types.
+      # 15 verdicts : nominal, idempotence (D1), cinq refus (rejetée/convertie/
+      # fabrication/annulée/autre fournisseur), frise (I-01), isolation (D8).
+      - name: 'L16 : proposition (MRP) → commande d''achat, rattachée et tracée (751)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/751_chain_l16_proposition_commande_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L23-b — LES AUTOMATISATIONS branchées sur le journal d'événements unifié :
+      # le moteur `chain_l23_automatiser` joue, pour chaque événement entrant,
+      # les règles ACTIVES de sa société (catalogue FERMÉ `automation_actions`,
+      # idempotence structurelle `automation_runs`).
+      # 10 verdicts : nominal (déclenchement + lien), idempotence (D1), skipped,
+      # failed (erreur tracée, transaction survit), isolation (D8).
+      - name: 'L23-b : automatisations sur le journal d''événements, tracées (752)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/752_chain_l23_automatisations_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L16 — chaînage interne ACHATS : le RÈGLEMENT d'une FACTURE FOURNISSEUR lui
+      # est rattaché et tracé (effet `purchase.invoice.to_payment`) ; miroir de 497.
+      # 14 verdicts : nominal, idempotence (D1), quatre refus (facture/règlement
+      # annulés, autre fournisseur, règlement déjà affecté), frise (I-01), isolation (D8).
+      - name: 'L16 : facture fournisseur → règlement, rattachée et tracée (753)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/753_chain_l16_reglement_fournisseur_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L16 — chaînage interne COMMERCIAL : l'AVOIR qui annule une FACTURE lui est
+      # rattaché et tracé (effet `sale.invoice.to_credit_note`) ; le lot différé
+      # `498` est enfin fermé (le harnais de validation du 753 l'a rendu possible).
+      # 14 verdicts : nominal, idempotence (D1), quatre refus (avoir introuvable/
+      # brouillon/autre client/déjà rattaché), frise (I-01), isolation (D8).
+      - name: 'L16 : facture → avoir, rattachée et tracée (754)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/754_chain_l16_facture_avoir_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L16 — chaînage interne ACHATS : la FACTURE FOURNISSEUR d'une RÉCEPTION lui
+      # est rattachée et tracée (effet `purchase.receipt.to_invoice`) ; le maillon
+      # ÉCRIT `purchase_invoices.goods_receipt_id`, que le rapprochement trois points
+      # (135/148) lisait sans que personne ne l'écrive.
+      # 14 verdicts : nominal, idempotence (D1), quatre refus (réception/facture
+      # annulées, autre fournisseur, facture déjà rattachée), frise (I-01), isolation (D8).
+      - name: 'L16 : réception → facture fournisseur, rattachée et tracée (755)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/755_chain_l16_reception_facturefournisseur_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L16 — chaînage interne ACHATS : l'AVOIR FOURNISSEUR qui annule une FACTURE
+      # FOURNISSEUR lui est rattaché et tracé (effet `purchase.invoice.to_credit_note`) ;
+      # `purchase_credit_notes` entre au registre chain_document_types. Dernier
+      # tronçon de la famille Achats.
+      # 14 verdicts : nominal, idempotence (D1), quatre refus (avoir introuvable/
+      # brouillon/autre fournisseur/déjà rattaché), frise (I-01), isolation (D8).
+      - name: 'L16 : facture fournisseur → avoir, rattachée et tracée (756)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/756_chain_l16_avoir_fournisseur_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L16 — chaînage interne COMMERCIAL : la RELANCE d'une FACTURE lui est
+      # rattachée et tracée (effet `sale.invoice.to_reminder`) ; `collection_reminders`
+      # entre au registre chain_document_types. Dernier tronçon du Commercial.
+      # 15 verdicts : nominal, idempotence (D1), cinq refus (introuvable/brouillon/
+      # annulée/autre client/déjà portée), frise (I-01), isolation (D8).
+      - name: 'L16 : facture → relance, rattachée et tracée (757)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/757_chain_l16_relance_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L16 — chaînage interne COMPTABILITÉ : chaque LIGNE DE JOURNAL d'un groupe de
+      # lettrage est tracée vers son GROUPE (effet `rev.line.lettered`) ; `lettrage_groups`
+      # entre au registre. C'est la demande R3 d'A1 (« bâtir le lien lettrage_groups ↔
+      # journal_lines », pour INV-07). Direction LIGNE → GROUPE : link_documents fusionne
+      # deux liens de même amont, donc l'amont est la ligne (N liens tiennent).
+      # 12 verdicts : nominal (2 lignes), idempotence structurelle, trois refus,
+      # frise (I-01) dans les deux sens, isolation (D8).
+      - name: 'L16 : groupe de lettrage → ses lignes de journal, tracé (758)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/758_chain_l16_lettrage_groupes_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L16 — chaînage interne RH/PAIE : le BULLETIN DE PAIE rattache son ÉCRITURE
+      # comptable (effet `payroll.slip.posted`) ; `pay_slips` entre au registre.
+      # 12 verdicts : nominal, idempotence (D1), trois refus (introuvable/annulé/
+      # non comptabilisé), frise (I-01), isolation (D8).
+      - name: 'L16 : bulletin de paie → son écriture, tracé (759)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/759_chain_l16_bulletin_ecriture_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L16 — chaînage interne COMPTABILITÉ : l'EXERCICE CLOS rattache son ÉCRITURE
+      # d'affectation du résultat (effet `rev.fiscal_year.result_allocated`) ;
+      # `fiscal_years` entre au registre. Première migration de la plage 760→769.
+      # 12 verdicts : nominal, idempotence (D1), trois refus (introuvable/ouvert/
+      # non affecté), frise (I-01), isolation (D8).
+      - name: 'L16 : exercice clos → son écriture d''affectation, tracé (760)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/760_chain_l16_cloture_resultat_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # P1 (A3.4) — l'ATTESTATION D'INTÉGRITÉ TECHNIQUE : un `jsonb` de FAITS
+      # (dernier relevé des invariants, écarts nommés, rapport du banc — non_joue
+      # compris — et empreinte NF-525). Aucune écriture, aucun « tenu » inventé,
+      # garde de société. 7 verdicts.
+      - name: 'P1 : attestation d''intégrité technique (770)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/770_chain_certificat_integrite_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # --- plan6:b --- règles d'état, paie française ---
       # Territoire : règles d'état par module ; app/src/lib/payroll*, écrans de paie
       # Plage : 500→559
+      #
+      # R-001 (partie B, lot Ventes) — un devis ACCEPTÉ produit sa commande
+      # (brouillon), prix gelé, lien `created_from`, événement `quotes.accepted`.
+      - name: 'plan6 B — R-001 : devis accepté → commande (500)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/500_regle_ventes_devis_accepte_commande_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-004 (partie B, lot Ventes) — une commande FACTURÉE se rapproche de ses
+      # factures (lien `invoiced_by`), reliquat non facturé mesuré.
+      - name: 'plan6 B — R-004 : commande facturée → rapprochement (501)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/501_regle_ventes_commande_facturee_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-005 (partie B, lot Ventes) — valider une commande : numéro définitif,
+      # en-tête immuable, lignes gelées.
+      - name: 'plan6 B — R-005 : commande validée → numéro définitif + gel (502)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/502_regle_ventes_commande_validee_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-003 (partie B, lot Ventes) — valider un devis : numéro définitif, verrou
+      # d'en-tête, lignes gelées (la transformation R-001 reste permise).
+      - name: 'plan6 B — R-003 : devis validé → numéro définitif + verrou (503)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/503_regle_ventes_devis_valide_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-002 (partie B, lot Ventes) — devis expiré : émet `quotes.expired`
+      # (relance CRM, statistique de perte), idempotent.
+      - name: 'plan6 B — R-002 : devis expiré → événement (504)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/504_regle_ventes_devis_expire_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-017/R-018 (partie B, lot Achats) — facture fournisseur échue / rejetée :
+      # événements `purchase_invoices.overdue` et `purchase_invoices.rejected`.
+      - name: 'plan6 B — R-017/R-018 : facture fournisseur échue / rejetée (505)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/505_regle_achats_facture_surveillance_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-059/R-060/R-061 (partie B, lot Relances) — horodatage de la relance (EF-02),
+      # arrêt de la relance (payée / annulée).
+      - name: 'plan6 B — R-059/060/061 : relances horodatées et clôturées (506)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/506_regle_relances_suivi_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-058 (partie B, lot Budgets) — engagement annulé : trace motivée.
+      - name: 'plan6 B — R-058 : engagement libéré (507)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/507_regle_budgets_engagement_annule_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-054/R-055/R-056 (partie B, lot Conformité) — rejets déclaratifs (TVA EDI,
+      # DSN, déclaration sociale) : alerte / histoire des rejets.
+      - name: 'plan6 B — R-054/055/056 : rejets déclaratifs (508)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/508_regle_conformite_rejets_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-046 (partie B, lot Production) — OF d'origine MRP : traçabilité amont.
+      - name: 'plan6 B — R-046 : OF d''origine MRP (509)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/509_regle_production_of_source_mrp_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-011 (partie B, lot Achats) — commande reçue : rapprochement + écart de quantité.
+      - name: 'plan6 B — R-011 : commande reçue → rapprochement (510)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/510_regle_achats_commande_recue_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-013/R-015/R-016 (partie B, lot Achats) — réception partielle / en attente,
+      # facture fournisseur annulée.
+      - name: 'plan6 B — R-013/015/016 : réceptions et facture annulée (511)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/511_regle_achats_reception_et_facture_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-007 (partie B, lot Ventes) — retour client : réintégration en stock.
+      - name: 'plan6 B — R-007 : retour client (512)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/512_regle_ventes_retour_client_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-009 (partie B, lot Ventes) — BL transformé : lien vers la facture (la garde
+      # « pas de sortie sur un brouillon » est coordonnée).
+      - name: 'plan6 B — R-009 : BL transformé → lien facture (513)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/513_regle_ventes_bl_transforme_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-048/R-049 (partie B, lot Trésorerie) — ordres SEPA rejeté / traité.
+      - name: 'plan6 B — R-048/049 : SEPA rejeté / traité (514)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/514_regle_tresorerie_sepa_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-050/R-051 (partie B, lot Trésorerie) — virement exécuté / annulé.
+      - name: 'plan6 B — R-050/051 : virement exécuté / annulé (515)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/515_regle_tresorerie_virement_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-052/R-053 (partie B, lot Conformité) — TVA soumise / payée.
+      - name: 'plan6 B — R-052/053 : TVA soumise / payée (516)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/516_regle_conformite_tva_retour_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-040/041/042 (partie B, lot Projets) — projet complété / annulé / en attente.
+      - name: 'plan6 B — R-040/041/042 : état de projet (517)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/517_regle_projets_cloture_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-031/037/038/039 (partie B, lot Paie/RH) — note de frais rejetée, contrats.
+      - name: 'plan6 B — R-031/037/038/039 : note de frais et contrats (518)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/518_regle_rh_contrats_et_note_frais_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-019/044/045/047 (partie B) — facture client annulée, OF planifié/en cours,
+      # transfert de stock : les quatre dernières VIERGES de l'inventaire B.1.
+      - name: 'plan6 B — R-019/044/045/047 : derniers états (519)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/519_regle_derniers_etats_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Complément des PARTIELLES — R-023/024 (règlements annulés), R-025/026/028 (paie),
+      # R-029/032/043 (note de frais, OF annulé), R-020 (garde documentée).
+      - name: 'plan6 B — R-023/024 : règlements annulés (520)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/520_regle_paiements_annules_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'plan6 B — R-025/026/028 : états de paie (521)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/521_regle_paie_etats_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'plan6 B — R-020/029/032/043 : dernières partielles (522)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/522_regle_partielles_finales_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-019 (partie B, lot Ventes) — facture annulée : avoir + arrêt des relances.
+      - name: 'plan6 B — R-019 : facture annulée → avoir (523)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/523_regle_r019_avoir_facture_annulee_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-047 (partie B, lot Stock) — les deux jambes d'un transfert liées.
+      - name: 'plan6 B — R-047 : transfert → deux jambes liées (524)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/524_regle_r047_transfert_lie_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-043 (partie B, lot Production) — OF annulé : contre-passation des mouvements.
+      - name: 'plan6 B — R-043 : OF annulé → contre-passation (525)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/525_regle_r043_of_annule_contrepassation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-016 (partie B, lot Achats) — facture fournisseur annulée : avoir fournisseur.
+      - name: 'plan6 B — R-016 : facture fournisseur annulée → avoir (526)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/526_regle_r016_avoir_fournisseur_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-044/R-045 (partie B, lot Production) — OF planifié : réservation ; en cours : consommation.
+      - name: 'plan6 B — R-044/045 : OF — réservation et consommation (527)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/527_regle_r044_r045_of_consommation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-015 (partie B, lot Achats) — contrôle qualité obligatoire avant entrée en stock.
+      - name: 'plan6 B — R-015 : contrôle qualité avant entrée en stock (528)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/528_regle_r015_controle_qualite_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-046 (partie B, lot Production) — OF d'origine MRP lié à sa proposition.
+      - name: 'plan6 B — R-046 : OF lié à sa proposition MRP (529)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/529_regle_r046_lier_proposition_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # --- plan6:c --- lot K, localisation Djibouti ---
       # Territoire : legislation_packs, chart_*, resolve_account, grilles fiscales ;

@@ -202,9 +202,9 @@ async function createCompanyViaUI(page, name, opts = {}) {
   }
   await page.getByRole('button', { name: FR.continue, exact: true }).click()
 
-  // Étape 5 — création. Le bouton d'envoi est le seul `submit` de l'assistant.
+  // Étape 5 — création. Le bouton d'envoi porte le libellé « Créer mon entreprise ».
   await page.waitForTimeout(600)
-  await page.locator('form button[type="submit"]').first().click({ timeout: 20000 }).catch(() => {})
+  await page.getByRole('button', { name: FR.create, exact: true }).first().click({ timeout: 20000 }).catch(() => {})
   // Mesure du correctif (W-QA 29/09/2026) : l'application doit rendre la main
   // D'ELLE-MÊME. On le constate avant tout contournement — sinon on ne saurait
   // jamais si le défaut est réparé.

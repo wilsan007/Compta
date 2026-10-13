@@ -35,12 +35,12 @@
 ## 0. Mesures (recalculées par le script)
 
 <!-- MESURES:DEBUT -->
-*Mesuré le **2026-10-05** par `node app/scripts/suivi-chantiers.mjs --write` — ne pas éditer à la main.*
+*Mesuré le **2026-10-13** par `node app/scripts/suivi-chantiers.mjs --write` — ne pas éditer à la main.*
 
 | Mesure | Valeur | Chantier |
 |---|---|---|
-| Branche de la copie de travail | `main` @ `010db14` | — |
-| Migrations / suites SQL dans `app/sql` | 234 / 152 | — |
+| Branche de la copie de travail | `integration/plan6-b` @ `02d6141` | — |
+| Migrations / suites SQL dans `app/sql` | 283 / 200 | — |
 | **Numéros de migration en collision entre branches** (SOC-06) | ✅ 0 | alerte |
 | Registre SQL `ci/expected_failures.sql` (lignes `INSERT`) | 1 | registre |
 | Registre écran `__screen__/expected_failures.json` | ✅ vide | registre |
@@ -52,13 +52,13 @@
 | `get_vat_codes` (correctif TVA 198) présent en base | ✅ | 1.7 |
 | e2e Playwright sur chaque PR vers `main` | ⬜ sur étiquette seulement | AUD-J01 · 4.3 |
 | `any` explicites (plafond gelé : production / tests) | 936 / 799 (gelé le 2026-10-05) | AUD-J07 · DAT-02 |
-| Tables non lues par l'écran (plafond) | 75 (gelé le 2026-10-03) | SOC-05 |
-| **Tables coquilles** (ni écran, ni Edge, SQL = DDL seul) | 37 | ORPH-02 · SOC-05 |
+| Tables non lues par l'écran (plafond) | 78 (gelé le 2026-10-11) | SOC-05 |
+| **Tables coquilles** (ni écran, ni Edge, SQL = DDL seul) | 38 | ORPH-02 · SOC-05 |
 | Suites SQL qui exercent `user_totp` / `api_keys` | 0 | ORPH-01 · SEC-02 |
 
-<details><summary>Les 37 tables coquilles</summary>
+<details><summary>Les 38 tables coquilles</summary>
 
-`business_alert_rules` · `business_connectors` · `collective_agreements` · `collective_classifications` · `crm_scoring_rules` · `crm_sequence_steps` · `crm_sequences` · `custom_field_definitions` · `custom_field_values` · `document_attachments` · `e_invoicing_logs` · `employee_self_service` · `fixed_asset_components` · `group_entities` · `group_members` · `intra_group_transactions` · `job_applications` · `job_postings` · `landed_cost_lines` · `maintenance_records` · `migration_templates` · `mo_consumptions` · `mo_operations` · `notification_center` · `platform_admins` · `quality_control_plans` · `quality_control_points` · `reorder_rules` · `report_definitions` · `resource_capacities` · `signup_flows` · `stock_count_cycles` · `stock_transfer_lines` · `tenant_fiscal_settings` · `time_entries` · `uom_categories` · `work_center_calendars`
+`automation_actions` · `business_alert_rules` · `business_connectors` · `collective_agreements` · `collective_classifications` · `crm_scoring_rules` · `crm_sequence_steps` · `crm_sequences` · `custom_field_definitions` · `custom_field_values` · `document_attachments` · `e_invoicing_logs` · `employee_self_service` · `fixed_asset_components` · `group_entities` · `group_members` · `intra_group_transactions` · `job_applications` · `job_postings` · `landed_cost_lines` · `maintenance_records` · `migration_templates` · `mo_consumptions` · `mo_operations` · `notification_center` · `platform_admins` · `quality_control_plans` · `quality_control_points` · `reorder_rules` · `report_definitions` · `resource_capacities` · `signup_flows` · `stock_count_cycles` · `stock_transfer_lines` · `tenant_fiscal_settings` · `time_entries` · `uom_categories` · `work_center_calendars`
 
 </details>
 <!-- MESURES:FIN -->
