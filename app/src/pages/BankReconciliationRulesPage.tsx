@@ -5,7 +5,7 @@ import { getBankReconciliationRules, createBankReconciliationRule, deleteBankRec
 import { Plus, Trash2, Zap, X } from 'lucide-react'
 import type { BankReconciliationRule } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 export function BankReconciliationRulesPage() {
@@ -31,7 +31,7 @@ export function BankReconciliationRulesPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('bankRecon.deleteConfirm'))) return
+    if (!(await confirmDialog(t('bankRecon.deleteConfirm')))) return
     try {
       await deleteBankReconciliationRule(id)
       toast('success', tCommon('common.success'), t('bankRecon.deleteSuccess'))

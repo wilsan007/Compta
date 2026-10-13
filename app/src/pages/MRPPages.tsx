@@ -6,7 +6,7 @@ import { useToast } from '@/lib/toast'
 import { getMRPRuns, runMRPCalculation, deleteMRPRun, getMRPProposals, updateMRPProposal, deleteMRPProposal, getMRPPendingDocs, deleteMRPPendingDoc } from '@/lib/queries/stock'
 import { runMRP } from '@/lib/queries/businessFunctions'
 import { errorMessage, formatDate } from '@/lib/utils'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 const proposalTypeIcons: Record<string, any> = { purchase: ShoppingCart, manufacture: Factory, subcontract: Factory }
 const proposalStatusVariants: Record<string, 'neutral' | 'success' | 'danger' | 'warning'> = { pending: 'neutral', approved: 'success', rejected: 'danger', converted: 'warning' }
@@ -15,12 +15,12 @@ export function MRPPage() {
   const { toast } = useToast()
   const { t } = useTranslation('production')
   const { t: tCommon } = useTranslation('common')
-  const [runs, setRuns] = useState<any[]>([])
+  const [runs, setRuns] = useState<Awaited<ReturnType<typeof getMRPRuns>>>([])
   const [loading, setLoading] = useState(true)
   const [calculating, setCalculating] = useState(false)
   const [mrpLoading, setMrpLoading] = useState(false)
-  const [selectedRun, setSelectedRun] = useState<any>(null)
-  const [proposals, setProposals] = useState<any[]>([])
+  const [selectedRun, setSelectedRun] = useState<Awaited<ReturnType<typeof runMRPCalculation>> | null>(null)
+  const [proposals, setProposals] = useState<Awaited<ReturnType<typeof getMRPProposals>>>([])
 
   const loadData = useCallback(async () => {
     try { setRuns(await getMRPRuns() || []) }
@@ -64,7 +64,7 @@ export function MRPPage() {
   }
 
   async function handleDeleteRun(id: string) {
-    if (!confirmSync(t('mrp.confirmDeleteRun'))) return
+    if (!(await confirmDialog(t('mrp.confirmDeleteRun')))) return
     try { await deleteMRPRun(id); await loadData(); setSelectedRun(null) }
     catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
@@ -182,7 +182,7 @@ export function MRPPendingDocsPage() {
   const { toast } = useToast()
   const { t } = useTranslation('production')
   const { t: tCommon } = useTranslation('common')
-  const [docs, setDocs] = useState<any[]>([])
+  const [docs, setDocs] = useState<Awaited<ReturnType<typeof getMRPPendingDocs>>>([])
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {

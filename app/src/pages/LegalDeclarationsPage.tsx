@@ -6,7 +6,7 @@ import { getLegalDeclarations, createLegalDeclaration, updateLegalDeclaration, d
 import { ShieldCheck, Plus, Trash2, X, Send } from 'lucide-react'
 import type { LegalDeclaration } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 const statusBadge: Record<string, 'neutral' | 'success' | 'warning' | 'danger'> = { pending: 'warning', submitted: 'success', late: 'danger', cancelled: 'neutral' }
 const monthLabels = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
@@ -35,7 +35,7 @@ const [declarations, setDeclarations] = useState<LegalDeclaration[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try { await deleteLegalDeclaration(id); await loadData() }
     catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }

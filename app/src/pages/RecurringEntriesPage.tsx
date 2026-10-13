@@ -6,7 +6,7 @@ import { useLocale } from '@/hooks/useLocale'
 import { RefreshCw, Plus, Trash2, Pencil, Play, Pause, Zap, X } from 'lucide-react'
 import type { RecurringEntry, RecurringEntryLine, Journal } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 export function RecurringEntriesPage() {
@@ -37,7 +37,7 @@ export function RecurringEntriesPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('recurring.deleteConfirm'))) return
+    if (!(await confirmDialog(t('recurring.deleteConfirm')))) return
     try {
       await deleteRecurringEntry(id)
       toast('success', tCommon('toast.success'), t('recurring.deleteSuccess'))
@@ -48,7 +48,7 @@ export function RecurringEntriesPage() {
   }
 
   async function handleGenerate(id: string) {
-    if (!confirmSync(t('recurring.generateConfirm'))) return
+    if (!(await confirmDialog(t('recurring.generateConfirm')))) return
     setGeneratingId(id)
     try {
       await generateRecurringEntry(id)

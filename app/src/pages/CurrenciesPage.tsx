@@ -5,7 +5,7 @@ import { Plus, Trash2, X, Coins } from 'lucide-react'
 import type { Currency } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 export function CurrenciesPage() {
@@ -24,7 +24,7 @@ const [currencies, setCurrencies] = useState<Currency[]>([])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-  if (!confirmSync(t('currencies.deleteConfirm'))) return
+  if (!(await confirmDialog(t('currencies.deleteConfirm')))) return
     try { await deleteCurrency(id); await loadData() } catch (err) { toast('error', t('currencies.loadError'), errorMessage(err) || t('currencies.loadError')) }
   }
 

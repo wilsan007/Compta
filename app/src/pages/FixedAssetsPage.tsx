@@ -7,7 +7,7 @@ import { Building, Plus, Trash2, X, Calculator, ChevronDown, ChevronRight, Trend
 import type { FixedAsset, AssetDepreciation, FiscalYear } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useStatusLabels } from '@/lib/statusUtils'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 export function FixedAssetsPage() {
   const { toast } = useToast()
@@ -59,7 +59,7 @@ export function FixedAssetsPage() {
   }
 
   async function handleDelete(id: string) {
-  if (!confirmSync(tCommon('form.confirmDelete'))) return
+  if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try {
       await deleteFixedAsset(id)
       await loadData()

@@ -12,7 +12,7 @@ import { useToast } from '@/lib/toast'
 import { useLegislation } from '@/lib/legislation'
 import { ArticleInterrogationModal } from '@/components/ArticleInterrogationModal'
 import { getProductStock } from '@/lib/queries/stock'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { usePermission } from '@/hooks/usePermission'
 import { ChainTimeline } from '@/components/ChainTimeline'
 
@@ -65,7 +65,7 @@ const [quotes, setQuotes] = useState<Quote[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try {
       await deleteQuote(id)
       await loadData()
@@ -75,7 +75,7 @@ const [quotes, setQuotes] = useState<Quote[]>([])
   }
 
   async function handleConvert(id: string) {
-    if (!confirmSync(t('quotes.convertToInvoice'))) return
+    if (!(await confirmDialog(t('quotes.convertToInvoice')))) return
     try {
       await convertQuoteToInvoice(id)
       toast('success', tCommon('toast.success'), t('quotes.convertToInvoice'))
@@ -86,7 +86,7 @@ const [quotes, setQuotes] = useState<Quote[]>([])
   }
 
   async function handleTransformToOrder(id: string) {
-    if (!confirmSync(t('quotes.transformToOrder'))) return
+    if (!(await confirmDialog(t('quotes.transformToOrder')))) return
     try {
       await transformQuoteToSalesOrder(id)
       toast('success', tCommon('toast.success'), t('transformations.transformationSuccess'))

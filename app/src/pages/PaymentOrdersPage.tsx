@@ -7,7 +7,7 @@ import { getBankAccounts } from '@/lib/queries/banking'
 import { Plus, Trash2, X, CheckCircle2, Ban, FileText } from 'lucide-react'
 import type { PaymentOrder, BankAccount, ThirdPartyAccount } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { nextDocumentNumber } from '@/lib/queries/core'
 import { isIbanRejected } from '@/lib/iban'
 
@@ -41,7 +41,7 @@ const [orders, setOrders] = useState<PaymentOrder[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('paymentOrders.deleteConfirm'))) return
+    if (!(await confirmDialog(t('paymentOrders.deleteConfirm')))) return
     try { await deletePaymentOrder(id); await load() }
     catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }

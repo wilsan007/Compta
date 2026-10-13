@@ -7,7 +7,7 @@ import { getLeaveRules, createLeaveRule, updateLeaveRule, deleteLeaveRule, getPu
 import type { LeaveRule, PublicHoliday, ApprovalWorkflow, StaffRequirement } from '@/types'
 import { useToast } from '@/lib/toast'
 import { Settings, Plus, Trash2, X, Workflow, Users, CalendarDays } from 'lucide-react'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 type Tab = 'rules' | 'holidays' | 'workflows' | 'staff'
 
@@ -71,7 +71,7 @@ function RulesTab() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try { await deleteLeaveRule(id); await loadData() }
     catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
@@ -225,7 +225,7 @@ function HolidaysTab() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try { await deletePublicHoliday(id); await loadData() }
     catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }

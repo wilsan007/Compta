@@ -10,7 +10,7 @@ import { useStatusLabels } from '@/lib/statusUtils'
 import { getRoutings } from '@/lib/queries/stock'
 import type { Routing } from '@/types'
 import { ArticleInterrogationModal } from '@/components/ArticleInterrogationModal'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 export function BOMPage() {
   const { t } = useTranslation('production')
@@ -56,7 +56,7 @@ const [boms, setBOMs] = useState<BOM[]>([])
   }
 
   async function handleDelete(id: string) {
-  if (!confirmSync(t('bom.confirmDelete'))) return
+  if (!(await confirmDialog(t('bom.confirmDelete')))) return
     try { await deleteBOM(id); await loadData() }
     catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }

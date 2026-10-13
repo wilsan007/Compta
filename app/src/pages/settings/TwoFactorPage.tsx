@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { useToast } from '@/lib/toast'
 import { Secret, TOTP } from 'otpauth'
 import { Shield, ShieldCheck, ShieldAlert, Key, Smartphone, Copy } from 'lucide-react'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 export function TwoFactorPage() {
@@ -104,7 +104,7 @@ export function TwoFactorPage() {
   }
 
   async function handleDisable() {
-    if (!confirmSync("Désactiver l'authentification à deux facteurs ?")) return
+    if (!(await confirmDialog("Désactiver l'authentification à deux facteurs ?"))) return
     try {
       const { error } = await supabase.rpc('disable_2fa')
       if (error) throw error

@@ -8,7 +8,7 @@ import { useToast } from '@/lib/toast'
 import { useDocuments } from '@/hooks/useDocuments'
 import { useDocumentPermissions } from '@/hooks/useDocumentPermissions'
 import type { ModuleName, ModuleDocument, Confidentiality, DocumentStatus } from '@/types/documents'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 interface DocumentListProps {
   module: ModuleName
@@ -137,7 +137,7 @@ export function DocumentList({ module, entityType, entityId }: DocumentListProps
   }, [docs, tCommon, toast])
 
   const handleDelete = useCallback(async (id: string) => {
-    if (!confirmSync(t('documents:list.confirmDelete'))) return
+    if (!(await confirmDialog(t('documents:list.confirmDelete')))) return
     try {
       await docs.remove(id)
     } catch (err: any) {

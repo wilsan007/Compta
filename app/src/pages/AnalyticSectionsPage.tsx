@@ -5,7 +5,7 @@ import { getAnalyticSections, createAnalyticSection, updateAnalyticSection, dele
 import { Plus, Pencil, Trash2, X, PieChart } from 'lucide-react'
 import type { AnalyticSection, AnalyticPlan } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 export function AnalyticSectionsPage() {
@@ -38,7 +38,7 @@ const [sections, setSections] = useState<AnalyticSection[]>([])
   function openEdit(s: AnalyticSection) { setEditing(s); setShowForm(true) }
 
   async function handleDelete(id: string) {
-  if (!confirmSync(t('analyticSections.deleteConfirm'))) return
+  if (!(await confirmDialog(t('analyticSections.deleteConfirm')))) return
     try { await deleteAnalyticSection(id); toast('success', tCommon('common.success'), t('analyticSections.deleteSuccess')); await load() }
     catch { toast('error', tCommon('toast.error'), tCommon('toast.deleteError')) }
   }

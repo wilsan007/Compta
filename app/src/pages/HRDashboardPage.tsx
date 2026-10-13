@@ -15,8 +15,8 @@ export function HRDashboardPage() {
   const { t: tNav } = useTranslation('nav')
 const [employees, setEmployees] = useState<Employee[]>([])
   const [payRuns, setPayRuns] = useState<PayRun[]>([])
-  const [timesheets, setTimesheets] = useState<any[]>([])
-  const [dashData, setDashData] = useState<any>(null)
+  const [timesheets, setTimesheets] = useState<Awaited<ReturnType<typeof getTimesheets>>>([])
+  const [dashData, setDashData] = useState<Awaited<ReturnType<typeof getRhDashboardData>> | null>(null)
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {
@@ -55,7 +55,7 @@ const [employees, setEmployees] = useState<Employee[]>([])
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <Card><div className="p-4"><div className="flex items-center gap-2 mb-1"><Activity className="w-4 h-4 text-[var(--color-danger)]" /><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.workStoppages', 'Arrêts en cours')}</p></div><p className="text-2xl font-bold text-[var(--color-danger)]">{dashData?.workStoppages?.current ?? 0}</p></div></Card>
-            <Card><div className="p-4"><div className="flex items-center gap-2 mb-1"><Stethoscope className="w-4 h-4 text-[var(--color-warning)]" /><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.medicalExams', 'Visites médicales')}</p></div><p className="text-2xl font-bold text-[var(--color-warning-text)]">{dashData?.medical?.toPlan ?? 0}</p>{dashData?.medical?.overdue > 0 && <Badge variant="danger">{dashData.medical.overdue} {t('dashboard.overdue', 'en retard')}</Badge>}</div></Card>
+            <Card><div className="p-4"><div className="flex items-center gap-2 mb-1"><Stethoscope className="w-4 h-4 text-[var(--color-warning)]" /><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.medicalExams', 'Visites médicales')}</p></div><p className="text-2xl font-bold text-[var(--color-warning-text)]">{dashData?.medical?.toPlan ?? 0}</p>{(dashData?.medical?.overdue ?? 0) > 0 && <Badge variant="danger">{dashData?.medical?.overdue} {t('dashboard.overdue', 'en retard')}</Badge>}</div></Card>
             <Card><div className="p-4"><div className="flex items-center gap-2 mb-1"><TrendingUp className="w-4 h-4 text-[var(--color-info)]" /><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.exits', 'Sorties en cours')}</p></div><p className="text-2xl font-bold">{dashData?.exits?.inProgress ?? 0}</p></div></Card>
             <Card><div className="p-4"><div className="flex items-center gap-2 mb-1"><HeartPulse className="w-4 h-4 text-[var(--color-primary)]" /><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.hardship', 'Pénibilité')}</p></div><p className="text-2xl font-bold">{dashData?.hardship?.totalExposed ?? 0}</p></div></Card>
           </div>

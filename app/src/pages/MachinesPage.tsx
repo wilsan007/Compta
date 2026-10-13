@@ -7,7 +7,7 @@ import { getMachines, createMachine, deleteMachine, getWorkCenters, createWorkCe
 import { exportToExcel, importFromExcel } from '@/lib/excel-utils'
 import type { Machine, WorkCenter } from '@/types'
 import { useStatusLabels } from '@/lib/statusUtils'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 export function MachinesPage() {
@@ -33,13 +33,13 @@ export function MachinesPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('machines.confirmDelete'))) return
+    if (!(await confirmDialog(t('machines.confirmDelete')))) return
     try { await deleteMachine(id); await loadData() }
     catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }
 
   async function handleDeleteWc(id: string) {
-    if (!confirmSync(t('machines.confirmDeleteWorkCenter'))) return
+    if (!(await confirmDialog(t('machines.confirmDeleteWorkCenter')))) return
     try { await deleteWorkCenter(id); await loadData() }
     catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }

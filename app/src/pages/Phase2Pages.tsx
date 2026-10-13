@@ -1,4 +1,4 @@
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { useEffect, useState, useCallback  } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
@@ -30,8 +30,8 @@ export function ProspectsPage() {
     try { await createProspect(form as Parameters<typeof createProspect>[0]); toast('success', tCommon('common.success'), t('prospects.created')); setShowForm(false); setForm({ name: '', email: '', phone: '', address: '', city: '', country: '', contact_name: '', source: '', status: 'new', notes: '', postal_code: '', assigned_rep_id: null, converted_customer_id: null }); await loadData() }
     catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
-  async function handleDelete(id: string) { if (!confirmSync(tCommon('form.confirmDelete'))) return; try { await deleteProspect(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
-  async function handleConvert(id: string) { if (!confirmSync(t('prospects.convertConfirm'))) return; try { await convertProspectToCustomer(id, { name: form.name } as Parameters<typeof convertProspectToCustomer>[1]); toast('success', tCommon('common.success'), t('prospects.converted')); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
+  async function handleDelete(id: string) { if (!(await confirmDialog(tCommon('form.confirmDelete')))) return; try { await deleteProspect(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
+  async function handleConvert(id: string) { if (!(await confirmDialog(t('prospects.convertConfirm')))) return; try { await convertProspectToCustomer(id, { name: form.name } as Parameters<typeof convertProspectToCustomer>[1]); toast('success', tCommon('common.success'), t('prospects.converted')); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
 
   return (
     <div>
@@ -88,7 +88,7 @@ export function RepresentativesPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createSalesRepresentative(form); toast('success', tCommon('common.success'), t('reps.created')); setShowForm(false); setForm({ name: '', email: '', phone: '', commission_rate: 0, territory: '', active: true, tenant_id: null }); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
-  async function handleDelete(id: string) { if (!confirmSync(tCommon('form.confirmDelete'))) return; try { await deleteSalesRepresentative(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
+  async function handleDelete(id: string) { if (!(await confirmDialog(tCommon('form.confirmDelete')))) return; try { await deleteSalesRepresentative(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
 
   return (
     <div>
@@ -129,7 +129,7 @@ export function WarehouseLocationsPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createWarehouseLocation(form as Parameters<typeof createWarehouseLocation>[0]); toast('success', tCommon('common.success'), t('locations.created')); setShowForm(false); setForm({ warehouse_id: '', zone: '', aisle: '', shelf: '', code: '', description: '' }); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
-  async function handleDelete(id: string) { if (!confirmSync(tCommon('form.confirmDelete'))) return; try { await deleteWarehouseLocation(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
+  async function handleDelete(id: string) { if (!(await confirmDialog(tCommon('form.confirmDelete')))) return; try { await deleteWarehouseLocation(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
 
   return (
     <div>
@@ -264,7 +264,7 @@ export function SerialNumbersPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createProductSerialNumber(form as Parameters<typeof createProductSerialNumber>[0]); toast('success', tCommon('common.success'), t('serials.created')); setShowForm(false); setForm({ product_id: '', serial_number: '', status: 'in_stock', warranty_expiry: '', notes: '' }); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
-  async function handleDelete(id: string) { if (!confirmSync(tCommon('form.confirmDelete'))) return; try { await deleteProductSerialNumber(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
+  async function handleDelete(id: string) { if (!(await confirmDialog(tCommon('form.confirmDelete')))) return; try { await deleteProductSerialNumber(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
 
   return (
     <div>
@@ -294,7 +294,7 @@ export function ProductBatchesPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createProductBatch(form as Parameters<typeof createProductBatch>[0]); toast('success', tCommon('common.success'), t('batches.created')); setShowForm(false); setForm({ product_id: '', batch_number: '', quantity: 0, expiry_date: '', status: 'active' }); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
-  async function handleDelete(id: string) { if (!confirmSync(tCommon('form.confirmDelete'))) return; try { await deleteProductBatch(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
+  async function handleDelete(id: string) { if (!(await confirmDialog(tCommon('form.confirmDelete')))) return; try { await deleteProductBatch(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
 
   return (
     <div>
@@ -324,7 +324,7 @@ export function DocumentTemplatesPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createDocumentTemplate(form as Parameters<typeof createDocumentTemplate>[0]); toast('success', tCommon('common.success'), t('docTemplates.created')); setShowForm(false); setForm({ name: '', document_type: 'invoice', logo_url: '', primary_color: '#2563eb', secondary_color: '#64748b', is_default: false }); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
-  async function handleDelete(id: string) { if (!confirmSync(tCommon('form.confirmDelete'))) return; try { await deleteDocumentTemplate(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
+  async function handleDelete(id: string) { if (!(await confirmDialog(tCommon('form.confirmDelete')))) return; try { await deleteDocumentTemplate(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
 
   return (
     <div>
@@ -354,7 +354,7 @@ export function DeliverySchedulePage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createDeliverySchedule(form as Parameters<typeof createDeliverySchedule>[0]); toast('success', tCommon('common.success'), t('schedules.created')); setShowForm(false); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
-  async function handleDelete(id: string) { if (!confirmSync(tCommon('form.confirmDelete'))) return; try { await deleteDeliverySchedule(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
+  async function handleDelete(id: string) { if (!(await confirmDialog(tCommon('form.confirmDelete')))) return; try { await deleteDeliverySchedule(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
 
   return (
     <div>
@@ -384,7 +384,7 @@ export function ProductSubstitutesPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createProductSubstitute(form as Parameters<typeof createProductSubstitute>[0]); toast('success', tCommon('common.success'), t('substitutes.created')); setShowForm(false); setForm({ product_id: '', substitute_id: '', priority: 1 }); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
-  async function handleDelete(id: string) { if (!confirmSync(tCommon('form.confirmDelete'))) return; try { await deleteProductSubstitute(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
+  async function handleDelete(id: string) { if (!(await confirmDialog(tCommon('form.confirmDelete')))) return; try { await deleteProductSubstitute(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
 
   return (
     <div>

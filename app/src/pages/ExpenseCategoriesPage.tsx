@@ -11,10 +11,10 @@ export function ExpenseCategoriesPage() {
   const { t } = useTranslation('hr')
   const { t: tCommon } = useTranslation('common')
   const { t: tNav } = useTranslation('nav')
-  const [records, setRecords] = useState<any[]>([])
+  const [records, setRecords] = useState<Awaited<ReturnType<typeof getExpenseCategories>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [editRecord, setEditRecord] = useState<any>(null)
+  const [editRecord, setEditRecord] = useState<Awaited<ReturnType<typeof getExpenseCategories>>[number] | null>(null)
 
   const loadData = useCallback(async () => {
     setLoading(true)

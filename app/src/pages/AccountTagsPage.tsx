@@ -5,7 +5,7 @@ import { useToast } from '@/lib/toast'
 import { getAccountTags, createAccountTag, updateAccountTag, deleteAccountTag, getAccountTagMappings, createAccountTagMapping, deleteAccountTagMapping } from '@/lib/queries/misc'
 import { Plus, Trash2, Edit2, X, Tag, Link2 } from 'lucide-react'
 import type { AccountTag, AccountTagMapping } from '@/types'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 type Tab = 'list' | 'application'
@@ -87,7 +87,7 @@ export function AccountTagsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('accountTags.deleteConfirm'))) return
+    if (!(await confirmDialog(t('accountTags.deleteConfirm')))) return
     try {
       await deleteAccountTag(id)
       toast('success', t('accountTags.title'), t('accountTags.deleteSuccess'))
@@ -124,7 +124,7 @@ export function AccountTagsPage() {
   }
 
   async function handleDeleteMapping(id: string) {
-    if (!confirmSync(t('accountTags.mappingDeleteConfirm'))) return
+    if (!(await confirmDialog(t('accountTags.mappingDeleteConfirm')))) return
     try {
       await deleteAccountTagMapping(id)
       if (selectedTag) setMappings(await getAccountTagMappings(selectedTag.id))

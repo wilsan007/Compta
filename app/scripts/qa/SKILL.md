@@ -54,6 +54,51 @@ Le **guide de bienvenue** a son scénario (`guide.mjs`) parce que la tournée le
 pose comme déjà vu (`compta-onboarded`) : sans lui, il recouvrirait les 334
 écrans. `dispatch.mjs` le lance après les vagues, sous le même jeton de tournée.
 
+## Recette P0-08 — les 14 parcours métier
+
+Le banc ci-dessus visite **tous** les écrans ; il ne *lit* pas les **chiffres**
+métier. La recette P0-08 (14 parcours, `RESTE-A-FAIRE` § P0-08) est le
+complément : elle produit son **référentiel**, son **procès-verbal** et son
+**certificat**, à partir d'une seule source (aucune liste tenue à la main).
+
+```bash
+node scripts/qa/recette.mjs            # référentiel + PV + certificat de recette
+```
+
+Les artefacts vont dans `doc/audit/plan6/recette/` (`parcours.json`,
+`PROCES-VERBAL-P0-08.md`, `CERTIFICAT-RECETTE.html`). Le certificat agrège les
+notes de module de `app/.qa-out/findings.json` s'il existe — donc, idéalement,
+après `npm run qa:run` puis `npm run qa:validate`.
+
+## Amorçage « chiffres » — les parcours qui lisent un montant
+
+La tournée visite **tous** les écrans mais ne lit aucun **chiffre** : une société
+neuve a des listes vides. `amorce-chiffres.mjs` lui donne les **données métier**,
+et il les donne **par l'API du produit** — jamais en SQL, parce que le produit
+l'interdit et c'est tant mieux : le garde des écritures refuse un `posted` inséré
+directement, un bulletin ne se calcule que par le moteur, un ticket de caisse ne
+s'encaisse que sur une session ouverte.
+
+| Ce qu'il amorce | Par quelle fonction |
+|---|---|
+| une écriture **équilibrée** (100 / 100) | `post_journal_entry` → `validate_journal_entries` |
+| un **bulletin de paie** (2400 → 1842,76) | `generate_pay_run_slips` (le moteur `calculate_payslip`) |
+| une **session de caisse** clôturée (TTC 120, écart 0) | `create_pos_ticket` → clôture |
+| une **sortie de stock** (initial 10, vente 2, solde 8) | article `stock` + mouvement `initial` → `create_pos_ticket` |
+
+```bash
+E2E_TEST_PASSWORD=… node scripts/qa/amorce-chiffres.mjs   # idempotent
+```
+
+Rejouable : relancé, il ne refait rien et le dit. C'est ce que lisent les quatre
+parcours chiffrés (`app/e2e/parcours-chiffres.spec.ts`, D.5) — balance équilibrée,
+`brut − retenues = net`, total de caisse, et **le stock qui suit la vente** (le
+solde du dépôt doit valoir le carnet des mouvements). Sur une machine partagée,
+viser un port dédié (`PW_BASE_URL=http://localhost:5199 node_modules/.bin/playwright
+test`) : `reuseExistingServer` reprendrait sinon le serveur d'une AUTRE
+application qui occuperait le port (mesuré : ODF Manager sur 5174).
+
+
 ## Doctrine (à respecter)
 
 1. **Local seulement.** `QA_BASE_URL` et `QA_API_URL` doivent être locaux ; le script refuse

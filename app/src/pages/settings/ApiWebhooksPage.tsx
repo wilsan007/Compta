@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { useToast } from '@/lib/toast'
 import { getTenantId } from '@/lib/queries/core'
 import { Key, Webhook, Plus, Trash2, Copy, RefreshCw,  X, AlertTriangle, Activity } from 'lucide-react'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 // LOT5-05 (durci) : Validation SSRF côté client — source unique dans @/lib/security/ssrfGuard,
@@ -126,7 +126,7 @@ export function ApiWebhooksPage() {
   }
 
   async function handleRevokeKey(id: string) {
-    if (!confirmSync('Révoquer cette clé API ? Action irréversible.')) return
+    if (!(await confirmDialog('Révoquer cette clé API ? Action irréversible.'))) return
     try {
       const { error } = await supabase.from('api_keys').update({ active: false, revoked_at: new Date().toISOString() }).eq('id', id)
       if (error) throw error
@@ -138,7 +138,7 @@ export function ApiWebhooksPage() {
   }
 
   async function handleDeleteKey(id: string) {
-    if (!confirmSync('Supprimer définitivement cette clé ?')) return
+    if (!(await confirmDialog('Supprimer définitivement cette clé ?'))) return
     try {
       const { error } = await supabase.from('api_keys').delete().eq('id', id)
       if (error) throw error
@@ -187,7 +187,7 @@ export function ApiWebhooksPage() {
   }
 
   async function handleDeleteWebhook(id: string) {
-    if (!confirmSync('Supprimer ce webhook ?')) return
+    if (!(await confirmDialog('Supprimer ce webhook ?'))) return
     try {
       const { error } = await supabase.from('webhook_endpoints').delete().eq('id', id)
       if (error) throw error

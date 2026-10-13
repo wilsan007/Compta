@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Certificat de recette — P0-08 · Onusuite</title>
+<style>
+  :root { --accent: #4338ca; --ink: #0f172a; --muted: #64748b; --line: #e2e8f0; --ok: #059669; --warn: #d97706; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 40px 24px; font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: #f8fafc; }
+  .sheet { max-width: 980px; margin: 0 auto; background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: 0 10px 40px rgba(15,23,42,.08); }
+  .haut { padding: 28px 32px; background: linear-gradient(135deg, var(--accent), #6d28d9); color: #fff; }
+  .marque { letter-spacing: .12em; text-transform: uppercase; font-size: 12px; opacity: .85; }
+  h1 { margin: 6px 0 2px; font-size: 26px; }
+  .sous { opacity: .92; font-size: 14px; }
+  .corps { padding: 28px 32px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 10px 26px; padding: 12px 16px; background: #f1f5f9; border-radius: 10px; font-size: 13px; color: var(--muted); margin-bottom: 22px; }
+  .meta b { color: var(--ink); }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: #f8fafc; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--accent); white-space: nowrap; }
+  .v { width: 56px; }
+  h2 { font-size: 15px; margin: 26px 0 8px; }
+  .grade { display: inline-block; min-width: 26px; text-align: center; padding: 1px 7px; border-radius: 999px; font-weight: 700; font-size: 11px; }
+  .g-A { background: #dcfce7; color: var(--ok); } .g-B { background: #fef3c7; color: var(--warn); } .g-na { background: #e2e8f0; color: var(--muted); }
+  .pied { padding: 20px 32px 28px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 18px; justify-content: space-between; align-items: flex-end; }
+  .hash { font-size: 11px; color: var(--muted); word-break: break-all; max-width: 560px; }
+  .hash code { font-family: ui-monospace, monospace; color: var(--ink); }
+  .sign { text-align: right; font-size: 12px; color: var(--muted); }
+  .sign .l { margin-top: 34px; border-top: 1px solid var(--ink); width: 220px; padding-top: 4px; }
+  .phrase { font-size: 12.5px; color: var(--muted); font-style: italic; margin-top: 18px; }
+  @media print { body { background: #fff; padding: 0; } .sheet { border: 0; box-shadow: none; border-radius: 0; } }
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="haut">
+      <div class="marque">Onusuite — The Unified Business Suite</div>
+      <h1>Certificat de recette</h1>
+      <div class="sous">P0-08 — les 14 parcours métier à l’écran</div>
+    </div>
+    <div class="corps">
+      <div class="meta">
+        <span>Date : <b>2026-10-05</b></span>
+        <span>Référentiel : <b>ce92316fee4f</b></span>
+        <span>Sociétés : <b>remplie + vide</b></span>
+        <span>Gabarits : <b>375 / 768 / 1280 / 1920 px</b></span>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>Écran</th><th>Parcours</th><th>Ce qu’on doit voir</th><th>Verdict</th></tr></thead>
+        <tbody>
+        <tr><td class="mono">rec-01</td><td>Inscription</td><td>Créer une société France, puis Djibouti</td><td>plan semé ; pour DJ : plan provisoire signalé ; autre pays refusé (PAYS_NON_DISPONIBLE)</td><td class="v"></td></tr>
+        <tr><td class="mono">rec-02</td><td>Factures</td><td>Nouvelle facture 2 lignes (TVA 20 % et 5,5 %) → Valider → Envoyer</td><td>brouillon BROUILLON-FAC-…, puis FAC-2026-000001 ; badge « Comptabilisé » ; écriture VT équilibrée</td><td class="v"></td></tr>
+        <tr><td class="mono">rec-03</td><td>Factures</td><td>« Envoyer » un brouillon</td><td>la facture est validée d’abord (numéro définitif), puis envoyée</td><td class="v"></td></tr>
+        <tr><td class="mono">rec-04</td><td>Factures</td><td>« Marquer payée »</td><td>règlement REG-…, facture payée, 411 lettré ; le bouton n’apparaît pas sur un brouillon</td><td class="v"></td></tr>
+        <tr><td class="mono">rec-05</td><td>Devis</td><td>Nouveau devis → Convertir en facture</td><td>lignes et TVA reprises ; devis « transformé »</td><td class="v"></td></tr>
+        <tr><td class="mono">rec-06</td><td>Avoirs</td><td>Avoir sur facture → Valider</td><td>AV-2026-000001, facture soldée ou réduite, lettrage</td><td class="v"></td></tr>
+        <tr><td class="mono">rec-07</td><td>Factures d’achat</td><td>Nouvelle facture (référence fournisseur + lignes) → Approuver → Marquer payée</td><td>ACH-2026-000001, écriture AC, décaissement DEC-…, 401 lettré ; libellés traduits (fr/en/ar)</td><td class="v"></td></tr>
+        <tr><td class="mono">rec-08</td><td>Avoirs fournisseur</td><td>Nouveau → Valider</td><td>AVF-…, écriture AC inverse</td><td class="v"></td></tr>
+        <tr><td class="mono">rec-09</td><td>Paie</td><td>Lot approuvé → « Générer l’écriture de paie » → passer à « payé »</td><td>une seule écriture PAIE, équilibrée ; message clair si un bulletin est incohérent</td><td class="v"></td></tr>
+        <tr><td class="mono">rec-10</td><td>Import de relevé</td><td>Fichier MT940 / CAMT.053 / CFONB réel</td><td>« n opérations importées, m doublons écartés » ; lignes pointées automatiquement</td><td class="v"></td></tr>
+        <tr><td class="mono">rec-11</td><td>Stock</td><td>Inventaire en baisse puis en hausse</td><td>stock dépôt = stock article ; écriture ST</td><td class="v"></td></tr>
+        <tr><td class="mono">rec-12</td><td>Caisse</td><td>Session avec 2 tickets → clôture</td><td>stock du magasin seul décrémenté, une fois</td><td class="v"></td></tr>
+        <tr><td class="mono">rec-13</td><td>Clôture (V2)</td><td>Exercice complet → clôture → bilan / compte de résultat</td><td>équilibrés, à-nouveaux corrects, bandeau rouge absent</td><td class="v"></td></tr>
+        <tr><td class="mono">rec-14</td><td>Tout</td><td>Changer de langue (fr → en → ar)</td><td>aucune clé brute affichée ; arabe en RTL</td><td class="v"></td></tr>
+        </tbody>
+      </table>
+      <h2>Re-notation des modules</h2>
+      <table>
+        <thead><tr><th>Module</th><th>Note</th><th>Mesure</th></tr></thead>
+        <tbody>
+        <tr><td>system</td><td><span class="grade g-na">n/a</span></td><td>non mesuré — lancer l’essaim QA</td></tr>
+        <tr><td>commercial</td><td><span class="grade g-na">n/a</span></td><td>non mesuré — lancer l’essaim QA</td></tr>
+        <tr><td>stock</td><td><span class="grade g-na">n/a</span></td><td>non mesuré — lancer l’essaim QA</td></tr>
+        <tr><td>hr</td><td><span class="grade g-na">n/a</span></td><td>non mesuré — lancer l’essaim QA</td></tr>
+        <tr><td>treasury</td><td><span class="grade g-na">n/a</span></td><td>non mesuré — lancer l’essaim QA</td></tr>
+        <tr><td>accounting</td><td><span class="grade g-na">n/a</span></td><td>non mesuré — lancer l’essaim QA</td></tr>
+        </tbody>
+      </table>
+      <p class="phrase">La recette ne s’évapore pas dans un fil de discussion : elle produit un document <b>daté, empreint et signable</b> — la même exigence de preuve que le certificat d’intégrité.</p>
+    </div>
+    <div class="pied">
+      <div class="hash">Empreinte du référentiel de recette (SHA-256) :<br /><code>ce92316fee4fa8374db8794f26e3b25b9536465025466f359f3cdd4753e1bd31</code></div>
+      <div class="sign"><div class="l">Recette &amp; acceptation (client)</div></div>
+    </div>
+  </div>
+</body>
+</html>

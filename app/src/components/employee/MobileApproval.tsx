@@ -7,17 +7,33 @@ import { getTenantId } from '@/lib/queries/core'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 
+/**
+ * Un élément à approuver : un congé ou une note de frais. ⚠️ Cet écran n'est monté
+ * par aucune route (aucun `import` de `MobileApproval`) et sa donnée n'est
+ * **jamais chargée** — voir le signalement dans `PARTIE-D.md`.
+ */
+type ApprovalItem = {
+  id: string
+  type: 'leave' | 'expense'
+  employee_name?: string | null
+  leave_type?: string | null
+  start_date?: string | null
+  end_date?: string | null
+  total_amount?: number | null
+  period?: string | null
+}
+
 export function MobileApproval() {
   const { t } = useTranslation('employee')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<ApprovalItem[]>([])
   const [currentIdx, setCurrentIdx] = useState(0)
   const [loading, setLoading] = useState(false)
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [rejectComment, setRejectComment] = useState('')
 
-  async function handleApprove(item: any) {
+  async function handleApprove(item: ApprovalItem) {
     setLoading(true)
     try {
       const tid = await getTenantId()
@@ -88,8 +104,8 @@ export function MobileApproval() {
         {current.type === 'leave' ? (
           <div className="text-sm space-y-1">
             <p>{t('leaves.leaveType')}: {t(`leaves.types.${current.leave_type}`) || current.leave_type}</p>
-            <p>{t('leaves.startDate')}: {formatDate(current.start_date)}</p>
-            <p>{t('leaves.endDate')}: {formatDate(current.end_date)}</p>
+            <p>{t('leaves.startDate')}: {current.start_date ? formatDate(current.start_date) : '—'}</p>
+            <p>{t('leaves.endDate')}: {current.end_date ? formatDate(current.end_date) : '—'}</p>
           </div>
         ) : (
           <div className="text-sm space-y-1">

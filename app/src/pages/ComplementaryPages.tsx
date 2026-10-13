@@ -7,14 +7,14 @@ import { useStatusLabels } from '@/lib/statusUtils'
 import { getWorkflows, createWorkflow, deleteWorkflow, updateWorkflow, getOFDocumentAccess, createOFDocumentAccess, deleteOFDocumentAccess, updateOFDocumentAccess, getProductEquivalences, createProductEquivalence, deleteProductEquivalence, getProducts } from '@/lib/queries/stock'
 import { errorMessage, formatDate } from '@/lib/utils'
 import type { Product } from '@/types'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 export function WorkflowsPage() {
   const { toast } = useToast()
   const { t } = useTranslation('production')
   const { t: tCommon } = useTranslation('common')
   const { getStatusLabel } = useStatusLabels()
-  const [workflows, setWorkflows] = useState<any[]>([])
+  const [workflows, setWorkflows] = useState<Awaited<ReturnType<typeof getWorkflows>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
@@ -28,7 +28,7 @@ export function WorkflowsPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try { await deleteWorkflow(id); await loadData() }
     catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
@@ -149,7 +149,7 @@ export function EquivalencesPage() {
   const { toast } = useToast()
   const { t } = useTranslation('production')
   const { t: tCommon } = useTranslation('common')
-  const [equivalences, setEquivalences] = useState<any[]>([])
+  const [equivalences, setEquivalences] = useState<Awaited<ReturnType<typeof getProductEquivalences>>>([])
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -239,7 +239,7 @@ export function OFDocumentAccessPage() {
   const { toast } = useToast()
   const { t } = useTranslation('production')
   const { t: tCommon } = useTranslation('common')
-  const [accessList, setAccessList] = useState<any[]>([])
+  const [accessList, setAccessList] = useState<Awaited<ReturnType<typeof getOFDocumentAccess>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
 
