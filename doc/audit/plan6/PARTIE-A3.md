@@ -35,7 +35,7 @@ le **comportement** peut se contrer. Garde-fous :
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | A3.1 | Recompter L16 → L22 : inventaire de ce que `415` → `422` ont réellement posé (L23 tranche 1, L17 capacité ↔ absence, L18 consommation chantier, L19, L20, métriques, retour arrière) et ce qu'il reste par lot du plan d'implémentation | A.6 | 1 j | ✅ fait le 05/10 (voir §Recomptage) |
-| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **18 maillons livrés** : L16 **Commercial** — devis → commande (`493`, **19/19**), commande → livraison (`494`, **14/14**), livraison → facture (`495`, **14/14**), facture → règlement (`497`, **14/14**), facture → avoir (`754`, **14/14**), facture → relance (`757`, **15/15**) ; L16 **Achats** — commande d'achat → réception (`498`, **14/14**), réception → facture fournisseur (`755`, **14/14**), facture fournisseur → règlement (`753`, **14/14**), facture fournisseur → avoir (`756`, **14/14**) ; L16 **Comptabilité** — groupe de lettrage → ses lignes (`758`, **12/12**), exercice clos → écriture d'affectation (`760`, **12/12**), exercice → écriture d'à-nouveaux (`763`, **14/14**) ; L16 **RH/Paie** — bulletin → écriture (`759`, **12/12**) ; L16 **Trésorerie** — ordre de paiement → virement (`499`, **16/16**) ; L16 **Stock** — proposition MRP → commande d'achat (`751`, **15/15**), mouvement → son lot (`761`, **15/15**), réception → ses mouvements (`762`, **14/14**) — voir §A3.2 lots 1 à 18 |
+| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **19 maillons livrés** : L16 **Commercial** — devis → commande (`493`, **19/19**), commande → livraison (`494`, **14/14**), livraison → facture (`495`, **14/14**), facture → règlement (`497`, **14/14**), facture → avoir (`754`, **14/14**), facture → relance (`757`, **15/15**) ; L16 **Achats** — commande d'achat → réception (`498`, **14/14**), réception → facture fournisseur (`755`, **14/14**), facture fournisseur → règlement (`753`, **14/14**), facture fournisseur → avoir (`756`, **14/14**) ; L16 **Comptabilité** — groupe de lettrage → ses lignes (`758`, **12/12**), exercice clos → écriture d'affectation (`760`, **12/12**), exercice → écriture d'à-nouveaux (`763`, **14/14**) ; L16 **RH/Paie** — bulletin → écriture (`759`, **12/12**) ; L16 **Trésorerie** — ordre de paiement → virement (`499`, **16/16**) ; L16 **Stock** — proposition MRP → commande d'achat (`751`, **15/15**), mouvement → son lot (`761`, **15/15**), réception → ses mouvements (`762`, **14/14**), frais accessoires → CUMP (`765`, **6/6**) — voir §A3.2 lots 1 à 20 |
 | A3.3 | L23 (événements et webhooks unifiés, suite de la tranche 1) ; L24 (explicabilité, régularisation guidée) | A.7 | plafond du plan | 🟡 **L23-b livré le 06/10** : le **moteur d'automatisations** (`752`, suite **10/10**) — voir §A3.3 ; restent **L23-c** (lecture écran), **L24** |
 | A3.4 | P1 certificat d'intégrité, P3 audit de reprise, P2 banc sur données du prospect, puis P4, P5, P7, P8, P6 | A.8 (propositions P1 → P8) | ≈ 25 j | 🟡 **P1 : le SQL est livré** (`770`, suite **7/7** sur base neuve) — voir §A3.4 ; l'**écran** reste à **A2** ; puis P3 → P6 |
 
@@ -722,6 +722,43 @@ T05 isolation), les **cinq portes OK**, G5 **170/170**, verifier **272**.
 n'écrit pas** — le garde de l'écriture (187) tient l'exercice et la période, et une
 écriture validée est **immuable**. Le chaînage y est **vérification + trace**, jamais
 écriture.
+
+## A3.2 — lot 20 : les frais accessoires rattachés à la CUMP (migration `765`)
+
+**Le tronçon Stock/CUMP** — et un **bug de production** trouvé en route.
+
+**Ce que la mesure a trouvé.** `distribute_landed_cost` (`125_stock_advanced.sql`)
+existait déjà : elle répartit une `landed_cost` sur les mouvements de la réception,
+écrit les `landed_cost_lines`, ajuste la CUMP (`stock_quantities.unit_cost`). Mais
+ses deux filtres cherchaient `reference_type = 'receipt'` là où le déclencheur `241`
+écrit **`goods_receipt`** — la fonction **trouvait zéro mouvement**, distribuait
+**zéro centime** et renvoyait `success: true`. Le bug est **corrigé dans la 125**
+(les deux filtres), et la 765 fait du maillon ce que la maison attend : un
+`chain_l16_*` SECURITY DEFINER, **borné à `current_tenant_id()`**, qui **recommence
+la répartition** (pas de double compté : les `landed_cost_lines` existantes sont
+rejouées), **pose le lien** `landed_costs → stock_movements` (effet
+`stock.landed_cost.distributed`) et **pose la garde de suppression** sur
+`landed_costs` (via le registre de la 764).
+
+**⚠️ LEÇON DU CONTRAINTE.** Le lien utilise `link_type = 'adjusted_by'` — car la
+contrainte `document_links_link_type_check` **n'autorise pas** `'distributed_to'`
+(que j'avais d'abord écrit) : la table `document_links` est un **vocabulaire fermé**
+(`created_from`, `delivered_by`, `invoiced_by`, `paid_by`, `reversed_by`,
+`adjusted_by`, `generated_entry`, `consumed_by_absence`, `reconciled_with`). Un
+maillon qui invente un mot est refusé à l'insertion — **et c'est la base qui le
+dit, pas l'audit**.
+
+**Ce qui est livré** : registre `landed_costs`, contrat d'effet
+`stock.landed_cost.distributed`, maillon `chain_l16_cump_ecriture` (rebaptisé
+`distribute_landed_cost` corrigé — la signature est conservée pour les appelants),
+REVOKE/GRANT, garde de suppression sur `landed_costs`.
+
+**Éprouvé** : suite **6/6** sur base neuve (T01 le bug fix — mouvements trouvés ;
+T02 le lien chaîne ; T03 la garde — refusé en `CHAIN_DELETE_REFUSED` ; T04 la
+non-régression — sans lien, la suppression passe ; T05 la couverture 764 ;
+T06 la CUMP ajustée — coût unitaire 50 → 60 pour 10 € de frais), les **cinq
+portes OK** sur `a3_fresh2`, G5 **172/172**, verifier **274**. La 125 est
+**corrigée en place** (les deux filtres `'receipt'` → `'goods_receipt'`).
 
 ## Demandes reçues (R3) — transmises par l'intégration du 05/10/2026
 

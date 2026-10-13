@@ -150,7 +150,7 @@ BEGIN
     END
   ), 0) INTO v_total_base
   FROM stock_movements sm
-  WHERE sm.reference_type = 'receipt'
+  WHERE sm.reference_type = 'goods_receipt'
     AND sm.tenant_id = v_tid
     AND sm.movement_type = 'in';
 
@@ -162,7 +162,7 @@ BEGIN
   FOR v_line IN
     SELECT product_id, unit_cost, quantity
     FROM stock_movements
-    WHERE reference_type = 'receipt' AND tenant_id = v_tid AND movement_type = 'in'
+    WHERE reference_type = 'goods_receipt' AND tenant_id = v_tid AND movement_type = 'in'
   LOOP
     v_distributed := v_lc.total_amount * (
       CASE v_lc.distribution_method

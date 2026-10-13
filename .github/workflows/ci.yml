@@ -2494,7 +2494,17 @@ jobs:
       # refus qui compte (lien fermé → suppression passe), couverture complète,
       # garde par ligne, deux non-régressions (brouillon, cascade société).
       - name: 'Correctif : garde de suppression sur les types A3 (764)'
-        run: psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f sql/764_chain_garde_suppression_vague_a3_tests.sql
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/764_chain_garde_suppression_vague_a3_tests.sql
+
+      # P10 (765) — frais accessoires → CUMP : la répartition des frais lie la
+      # landed_cost aux mouvements `goods_receipt` affectés (le filtre 'receipt'
+      # de la 125, corrigé, faisait trouver ZÉRO mouvement), ajuste la CUMP
+      # (stock_quantities.unit_cost) et porte la garde de suppression sur
+      # landed_costs. 6 verdicts : le bug fix (mouvements trouvés), le lien
+      # chaîne (effet stock.landed_cost.distributed), la garde (refus +
+      # non-régression sans lien), la couverture 764, l'ajustement CUMP.
+      - name: 'L10 : frais accessoires → CUMP (765)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/765_chain_l16_cump_ecriture_tests.sql
 
 
       # P1 (A3.4) — l'ATTESTATION D'INTÉGRITÉ TECHNIQUE : un `jsonb` de FAITS
