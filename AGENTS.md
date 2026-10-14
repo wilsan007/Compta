@@ -75,6 +75,7 @@ L'essentiel en huit lignes :
 > | **`760` → `769`** | **plan6 A3, familles restantes** — 2ᵉ extension, après saturation de `750` → `759` (`760` : exercice clos → écriture d'affectation) | **2026-10-11** |
 > | **`770` → `779`** | **plan6 A3 (certificat d'intégrité, A3.4)** — **P1** : `chain_certificat_integrite`, l'attestation d'intégrité technique (jsonb de faits) — branche `plan6/a3-moteur` | **2026-10-11** |
 > | **`780` → `789`** | **garde de suppression des types récents** (suite de la `450` T11, ex-numéro `530` en double) — ⚠️ **le numéro est aussi un ORDRE** : sa boucle pose les gardes sur le registre **tel qu'il est à son passage**, donc elle doit tourner **APRÈS toutes les inscriptions de types** (tentative `457` rouge le 13/10, run `38424071395`) | **2026-10-13** |
+> | **`790` → `799`** | **plan6 intégration (correctifs de fusion)** — `790` : le garde de `create_notification` (712) n'exige le marqueur serveur **que hors déclencheur** (`pg_trigger_depth()`) + `REVOKE` de `zz_715_check_subscription_member` | **2026-10-13** |
 
 >
 > *Règle de coexistence : une session qui travaille sur une série déjà

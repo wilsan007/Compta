@@ -32,7 +32,12 @@ BEGIN
   SELECT count(*) INTO n FROM chain_document_types;
   SELECT EXISTS (SELECT 1 FROM chain_document_types WHERE code = 'journals') INTO ok_j;
   PERFORM _rec('T07', 'le registre `chain_document_types` couvre les 27 pièces (dont `journals`)',
-    n = 27 AND ok_j, format('codes = %s ; `journals` présent = %s', n, ok_j));
+    -- 13/10/2026 (fusion plan6) : `n = 27` est devenu faux — le registre a
+    -- GROSSI (37+ types : devis, projets, commandes, certificat… portés par les
+    -- lots A1/A3/B) et c'est une amélioration, pas une régression. L'intention
+    -- de la 707 est la COUVERTURE (les 27 pièces d'origine, dont `journals`),
+    -- pas l'effectif exact : `>= 27` + le repère `journals`.
+    n >= 27 AND ok_j, format('codes = %s (27 au minimum) ; `journals` présent = %s', n, ok_j));
 EXCEPTION WHEN OTHERS THEN
   PERFORM _rec('T07', 'couverture du registre', false, SQLERRM);
 END $$;

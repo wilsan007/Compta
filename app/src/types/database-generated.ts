@@ -209,6 +209,48 @@ export interface Database {
         },
       ]
     }
+    alert_subscriptions: {
+      Row: {
+        id: string
+        tenant_id: string
+        rule_id: string
+        user_id: string
+        channel: string
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        rule_id: string
+        user_id: string
+        channel?: string
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        rule_id?: string
+        user_id?: string
+        channel?: string
+        created_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "alert_subscriptions_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "alert_subscriptions_user_id_fkey",
+          columns: ["user_id"],
+          isOneToOne: true,
+          referencedRelation: "users",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
     analytic_distribution_lines: {
       Row: {
         id: string
@@ -2294,6 +2336,50 @@ export interface Database {
         },
         {
           foreignKeyName: "budgets_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
+    business_alert_rules: {
+      Row: {
+        id: string
+        tenant_id: string
+        name: string
+        alert_type: string
+        conditions: Json
+        severity: string
+        active: boolean
+        created_at: string
+        updated_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        name: string
+        alert_type: string
+        conditions?: Json
+        severity?: string
+        active?: boolean
+        created_at?: string
+        updated_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        name?: string
+        alert_type?: string
+        conditions?: Json
+        severity?: string
+        active?: boolean
+        created_at?: string
+        updated_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "business_alert_rules_tenant_id_fkey",
           columns: ["tenant_id"],
           isOneToOne: true,
           referencedRelation: "tenants",

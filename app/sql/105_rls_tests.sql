@@ -126,6 +126,19 @@ BEGIN
           AND a.attname <> 'tenant_id'
       LOOP
         v_val := CASE
+          -- Cas particuliers — 13/10/2026 (fusion plan6 E+F). Les CHECK
+          -- contraignent des colonnes que le remplissage générique ne peut pas
+          -- deviner : sans ce qui suit, `custom_field_definitions` reste « non
+          -- alimentée », la porte à la ligne 306 s'arrête AVANT le nettoyage de
+          -- la ligne 317 — et toutes les suites suivantes héritent des résidus
+          -- (mesuré : 22 échecs en cascade — 243 voit les employés orphelins
+          -- plantés en mode `replica`, 234 les lignes de file sans événement).
+          -- (`business_alert_rules.conditions` a un DÉFAUT : elle est hors
+          -- boucle, le correctif est au niveau de l'INSERT plus bas.)
+          WHEN r.table_name = 'custom_field_definitions' AND col.attname = 'field_key'
+            THEN quote_literal('rls_champ')
+          WHEN r.table_name = 'custom_field_definitions' AND col.attname = 'field_type'
+            THEN quote_literal('text')
           WHEN col.allowed IS NOT NULL THEN quote_literal(col.allowed)
           WHEN col.attname ILIKE '%iban%' THEN quote_literal('FR7630006000011234567890189')
           WHEN col.attname ILIKE '%bic%' OR col.attname ILIKE '%swift%' THEN quote_literal('AGRIFRPP')
@@ -148,6 +161,18 @@ BEGIN
         v_cols := v_cols || ', ' || quote_ident(col.attname);
         v_vals := v_vals || ', ' || v_val || '::' || col.typ;
       END LOOP;
+
+      -- 13/10/2026 (fusion E+F) : `business_alert_rules.conditions` porte un
+      -- DÉFAUT (hors boucle de remplissage) mais le CHECK
+      -- `bar_conditions_per_type` refuse `{}` pour `invoice_overdue` (valeur
+      -- qu'attribue `allowed`). La colonne est ajoutée ici, avec la valeur qui
+      -- satisfait le type saisi — sinon la table reste « non alimentée », la
+      -- porte s'arrête avant le nettoyage, et les suites suivantes héritent des
+      -- résidus (22 échecs en cascade, mesurés le 13/10).
+      IF r.table_name = 'business_alert_rules' THEN
+        v_cols := v_cols || ', conditions';
+        v_vals := v_vals || ', ''{"min_amount": 1}''::jsonb';
+      END IF;
 
       BEGIN
         EXECUTE format('INSERT INTO public.%I (%s) VALUES (%s)', r.table_name, v_cols, v_vals);
