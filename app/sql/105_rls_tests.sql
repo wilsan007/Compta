@@ -135,6 +135,8 @@ BEGIN
           -- plantés en mode `replica`, 234 les lignes de file sans événement).
           -- (`business_alert_rules.conditions` a un DÉFAUT : elle est hors
           -- boucle, le correctif est au niveau de l'INSERT plus bas.)
+          WHEN r.table_name = 'crm_scoring_rules' AND col.attname = 'operator'
+            THEN quote_literal('is_set')
           WHEN r.table_name = 'custom_field_definitions' AND col.attname = 'field_key'
             THEN quote_literal('rls_champ')
           WHEN r.table_name = 'custom_field_definitions' AND col.attname = 'field_type'

@@ -31,15 +31,18 @@
 -- diagnostic**, exécutable en une commande.
 --
 -- LA RÈGLE DU PLAFOND (celle de G1). Mesuré sur base neuve, 02/10/2026 :
---     * **338** tables sous `FORCE ROW LEVEL SECURITY` (13/10/2026, fusion E + F +
---       intégration — de 322 à 338, +16 pour la partie F, mesuré sur base
+--     * **340** tables sous `FORCE ROW LEVEL SECURITY` (13/10/2026, fusion E + F + C +
+--       intégration — de 322 à 340, +18 pour F et C, mesuré sur base
 --       migrations seules) : +14 le 05/10 (plan6 F) — 702 (groups, group_members,
 --       intra_group_transactions), 704 (collective_agreements,
 --       collective_classifications — ISO-04 rattrapé), 705 (job_postings,
 --       job_applications), 706 (custom_field_definitions, custom_field_values),
 --       708 (resource_capacities), 709 (crm_sequences, crm_sequence_steps),
 --       710 (crm_scoring_rules), 711 (business_connectors) ; +2 (715 :
---       business_alert_rules, alert_subscriptions). Avant (322) : +2 le 06/10
+--       business_alert_rules, alert_subscriptions) ; +2 le 13/10 (plan6 C,
+--       791) : tenant_account_roles et tenant_journal_roles — les rôles par
+--       société des packs, créées RLS par la 381 et MISES SOUS FORCE par la
+--       791 (ISO-04 rattrapé). Avant (322) : +2 le 06/10
 --       (intégration, 752 : automation_rules/automation_runs) +2 le 11/10
 --       (plan6 E : 658/659 via la 665). Chaque table neuve est créée sous
 --       FORCE : la hausse est la doctrine du dépôt appliquée aux tables neuves ;
@@ -96,7 +99,7 @@ SELECT (SELECT count(*) FROM g7_exposition) AS tables_forcees,
 -- Plafond DATÉ (une ligne à mettre à jour, jamais à relever sans la mesurer)
 CREATE TEMP TABLE g7_plafond (nom text PRIMARY KEY, plafond int);
 INSERT INTO g7_plafond VALUES
-  ('tables_forcees', 338),
+  ('tables_forcees', 340),
   ('muettes',         21);
 
 DO $$
