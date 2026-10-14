@@ -137,6 +137,16 @@ jobs:
       - name: 'Dette : plafond des `console.error`'
         run: node scripts/check-console-error-ceiling.mjs
 
+      # LOC1-10 (partie C, lot K) — règle E01 de l'annexe E du cahier de
+      # localisation : un compte écrit en clair dans le front (`'641000'`,
+      # `'411000'`…) empêche une société djiboutienne de lire son propre plan.
+      # Plafond GELÉ (`app/.country-neutral-ceiling.json`), même doctrine que
+      # les deux ci-dessus : une hausse casse, une baisse abaisse.
+      # Ici le FRONT seul : le gisement SQL (`pg_proc.prosrc`) est mesuré dans le
+      # job `db-integration`, le seul qui ait une base.
+      - name: 'LOC1-10 : garde-fou anti-code-en-dur (E01) — front'
+        run: node scripts/check-country-neutral.mjs --front-only
+
       # L2 / G5 — le câblage ET le verdict des suites. Trois moitiés de la règle
       # du dépôt (« un défaut = un test rouge avant, le câblage CI dans le même
       # commit ») : le registre des échecs attendus (AUD-X01), le refus d'un
@@ -423,6 +433,18 @@ jobs:
 
       - name: Appliquer les migrations
         run: node run-sql-migrations.mjs
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Règle E01 de l'annexe E du cahier de localisation : un compte écrit en
+      # clair là où le pack doit répondre. Ici le gisement de FOND — les
+      # définitions effectives des fonctions (`pg_proc.prosrc`) : c'est un
+      # trigger qui choisit `'641000'`, le front ne fait que recopier son choix.
+      # Plafond gelé dans `app/.country-neutral-ceiling.json` : une hausse casse
+      # la CI, une baisse abaisse le plafond. Contrôle AVANT les suites, comme
+      # les autres (`check_bt_grid`) : ce sont elles qui créent des fixtures.
+      - name: 'LOC1-10 : garde-fou anti-code-en-dur (E01) — front + SQL'
+        run: node scripts/check-country-neutral.mjs
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
@@ -2731,6 +2753,106 @@ jobs:
       # Territoire : legislation_packs, chart_*, resolve_account, grilles fiscales ;
       #              app/src/lib/countries.ts ; écrans Paramètres ; doc/localisation/
       # Plage : 370→399, puis 600→649
+
+      - name: 'LOC1-01 : le modèle de données du pack (LOT 1-A)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/380_pack_model_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-02 : les tables de données du pack (LOT 1-A)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/381_pack_data_tables_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-03 : la résolution héritée du pack (LOT 1-A)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/382_pack_resolution_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-04 : le catalogue fermé des rôles (LOT 1-B)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/383_role_catalog_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-05 : resolve_account / resolve_journal (LOT 1-B)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/384_resolve_account_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-13 (prérequis) : les rôles du pack PCG'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/385_pcg_roles_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-06 : les 4 triggers de ventes/achats/règlements sur les rôles'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/386_roles_sales_purchases_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-07 (tranche POS) : la clôture de caisse sur les rôles'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/387_roles_operations_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-07 (tranche stock/production) : stock et OF sur les rôles'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/388_roles_stock_production_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-08 (tranche affectation/écarts) : clôture sur les rôles'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/389_roles_closing_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-08 (clôture d''exercice) : close_fiscal_year sur les rôles'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/390_roles_close_fiscal_year_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-09 (tranche 1) : les derniers journaux en dur'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/391_roles_journaux_restants_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-09 (tranche 2) : journaux en dur'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/392_roles_journaux_restants_2_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-09 (tranche 3) : les 4 derniers journaux en dur — LOC1-09 TERMINÉ'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/393_roles_journaux_restants_3_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-10 (tranche 1) : les comptes en dur des fonctions courtes'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/394_roles_comptes_1_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-10 (tranche 3) : les comptes en dur des avoirs'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/395_roles_comptes_2_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # LOC1-10 (tranche 4) — les TROIS dernières fonctions que le garde-fou E01
+      # nomme encore : elles comparaissent en dur, la suite prouve qu'elles
+      # passent par `resolve_account` — reprise des valeurs existantes incluse.
+      - name: 'LOC1-10 (tranche 4) : les 3 dernières fonctions du garde-fou E01 (396)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/396_roles_comptes_3_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # LOC1-10 (tranche 5, LOT FINAL) — les 2 derniers comptes en dur : les
+      # rôles d'amortissement (681200/281000) et le compte d'encaissement
+      # (511200). T01 (E01 tenu sur tout le schéma) : le PRÉDICAT est celui du
+      # garde-fou (`check-country-neutral.mjs`, scanSql) — un littéral entre
+      # guillemets sur une ligne qui parle d'un compte. Mesuré le 13/10 : le
+      # motif brut comptait 195 fonctions (faux écart du test), le prédicat
+      # contextualisé mesure 0, comme le garde-fou.
+      - name: 'LOC1-10 (tranche 5) : les 2 derniers comptes en dur — E01 SQL = 0 (397)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/397_roles_comptes_4_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # --- plan6:d --- qualité des écrans, recette, livraison ---
       # Territoire : app/src/pages, app/src/components, e2e/, scripts/qa,

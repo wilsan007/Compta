@@ -54,7 +54,7 @@ BEGIN
   EXECUTE 'RESET ROLE';
   t := _mk_tenant(p_nom, false);
   PERFORM ensure_standard_journals(t);
-  PERFORM _ledger_fixture(t, ARRAY['530000','511200','531000','707000','445710','445711','658000','758000','411000']);
+  PERFORM _ledger_fixture(t, ARRAY['530000','511000','531000','707000','445710','445711','658000','758000','411000']);
   INSERT INTO warehouses (tenant_id, code, name) VALUES (t, 'W-' || p_nom, 'Magasin') RETURNING id INTO wh;
   INSERT INTO customers (tenant_id, name) VALUES (t, 'Client ' || p_nom) RETURNING id INTO cli;
   INSERT INTO products (tenant_id, name, sku, type, sale_price, cost_price, vat_rate)
