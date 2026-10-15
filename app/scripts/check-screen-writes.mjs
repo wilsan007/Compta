@@ -16,6 +16,10 @@
  *   1. repère les fonctions exportées de `src/lib/**` qui écrivent une table
  *      (`.from('t').insert|update|upsert(`, ou via `ti(` / `tud(`), et les clés
  *      qu'elles retirent par déstructuration (`const { lines, ...rest } = p`) ;
+ *      Quand le premier write reçoit un objet littéral explicite sans spread
+ *      (mapping `ti({…})`), ce sont ses clés — et non celles de l'appelant —
+ *      qui sont considérées écrites (traversée de `ti()` : les clés que
+ *      l'appelant passe mais que le mapping ne recopie pas ne sont pas écrites).
  *   2. dans tous les autres fichiers de `src/`, suit chaque appel
  *      `create*|update*|upsert*|save*|add*|insert*(…)` d'une de ces fonctions
  *      jusqu'à l'OBJET LITTÉRAL passé — directement, ou par une variable du même
@@ -113,7 +117,7 @@ for (const file of walk(path.join(SRC, 'lib'))) {
     for (const m of body.matchAll(/const\s*\{([^}]*)\}\s*=\s*[a-zA-Z_]+/g)) {
       for (const k of m[1].split(',')) { const n = k.trim().replace(/^\.\.\..*/, '').split(':')[0].trim(); if (n) removed.add(n) }
     }
-    fnTable.set(node.name.text, { table, removed, arity: node.parameters.length, file: rel(file) })
+    fnTable.set(node.name.text, { table, removed, arity: node.parameters.length, file: rel(file), writtenKeys: writtenKeysOf(node.body, sf) })
   })
 }
 
@@ -136,6 +140,45 @@ const literals = (n) => {
   if (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) return [n.text]
   if (ts.isConditionalExpression(n)) return [...literals(n.whenTrue), ...literals(n.whenFalse)]
   return []
+}
+
+// Quand une fonction d'écriture passe un OBJET LITTÉRAL explicite
+// (mapping clé-par-clé) à ti() / .insert() / .update(), ce sont les clés de
+// ce littéral — et non celles de l'appelant — qui sont écrites en base.
+// Retourne cet ensemble de clés, ou null quand le premier write transmet le
+// paramètre de l'appelant (identifiant, spread de variable) : dans ce cas
+// les clés de l'appelant s'appliquent et le contrôle actuel s'applique.
+// Seul le premier .insert/.update/.upsert de la fonction est considéré.
+function payloadOfTi(arg, sf) {
+  let n = unwrap(arg)
+  if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === 'ti' && n.arguments[0]) {
+    return unwrap(n.arguments[0])
+  }
+  return n
+}
+
+function writtenKeysOf(bodyNode, sf) {
+  const walk = (n) => {
+    if (ts.isFunctionDeclaration(n) || ts.isArrowFunction(n) || ts.isFunctionExpression(n)) return null
+    if (ts.isCallExpression(n)) {
+      const callee = n.expression
+      if (ts.isPropertyAccessExpression(callee) && (callee.name.text === 'insert' || callee.name.text === 'update' || callee.name.text === 'upsert') && n.arguments.length > 0) {
+        const payload = payloadOfTi(n.arguments[0], sf)
+        if (payload && ts.isObjectLiteralExpression(payload) && !payload.properties.some((p) => ts.isSpreadAssignment(p))) {
+          return new Set(
+            [...payload.properties]
+              .filter((p) => ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p))
+              .map((p) => p.name.getText(sf).replace(/['"]/g, ''))
+          )
+        }
+        return null
+      }
+    }
+    let result = null
+    ts.forEachChild(n, (child) => { if (!result) { result = walk(child) } })
+    return result
+  }
+  return walk(bodyNode) ?? null
 }
 
 // 2. appels depuis les écrans
@@ -167,7 +210,7 @@ for (const file of walk(SRC).filter((f) => !f.includes(`${path.sep}lib${path.sep
           if (best) arg = best
         }
         if (arg && ts.isCallExpression(arg) && ts.isIdentifier(arg.expression) && builders.has(arg.expression.text)) arg = builders.get(arg.expression.text)
-        if (arg && ts.isObjectLiteralExpression(arg)) {
+        if (arg && ts.isObjectLiteralExpression(arg) && !info.writtenKeys) {
           calls++
           const known = cols.get(info.table)
           // l'objet peut venir d'un constructeur d'un AUTRE fichier : la ligne est la sienne
