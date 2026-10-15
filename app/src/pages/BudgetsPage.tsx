@@ -6,7 +6,7 @@ import { getBudgets, createBudget, updateBudget, deleteBudget, getFiscalYears, g
 import { Plus, Pencil, Trash2, X, Target } from 'lucide-react'
 import type { Budget, FiscalYear, ChartAccount } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 export function BudgetsPage() {
   const { toast } = useToast()
@@ -57,7 +57,7 @@ const [budgets, setBudgets] = useState<Budget[]>([])
   function openEdit(b: Budget) { setEditing(b); setShowForm(true) }
 
   async function handleDelete(id: string) {
-  if (!confirmSync(t('budgets.deleteConfirm'))) return
+  if (!(await confirmDialog(t('budgets.deleteConfirm')))) return
     try { await deleteBudget(id); await load() }
     catch { toast('error', tCommon('toast.error'), tCommon('toast.deleteError')) }
   }

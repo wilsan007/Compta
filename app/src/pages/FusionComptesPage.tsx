@@ -7,7 +7,7 @@ import { getChartAccounts } from '@/lib/queries/accounting'
 import { getFusionLogs, fuseAccounts } from '@/lib/queries/misc'
 import { GitMerge, ArrowRight } from 'lucide-react'
 import type { ChartAccount, FusionLog } from '@/types'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 export function FusionComptesPage() {
   const { t } = useTranslation('accounting')
@@ -45,7 +45,7 @@ export function FusionComptesPage() {
       toast('warning', t('fusionComptes.title'), t('fusionComptes.sameAccount'))
       return
     }
-    if (!confirmSync(t('fusionComptes.confirm', { source: sourceCode, target: targetCode }))) return
+    if (!(await confirmDialog(t('fusionComptes.confirm', { source: sourceCode, target: targetCode })))) return
     setFusing(true)
     try {
       const log = await fuseAccounts(sourceCode, targetCode)

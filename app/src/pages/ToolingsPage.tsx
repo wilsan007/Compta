@@ -7,7 +7,7 @@ import { getToolings, createTooling, deleteTooling, getMachines } from '@/lib/qu
 import { exportToExcel, importFromExcel } from '@/lib/excel-utils'
 import type { Tooling, Machine } from '@/types'
 import { useStatusLabels } from '@/lib/statusUtils'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 export function ToolingsPage() {
@@ -32,7 +32,7 @@ export function ToolingsPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('toolings.confirmDelete'))) return
+    if (!(await confirmDialog(t('toolings.confirmDelete')))) return
     try { await deleteTooling(id); await loadData() }
     catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }

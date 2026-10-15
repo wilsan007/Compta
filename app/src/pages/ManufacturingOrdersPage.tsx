@@ -10,7 +10,7 @@ import { Link } from 'react-router-dom'
 import type { ManufacturingOrder, BOM, Warehouse, Routing } from '@/types'
 import { useToast } from '@/lib/toast'
 import { Badge } from '@/components/ui'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 const originVariants: Record<string, 'neutral' | 'success' | 'warning'> = { manual: 'neutral', mrp: 'success', sub_level: 'warning' }
 
@@ -48,7 +48,7 @@ const [orders, setOrders] = useState<ManufacturingOrder[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('manufacturing.confirmDelete'))) return
+    if (!(await confirmDialog(t('manufacturing.confirmDelete')))) return
     try { await deleteManufacturingOrder(id); await loadData() }
     catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }

@@ -90,61 +90,87 @@ function resetMock() {
   ;(supabase as any).rpc = vi.fn(() => Promise.resolve({ data: null, error: null }))
 }
 
+/** PRD-08 : `runMRPAndSave` appelle le RPC `run_mrp` — alimente SA réponse. */
+function setRpcResponse(data: unknown, error: unknown = null) {
+  ;(supabase as unknown as { rpc: unknown }).rpc = vi.fn(() => Promise.resolve({ data, error }))
+}
+
 // ============================================================
-// 1. MRP Calculation (5042-5154) — runMRPCalculation inner logic
+// 1. MRP (PRD-08) — runMRPAndSave : le RPC calcule, le client persiste
 // ============================================================
-describe('MRP Calculation — runMRPCalculation', () => {
+describe('MRP — runMRPAndSave', () => {
   beforeEach(() => resetMock())
 
-  it('generates proposals for products with net needs', async () => {
-    let firstCall = true
+  it('persiste un run et les propositions calculées par le RPC run_mrp', async () => {
+    // PRD-08 : le calcul est au serveur — le mock alimente la réponse du RPC
+    // `run_mrp` ; il n'y a plus de moteur local à tester, seulement la
+    // persistance de ce que le serveur a calculé.
+    setRpcResponse([
+      {
+        product_id: 'p1', product_name: 'Product A', gross_need: 10, stock_available: 5,
+        open_purchase_qty: 0, open_production_qty: 0, net_need: 5, suggested_qty: 5,
+        suggested_date: '2026-11-01', low_level_code: 0, source: 'mrp', need_date: null, is_late: false,
+      },
+    ])
+    let mrpRunsCalls = 0
     _fromOverride = (table: string) => {
-      if (firstCall && table === 'mrp_runs') {
-        firstCall = false
-        const c = chainWith({ id: 'run1', status: 'running' })
-        c.insert = vi.fn(() => c)
-        c.select = vi.fn(() => c)
-        c.single = vi.fn(() => Promise.resolve({ data: { id: 'run1', status: 'running' }, error: null }))
-        return c
-      }
-      const dataMap: Record<string, any> = {
-        products: [{ id: 'p1', name: 'Product A', exclude_from_mrp: false, supplier_id: 's1' }],
-        boms: [{ id: 'bom1', product_id: 'p1' }],
-        bom_lines: [{ bom_id: 'bom1', product_id: 'p1', quantity: 2 }],
-        stock_quantities: [{ product_id: 'p1', quantity: 5 }],
-        manufacturing_orders: [{ id: 'mo1', product_id: 'p1', bom_id: 'bom1', quantity: 10, status: 'planned' }],
-        purchase_orders: [],
-      }
-      const c = chainWith(dataMap[table] || [])
-      if (table === 'mrp_proposals') c.insert = vi.fn(() => c)
       if (table === 'mrp_runs') {
+        mrpRunsCalls++
+        if (mrpRunsCalls === 1) {
+          // createMRPRun : insert().select().single()
+          const c = chainWith({ id: 'run1', status: 'running' })
+          c.insert = vi.fn(() => c)
+          c.select = vi.fn(() => c)
+          c.single = vi.fn(() => Promise.resolve({ data: { id: 'run1', status: 'running' }, error: null }))
+          return c
+        }
+        // updateMRPRun : update().eq().select().single()
+        const c = chainWith({ id: 'run1', status: 'completed' })
         c.update = vi.fn(() => c)
         c.eq = vi.fn(() => c)
         c.select = vi.fn(() => c)
         c.single = vi.fn(() => Promise.resolve({ data: { id: 'run1', status: 'completed' }, error: null }))
+        return c
       }
+      const dataMap: Record<string, unknown> = {
+        products: [{ id: 'p1', name: 'Product A', exclude_from_mrp: false, supplier_id: 's1' }],
+        boms: [{ id: 'bom1', product_id: 'p1' }],
+      }
+      const c = chainWith(dataMap[table] || [])
+      if (table === 'mrp_proposals') c.insert = vi.fn(() => c)
       return c
     }
 
-    const { runMRPCalculation } = await import('@/lib/queries')
-    const result = await runMRPCalculation()
-    expect(result).toBeDefined()
+    const { runMRPAndSave } = await import('@/lib/queries')
+    const result = await runMRPAndSave()
     expect(result.status).toBe('completed')
+    expect(result.summary?.products_with_needs).toBe(1)
+    expect(result.summary?.manufacture_count).toBe(1)
+    // Deux appels mrp_runs : la création du lancement, puis sa clôture.
+    expect(mrpRunsCalls).toBe(2)
   })
 
-  it('handles errors and cancels run', async () => {
-    let firstCall = true
+  it('annule le run quand une proposition ne s\'enregistre pas', async () => {
+    setRpcResponse([
+      {
+        product_id: 'p1', product_name: 'Product A', gross_need: 10, stock_available: 5,
+        open_purchase_qty: 0, open_production_qty: 0, net_need: 5, suggested_qty: 5,
+        suggested_date: '2026-11-01', low_level_code: 0, source: 'mrp', need_date: null, is_late: false,
+      },
+    ])
+    let mrpRunsCalls = 0
     _fromOverride = (table: string) => {
-      if (firstCall && table === 'mrp_runs') {
-        firstCall = false
-        const c = chainWith({ id: 'run1', status: 'running' })
-        c.insert = vi.fn(() => c)
-        c.select = vi.fn(() => c)
-        c.single = vi.fn(() => Promise.resolve({ data: { id: 'run1', status: 'running' }, error: null }))
-        return c
-      }
-      if (table === 'products') return chainWith(null, { message: 'DB error' })
       if (table === 'mrp_runs') {
+        mrpRunsCalls++
+        if (mrpRunsCalls === 1) {
+          const c = chainWith({ id: 'run1', status: 'running' })
+          c.insert = vi.fn(() => c)
+          c.select = vi.fn(() => c)
+          c.single = vi.fn(() => Promise.resolve({ data: { id: 'run1', status: 'running' }, error: null }))
+          return c
+        }
+        // Le lancement passe à « cancelled » : une proposition refusée doit
+        // l'annuler, pas laisser un « running » orphelin.
         const c = chainWith({ id: 'run1', status: 'cancelled' })
         c.update = vi.fn(() => c)
         c.eq = vi.fn(() => c)
@@ -152,11 +178,24 @@ describe('MRP Calculation — runMRPCalculation', () => {
         c.single = vi.fn(() => Promise.resolve({ data: { id: 'run1', status: 'cancelled' }, error: null }))
         return c
       }
-      return chainWith([])
+      if (table === 'mrp_proposals') {
+        // W6 : un refus d'insertion est une proposition PERDUE — la fonction
+        // doit lever, pas compter « générées ».
+        const c = chainWith(null, { message: 'insert refused' })
+        c.insert = vi.fn(() => c)
+        return c
+      }
+      const dataMap: Record<string, unknown> = {
+        products: [{ id: 'p1', name: 'Product A', exclude_from_mrp: false, supplier_id: 's1' }],
+        boms: [{ id: 'bom1', product_id: 'p1' }],
+      }
+      return chainWith(dataMap[table] || [])
     }
 
-    const { runMRPCalculation } = await import('@/lib/queries')
-    await expect(runMRPCalculation()).rejects.toThrow()
+    const { runMRPAndSave } = await import('@/lib/queries')
+    await expect(runMRPAndSave()).rejects.toThrow()
+    // Le lancement a bien été créé PUIS annulé.
+    expect(mrpRunsCalls).toBe(2)
   })
 })
 

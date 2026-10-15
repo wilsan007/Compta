@@ -7,7 +7,7 @@ import { useLocale } from '@/hooks/useLocale'
 import { Send, FileCheck } from 'lucide-react'
 import type { VatReturn } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 export function EdiTvaPage() {
@@ -33,7 +33,7 @@ export function EdiTvaPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleSubmit(id: string) {
-    if (!confirmSync(t('ediTva.submitConfirm'))) return
+    if (!(await confirmDialog(t('ediTva.submitConfirm')))) return
     try {
       await submitEdiTva(id)
       toast('success', tCommon('common.success'), t('ediTva.submitSuccess'))

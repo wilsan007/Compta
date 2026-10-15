@@ -129,7 +129,21 @@
       "inactive": "غير نشط"
     },
     "namePlaceholder": "اسم الآلة",
-    "workCenterPlaceholder": "اسم مركز العمل"
+    "workCenterPlaceholder": "اسم مركز العمل",
+    "toolingWear": "اهتراء الأدوات",
+    "toolingCounter": "العداد / العمر",
+    "toolingWearRatio": "الاهتراء",
+    "capacityLoad": "حمل / طاقة مراكز العمل",
+    "day": "اليوم",
+    "capacity": "الطاقة",
+    "load": "الحمل",
+    "overload": "حمل زائد",
+    "maintenance": "تدخلات الصيانة",
+    "newMaintenance": "تدخل جديد",
+    "noMaintenance": "لا توجد تدخلات",
+    "technician": "الفني",
+    "duration": "المدة (س)",
+    "cost": "التكلفة"
   },
   "toolings": {
     "title": "الأدوات",
@@ -188,7 +202,8 @@
         "labels": "تتبع الكمية",
         "lots": "الدفعات والصلاحية",
         "consumptions": "الاستهلاك",
-        "sublevels": "المستويات الفرعية"
+        "sublevels": "المستويات الفرعية",
+        "shopfloor": "الورشة"
       },
       "info": {
         "number": "الرقم",
@@ -275,6 +290,40 @@
         "quantity": "الكمية",
         "status": "الحالة",
         "view": "عرض"
+      },
+      "shopfloor": {
+        "summary": "ملخص الورشة",
+        "add": "تسجيل عملية",
+        "noOperations": "لا توجد عملية مسجلة",
+        "noOperationsDescription": "سجّل عمليات الورشة: الزمن الفعلي والكميات المنتجة والهوالك.",
+        "operation": "العملية",
+        "operationRequired": "اسم العملية مطلوب",
+        "plannedMinutes": "الدقائق المخططة",
+        "actualMinutes": "الدقائق الفعلية",
+        "produced": "الكمية المنتجة",
+        "scrapped": "الكمية التالفة",
+        "scrapReason": "سبب التلف",
+        "nbOperations": "العمليات",
+        "totalPlanned": "الدقائق المخططة (الإجمالي)",
+        "totalActual": "الدقائق الفعلية (الإجمالي)",
+        "totalProduced": "المنتَج (الإجمالي)",
+        "totalScrapped": "الهوالك (الإجمالي)",
+        "scrapRate": "نسبة الهوالك",
+        "saved": "تم تسجيل العملية",
+        "savedMsg": "تم تحديث ملخص الأمر.",
+        "hint": "إعادة تسجيل عملية بنفس الاسم تصحّح قيمها. لا تُنشأ أي حركة مخزون."
+      },
+      "variance": {
+        "title": "انحراف المواد (المخطط / الفعلي)",
+        "refresh": "إعادة الحساب",
+        "product": "الصنف",
+        "theoretical": "المخطط",
+        "actual": "الفعلي",
+        "variance": "الانحراف",
+        "variancePercent": "نسبة الانحراف",
+        "empty": "لا يوجد انحراف محسوب — اضغط «إعادة الحساب».",
+        "refreshed": "تم إعادة حساب الانحراف",
+        "refreshedMsg": "المخطط والفعلي محدّثان."
       }
     },
     "number": "رقم الأمر",

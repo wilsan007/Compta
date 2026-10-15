@@ -6,7 +6,7 @@ import { errorMessage, formatCurrency } from '@/lib/utils'
 import { BookOpen, Plus, Pencil, Trash2, X, Search, ChevronDown, ChevronRight, Link2, Eye, EyeOff, Download, FileSpreadsheet, AlertCircle } from 'lucide-react'
 import type { ChartAccount, ThirdPartyAccount } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 const accountTypeBadge: Record<string, 'success' | 'warning' | 'danger' | 'neutral' | 'primary'> = {
   asset: 'primary',
@@ -275,7 +275,7 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('chartAccounts.deleteConfirm'))) return
+    if (!(await confirmDialog(t('chartAccounts.deleteConfirm')))) return
     try {
       await deleteChartAccount(id)
       await loadAccounts()

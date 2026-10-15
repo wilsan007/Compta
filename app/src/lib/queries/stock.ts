@@ -3,24 +3,8 @@ import { supabase } from '@/lib/supabase'
 import type { Joined, Row } from '@/types/dbRow'
 import { fetchAllRows, getTenantId, nextDocumentNumber, ti, tud } from './core'
 import { getManufacturingOrders, updateManufacturingOrder } from './production'
+import { runMRP } from './businessFunctions'
 import type { Product, StockMovement, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, Routing, RoutingOperation, WorkCenter, Machine, Tooling, OFLabel, OFLot, OFConsumption, STOrder, STShipment, STShipmentLine, STReceipt, STReceiptLine, MRPRun, MRPProposal, ProductionForecast, PlanningSlot, ProductEquivalence, Workflow, OFDocumentAccess, ProductVariant, ProductSerialNumber, ProductBatch, WarehouseLocation, ProductSubstitute } from '@/types'
-
-// PRD-05 : `purchase_order_lines` est lu en select PARTIEL et inclut
-// `quantity_received`, qui n'est PAS une colonne de la table mais une **colonne
-// calculée PostgREST** (fonction `quantity_received(purchase_order_lines)`,
-// migration 195) — sélectionnable, mais absente des types générés (`Row` ne
-// porte que les vraies colonnes). D'où ce type dédié : les vraies colonnes
-// viennent du schéma, la calculée est déclarée ici. Renommer `product_id`,
-// `quantity` ou `purchase_order_id` en base fera donc échouer la compilation.
-type OpenPurchaseLine = Pick<
-  Row<'purchase_order_lines'>,
-  'product_id' | 'quantity'
-> & {
-  /** Colonne CALCULÉE PostgREST — cf. `sql/195_purchase_order_line_received.sql`. */
-  quantity_received: number
-  /** Embed `purchase_orders!inner(status)` — PostgREST renvoie un tableau. */
-  purchase_orders: Pick<Row<'purchase_orders'>, 'status'>[]
-}
 
 // ============ Products ============
 export async function getProducts() {
@@ -240,6 +224,16 @@ export async function deleteBOM(id: string) {
   if (error) throw error
 }
 
+// E.2 : « Modifier » une nomenclature — l'action manquait (seuls create/delete
+// existaient). On corrige un code, un nom, une quantité ou un type sans
+// détruire les lignes ni les ordres de fabrication déjà rattachés.
+export async function updateBOM(id: string, updates: Partial<Omit<BOM, 'id' | 'created_at'>>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('boms').update(updates), 'boms', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as BOM
+}
+
 export async function getBOMLines(bomId: string) {
   const tid = await getTenantId()
   let q = supabase.from('bom_lines').select('*, products(name, sku)').eq('bom_id', bomId).order('position')
@@ -267,6 +261,311 @@ export async function deleteBOMLine(id: string) {
   const tid = await getTenantId()
   const { error } = await tud(supabase.from('bom_lines').delete(), 'bom_lines', tid).eq('id', id)
   if (error) throw error
+}
+
+// E.2 : « Modifier » une ligne de nomenclature (quantité, coût unitaire, position).
+export async function updateBOMLine(id: string, updates: Partial<Omit<BOMLine, 'id'>>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('bom_lines').update(updates), 'bom_lines', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as BOMLine
+}
+
+// ============ STK-14 / E.2 : transferts inter-dépôts ============
+// Les tables existaient depuis la 125 sans moteur ni écran. La 652 les exécute :
+// `ship_stock_transfer` sort du dépôt source (statut « in_transit »),
+// `receive_stock_transfer` fait entrer au dépôt destination (statut « received »).
+
+export interface StockTransfer {
+  id: string
+  tenant_id: string
+  transfer_number: string
+  from_warehouse_id: string
+  to_warehouse_id: string
+  shipment_date: string | null
+  expected_receipt_date: string | null
+  actual_receipt_date: string | null
+  status: 'pending' | 'in_transit' | 'received' | 'cancelled'
+  notes: string | null
+  created_at: string | null
+}
+
+export interface StockTransferLine {
+  id: string
+  tenant_id: string
+  transfer_id: string
+  product_id: string
+  quantity: number
+  unit_cost: number | null
+  created_at: string | null
+}
+
+export type StockTransferLineRow = StockTransferLine & {
+  products: { name: string; sku: string } | null
+}
+
+export async function getStockTransfers() {
+  const tid = await getTenantId()
+  let q = supabase.from('stock_transfers').select('*').order('created_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as StockTransfer[]
+}
+
+export async function createStockTransfer(tr: Omit<StockTransfer, 'id' | 'created_at' | 'tenant_id'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('stock_transfers').insert(ti(tr, 'stock_transfers', tid)).select().single()
+  if (error) throw error
+  return data as StockTransfer
+}
+
+export async function deleteStockTransfer(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('stock_transfers').delete(), 'stock_transfers', tid).eq('id', id)
+  if (error) throw error
+}
+
+export async function getStockTransferLines(transferId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('stock_transfer_lines').select('*, products(name, sku)').eq('transfer_id', transferId).order('created_at')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as StockTransferLineRow[]
+}
+
+export async function createStockTransferLine(line: Omit<StockTransferLine, 'id' | 'created_at' | 'tenant_id'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('stock_transfer_lines').insert(ti(line, 'stock_transfer_lines', tid)).select().single()
+  if (error) throw error
+  return data as StockTransferLine
+}
+
+/** STK-14 (652) : expédie un transfert — sort la quantité du dépôt source. */
+export async function shipStockTransfer(id: string) {
+  const { error } = await supabase.rpc('ship_stock_transfer', { p_transfer_id: id })
+  if (error) throw error
+}
+
+/** STK-14 (652) : réceptionne un transfert — fait entrer au dépôt destination. */
+export async function receiveStockTransfer(id: string) {
+  const { error } = await supabase.rpc('receive_stock_transfer', { p_transfer_id: id })
+  if (error) throw error
+}
+
+// ============ STK-07 / E.3 : unités de mesure ============
+// La base portait déjà `uom_categories`, `uoms`, `convert_uom` et les champs
+// produit (`uom_id`, `purchase_uom_id`, `sale_uom_id`) depuis la 125 — mais rien
+// ne les lisait (coquille). `convert_uom` interdit le croisement de catégories et
+// arrondit ; ces requêtes l'exposent à l'écran.
+
+export interface UomCategory {
+  id: string
+  tenant_id: string
+  name: string
+  created_at: string | null
+}
+
+export interface Uom {
+  id: string
+  tenant_id: string
+  code: string
+  name: string
+  category_id: string
+  factor: number
+  is_base: boolean | null
+  rounding: number | null
+  created_at: string | null
+}
+
+export async function getUomCategories() {
+  const tid = await getTenantId()
+  let q = supabase.from('uom_categories').select('*').order('name')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as UomCategory[]
+}
+
+export async function createUomCategory(c: Omit<UomCategory, 'id' | 'created_at' | 'tenant_id'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('uom_categories').insert(ti(c, 'uom_categories', tid)).select().single()
+  if (error) throw error
+  return data as UomCategory
+}
+
+export async function deleteUomCategory(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('uom_categories').delete(), 'uom_categories', tid).eq('id', id)
+  if (error) throw error
+}
+
+export async function getUoms() {
+  const tid = await getTenantId()
+  let q = supabase.from('uoms').select('*').order('code')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as Uom[]
+}
+
+export async function createUom(u: Omit<Uom, 'id' | 'created_at' | 'tenant_id'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('uoms').insert(ti(u, 'uoms', tid)).select().single()
+  if (error) throw error
+  return data as Uom
+}
+
+export async function updateUom(id: string, updates: Partial<Omit<Uom, 'id' | 'created_at'>>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('uoms').update(updates), 'uoms', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as Uom
+}
+
+export async function deleteUom(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('uoms').delete(), 'uoms', tid).eq('id', id)
+  if (error) throw error
+}
+
+/** STK-07 : convertit une quantité d'une unité vers une autre (même catégorie). */
+export async function convertUom(quantity: number, fromUomId: string, toUomId: string): Promise<number> {
+  const { data, error } = await supabase.rpc('convert_uom', { p_quantity: quantity, p_from_uom_id: fromUomId, p_to_uom_id: toUomId })
+  if (error) throw error
+  return Number(data)
+}
+
+// ============ STK-09 / E.3 : règles de réapprovisionnement ============
+// `reorder_rules` existait depuis la 125 sans être lue (coquille). La 653 la
+// branche : `reorder_suggestions()` remonte au maximum, arrondi au multiple.
+
+export interface ReorderRule {
+  id: string
+  tenant_id: string
+  product_id: string
+  warehouse_id: string | null
+  min_quantity: number
+  max_quantity: number
+  multiple_quantity: number | null
+  lead_time_days: number | null
+  is_active: boolean | null
+  created_at: string | null
+}
+
+export interface ReorderSuggestion {
+  product_id: string
+  product_name: string
+  warehouse_id: string | null
+  warehouse_name: string | null
+  stock: number
+  min_quantity: number
+  max_quantity: number
+  suggested_qty: number
+}
+
+export async function getReorderRules() {
+  const tid = await getTenantId()
+  let q = supabase.from('reorder_rules').select('*').order('created_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as ReorderRule[]
+}
+
+export async function createReorderRule(r: Omit<ReorderRule, 'id' | 'created_at' | 'tenant_id'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('reorder_rules').insert(ti(r, 'reorder_rules', tid)).select().single()
+  if (error) throw error
+  return data as ReorderRule
+}
+
+export async function updateReorderRule(id: string, updates: Partial<Omit<ReorderRule, 'id' | 'created_at'>>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('reorder_rules').update(updates), 'reorder_rules', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as ReorderRule
+}
+
+export async function deleteReorderRule(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('reorder_rules').delete(), 'reorder_rules', tid).eq('id', id)
+  if (error) throw error
+}
+
+/** STK-09 (653) : suggestions de réappro calculées par `reorder_suggestions()`. */
+export async function getReorderSuggestions() {
+  const { data, error } = await supabase.rpc('reorder_suggestions')
+  if (error) throw error
+  return (data || []) as ReorderSuggestion[]
+}
+
+// ============ STK-09 / E.3 : inventaire tournant (comptages cycliques) ============
+// `stock_count_cycles` existait depuis la 125 sans être lue. La 654 la branche :
+// `generate_count_list()` donne les articles dus, `record_stock_count()` enregistre
+// l'écart physique (mouvement valorisé) et avance la prochaine date.
+
+export interface StockCountCycle {
+  id: string
+  tenant_id: string
+  product_id: string
+  warehouse_id: string | null
+  abc_class: string | null
+  frequency_days: number
+  last_count_date: string | null
+  next_count_date: string | null
+  is_active: boolean | null
+  created_at: string | null
+}
+
+export interface StockCountDue {
+  cycle_id: string
+  product_id: string
+  product_name: string
+  warehouse_id: string | null
+  warehouse_name: string | null
+  abc_class: string | null
+  frequency_days: number
+  last_count_date: string | null
+  next_count_date: string | null
+  current_stock: number
+}
+
+export async function getStockCountCycles() {
+  const tid = await getTenantId()
+  let q = supabase.from('stock_count_cycles').select('*').order('next_count_date', { ascending: true, nullsFirst: true })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as StockCountCycle[]
+}
+
+export async function createStockCountCycle(c: Omit<StockCountCycle, 'id' | 'created_at' | 'tenant_id'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('stock_count_cycles').insert(ti(c, 'stock_count_cycles', tid)).select().single()
+  if (error) throw error
+  return data as StockCountCycle
+}
+
+export async function deleteStockCountCycle(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('stock_count_cycles').delete(), 'stock_count_cycles', tid).eq('id', id)
+  if (error) throw error
+}
+
+/** STK-09 (654) : les comptages dus (prochaine date ≤ aujourd'hui). */
+export async function getStockCountList() {
+  const { data, error } = await supabase.rpc('generate_count_list')
+  if (error) throw error
+  return (data || []) as StockCountDue[]
+}
+
+/** STK-09 (654) : enregistre un comptage ; renvoie l'écart (compté − stock). */
+export async function recordStockCount(cycleId: string, countedQty: number): Promise<number> {
+  const { data, error } = await supabase.rpc('record_stock_count', { p_cycle_id: cycleId, p_counted_qty: countedQty })
+  if (error) throw error
+  return Number(data)
 }
 
 
@@ -426,6 +725,217 @@ export async function deleteTooling(id: string) {
   if (error) throw error
 }
 
+// PRD-11 / E.4 : les outillages à 95 % ou plus de leur durée de vie (656).
+export interface ToolingWearAlert {
+  tooling_id: string
+  tooling_code: string
+  tooling_name: string
+  machine_name: string | null
+  current_counter: number
+  max_pieces: number
+  wear_ratio: number
+}
+
+export async function getToolingWearAlerts() {
+  const { data, error } = await supabase.rpc('tooling_wear_alert')
+  if (error) throw error
+  return (data || []) as ToolingWearAlert[]
+}
+
+// PRD-07 / E.4 : charge × capacité par poste et par jour (657).
+export interface WorkCenterCapacityLoad {
+  work_center_id: string
+  work_center_code: string
+  work_center_name: string
+  day: string
+  capacity: number
+  load: number
+  overload: boolean
+}
+
+export async function getWorkCenterCapacityLoad(from: string, to: string) {
+  const { data, error } = await supabase.rpc('work_center_capacity_load', { p_from: from, p_to: to })
+  if (error) throw error
+  return (data || []) as WorkCenterCapacityLoad[]
+}
+
+// PRD-11 / E.4 : les interventions de maintenance — branche la coquille
+// `maintenance_records` (planifiée, curative, coût, durée d'immobilisation).
+export interface MaintenanceRecord {
+  id: string
+  tenant_id: string
+  plan_id: string | null
+  machine_id: string | null
+  tool_id: string | null
+  maintenance_date: string
+  duration_hours: number | null
+  cost: number | null
+  technician: string | null
+  notes: string | null
+  status: string | null
+  created_at: string | null
+}
+
+export async function getMaintenanceRecords() {
+  const tid = await getTenantId()
+  let q = supabase.from('maintenance_records').select('*').order('maintenance_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as MaintenanceRecord[]
+}
+
+export async function createMaintenanceRecord(r: Omit<MaintenanceRecord, 'id' | 'created_at' | 'tenant_id'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('maintenance_records').insert(ti(r, 'maintenance_records', tid)).select().single()
+  if (error) throw error
+  return data as MaintenanceRecord
+}
+
+export async function deleteMaintenanceRecord(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('maintenance_records').delete(), 'maintenance_records', tid).eq('id', id)
+  if (error) throw error
+}
+
+// STK-08 / E.3 : les frais accessoires d'achat (landed costs) — branche
+// `landed_cost_lines` via le moteur corrigé de la 658.
+export interface LandedCost {
+  id: string
+  tenant_id: string
+  invoice_number: string | null
+  supplier_id: string | null
+  total_amount: number
+  distribution_method: string
+  status: string | null
+  created_at: string | null
+}
+
+export interface LandedCostReceipt {
+  id: string
+  tenant_id: string
+  landed_cost_id: string
+  receipt_id: string
+  created_at: string | null
+}
+
+export interface LandedCostLine {
+  id: string
+  tenant_id: string
+  landed_cost_id: string
+  product_id: string | null
+  distributed_amount: number
+  original_unit_cost: number | null
+  new_unit_cost: number | null
+  created_at: string | null
+}
+
+export async function getLandedCosts() {
+  const tid = await getTenantId()
+  let q = supabase.from('landed_costs').select('*').order('created_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as LandedCost[]
+}
+
+export async function createLandedCost(c: Omit<LandedCost, 'id' | 'created_at' | 'tenant_id'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('landed_costs').insert(ti(c, 'landed_costs', tid)).select().single()
+  if (error) throw error
+  return data as LandedCost
+}
+
+export async function deleteLandedCost(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('landed_costs').delete(), 'landed_costs', tid).eq('id', id)
+  if (error) throw error
+}
+
+export async function getLandedCostReceipts(landedCostId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('landed_cost_receipts').select('*').eq('landed_cost_id', landedCostId)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as LandedCostReceipt[]
+}
+
+export async function addLandedCostReceipt(landedCostId: string, receiptId: string) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('landed_cost_receipts')
+    .insert(ti({ landed_cost_id: landedCostId, receipt_id: receiptId }, 'landed_cost_receipts', tid)).select().single()
+  if (error) throw error
+  return data as LandedCostReceipt
+}
+
+export async function getLandedCostLines(landedCostId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('landed_cost_lines').select('*').eq('landed_cost_id', landedCostId)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as LandedCostLine[]
+}
+
+/** STK-08 (658) : répartit la dépense sur ses réceptions ciblées. */
+export async function distributeLandedCost(id: string) {
+  const { data, error } = await supabase.rpc('distribute_landed_cost', { p_landed_cost_id: id })
+  if (error) throw error
+  return data
+}
+
+/** Les réceptions, pour cibler une dépense de frais. */
+export async function listGoodsReceipts() {
+  const tid = await getTenantId()
+  let q = supabase.from('goods_receipts').select('id, number, receipt_date').order('receipt_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as { id: string; number: string; receipt_date: string | null }[]
+}
+
+// STK-11 / E.3 : la ventilation du stock par casier (659) — sans toucher au stock
+// d'entrepôt : une affectation dit « tant de cet article est au casier B3 ».
+export interface LocationStockRow {
+  product_id: string
+  product_name: string
+  warehouse_id: string
+  location_id: string | null
+  location_code: string | null
+  quantity: number
+  assigned: boolean
+}
+
+export async function getLocationStock(warehouseId?: string) {
+  const { data, error } = await supabase.rpc('location_stock', { p_warehouse_id: warehouseId ?? null })
+  if (error) throw error
+  return (data || []) as LocationStockRow[]
+}
+
+export async function assignStockToLocation(productId: string, warehouseId: string, locationId: string, quantity: number) {
+  const { error } = await supabase.rpc('assign_stock_to_location', {
+    p_product_id: productId, p_warehouse_id: warehouseId, p_location_id: locationId, p_quantity: quantity,
+  })
+  if (error) throw error
+}
+
+// STK-11 (660) : où ranger (put-away) et où prélever (removal).
+export interface PutawaySuggestion { location_id: string; location_code: string; reason: string }
+export interface PickSuggestion { location_id: string; location_code: string; quantity: number }
+
+export async function suggestPutawayLocation(productId: string, warehouseId: string) {
+  const { data, error } = await supabase.rpc('suggest_putaway_location', { p_product_id: productId, p_warehouse_id: warehouseId })
+  if (error) throw error
+  return ((data || []) as PutawaySuggestion[])[0] ?? null
+}
+
+export async function suggestPickLocation(productId: string, warehouseId: string) {
+  const { data, error } = await supabase.rpc('suggest_pick_location', { p_product_id: productId, p_warehouse_id: warehouseId })
+  if (error) throw error
+  return ((data || []) as PickSuggestion[])[0] ?? null
+}
+
 
 // ============ Production Module: OF Labels ============
 export async function getOFLabels(moId: string) {
@@ -482,6 +992,58 @@ export async function getOFLots(moId: string) {
   const { data, error } = await q
   if (error) throw error
   return data as any[]
+}
+
+// PRD-06 (661) : déclaration d'atelier — temps réel, quantités produites, rebuts.
+export interface MoOperation {
+  id: string
+  operation_name: string | null
+  planned_time_minutes: number | null
+  actual_time_minutes: number | null
+  quantity_produced: number | null
+  quantity_scrapped: number | null
+  scrap_reason: string | null
+  status: string | null
+}
+
+export async function getMoOperations(moId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('mo_operations').select('*').eq('manufacturing_order_id', moId).order('operation_name')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return (data || []) as MoOperation[]
+}
+
+export async function recordMoOperation(
+  moId: string, operationName: string, plannedMinutes: number | null,
+  actualMinutes: number, produced: number, scrapped: number, scrapReason: string | null,
+) {
+  const { error } = await supabase.rpc('record_mo_operation', {
+    p_mo_id: moId,
+    p_operation_name: operationName,
+    p_planned_minutes: plannedMinutes,
+    p_actual_minutes: actualMinutes,
+    p_produced: produced,
+    p_scrapped: scrapped,
+    p_scrap_reason: scrapReason,
+  })
+  if (error) throw error
+}
+
+export interface MoOperationsSummary {
+  nb_operations: number
+  planned_minutes: number
+  actual_minutes: number
+  produced: number
+  scrapped: number
+  scrap_rate: number
+}
+
+export async function getMoOperationsSummary(moId: string) {
+  const { data, error } = await supabase.rpc('mo_operations_summary', { p_mo_id: moId })
+  if (error) throw error
+  return ((data || []) as MoOperationsSummary[])[0] ?? null
 }
 
 export async function createOFLot(lot: Omit<OFLot, 'id' | 'created_at'>) {
@@ -565,11 +1127,11 @@ export async function getManufacturingOrder(id: string) {
 
 export async function getSubManufacturingOrders(parentId: string) {
   const tid = await getTenantId()
-  let q = supabase.from('manufacturing_orders').select('*').eq('parent_mo_id', parentId).order('number')
+  let q = supabase.from('manufacturing_orders').select('*, products(name, sku)').eq('parent_mo_id', parentId).order('number')
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as ManufacturingOrder[]
+  return data as (ManufacturingOrder & { products?: { name: string; sku: string } | null })[]
 }
 
 
@@ -772,8 +1334,16 @@ export async function deleteMRPPendingDoc(id: string) {
 }
 
 
-// ============ Production Module: MRP Calculation Algorithm ============
-export async function runMRPCalculation(): Promise<MRPRun> {
+// ============ Production Module: MRP Run (PRD-08, moteur unique) ============
+// PRD-08 : il n'y a plus qu'UN moteur de calcul des besoins nets — le RPC
+// `run_mrp` (651, garde de société 664) : OF + commandes clients + prévisions
+// CONSOMMÉES (p_consume_forecast), safety_stock, lead_time, min_order_qty,
+// qty_multiple. L'ancien moteur client (`runMRPCalculation`, supprimé) ne
+// lisait que les OF, ajoutait 7 jours en dur et arrondissait au Math.ceil nu :
+// deux boutons voisins à l'écran, deux réponses différentes à la même question.
+// Le client ne calcule plus rien ici — il PERSISTE ce que le serveur a
+// calculé : un `mrp_runs` et ses `mrp_proposals`.
+export async function runMRPAndSave(horizonDays = 90): Promise<MRPRun> {
   const tid = await getTenantId()
   const runNumber = await nextDocumentNumber('MRP')
 
@@ -781,107 +1351,45 @@ export async function runMRPCalculation(): Promise<MRPRun> {
     run_number: runNumber,
     run_date: new Date().toISOString(),
     status: 'running',
-    parameters: { generated_at: new Date().toISOString() },
+    parameters: { engine: 'run_mrp', horizon_days: horizonDays, generated_at: new Date().toISOString() },
     summary: null,
   })
 
   try {
-    // LOT7-03 : le calcul des besoins nets doit voir TOUTES les nomenclatures, TOUT le
-    // stock et TOUS les en-cours. Tronqué à 1 000 lignes, le MRP proposait des
-    // approvisionnements pour des besoins déjà couverts (et en oubliait d'autres).
-    const [products, boms, bomLines, stockQtys, openMOs, openPOLines] = await Promise.all([
-      getProducts(),
-      getBOMs(),
-      fetchAllRows<Row<'bom_lines'>>(supabase.from('bom_lines').select('*').eq('tenant_id', tid).order('id'), { label: 'runMRPCalculation/bom_lines' }),
-      fetchAllRows<Row<'stock_quantities'>>(supabase.from('stock_quantities').select('*').eq('tenant_id', tid).order('id'), { label: 'runMRPCalculation/stock_quantities' }),
-      fetchAllRows<Row<'manufacturing_orders'>>(supabase.from('manufacturing_orders').select('*').eq('tenant_id', tid).in('status', ['planned', 'in_progress']).order('id'), { label: 'runMRPCalculation/manufacturing_orders' }),
-      // PRD-05 : Lire les LIGNES de commande, pas l'en-tête — purchase_orders n'a pas de product_id
-      fetchAllRows<OpenPurchaseLine>(supabase.from('purchase_order_lines').select('product_id, quantity, quantity_received, purchase_orders!inner(status)').eq('tenant_id', tid).in('purchase_orders.status', ['draft', 'confirmed', 'partial']).order('id'), { label: 'runMRPCalculation/purchase_order_lines' }),
-    ])
+    // Le calcul est au serveur (`run_mrp`, SECURITY DEFINER, garde de société
+    // 664) — la société vient du contexte d'appel, jamais du client.
+    const needs = await runMRP(horizonDays)
 
-    // Build stock map: product_id -> total quantity
-    const stockMap: Record<string, number> = {}
-    for (const sq of stockQtys as any[]) {
-      stockMap[sq.product_id] = (stockMap[sq.product_id] || 0) + Number(sq.quantity || 0)
-    }
-
-    // PRD-05 : Build open MO map — déduire qty_produced (reste à produire)
-    const openMOMap: Record<string, number> = {}
-    for (const mo of openMOs as any[]) {
-      const remaining = Number(mo.quantity || 0) - Number(mo.qty_produced || 0)
-      if (remaining <= 0) continue
-      if (mo.product_id) openMOMap[mo.product_id] = (openMOMap[mo.product_id] || 0) + remaining
-      if (mo.bom_id) {
-        const bom = (boms as any[]).find((b) => b.id === mo.bom_id)
-        if (bom?.product_id) openMOMap[bom.product_id] = (openMOMap[bom.product_id] || 0) + remaining
-      }
-    }
-
-    // PRD-05 : Build open PO map from purchase_order_lines (reste à recevoir)
-    const openPOMap: Record<string, number> = {}
-    for (const pol of openPOLines as any[]) {
-      const remaining = Number(pol.quantity || 0) - Number(pol.quantity_received || 0)
-      if (remaining > 0 && pol.product_id) {
-        openPOMap[pol.product_id] = (openPOMap[pol.product_id] || 0) + remaining
-      }
-    }
-
-    // Build BOM line map: product_id -> [{component_id, quantity}]
-    const bomLineMap: Record<string, any[]> = {}
-    for (const bl of bomLines as any[]) {
-      if (!bomLineMap[bl.bom_id]) bomLineMap[bl.bom_id] = []
-      bomLineMap[bl.bom_id].push({ product_id: bl.product_id, quantity: Number(bl.quantity) })
-    }
-
-    // Build BOM map: product_id -> bom
+    // Enrichissement, pas calcul : le RPC ne retourne ni `supplier_id` ni
+    // `bom_id`, et le type de proposition se lit sur la nomenclature.
+    const [products, boms] = await Promise.all([getProducts(), getBOMs()])
     const bomByProduct: Record<string, any> = {}
-    for (const bom of boms as any[]) {
+    for (const bom of boms) {
       if (bom.product_id) bomByProduct[bom.product_id] = bom
     }
+    const productById: Record<string, any> = {}
+    for (const product of products) productById[product.id] = product
 
-    // Calculate gross needs: sum of all MO quantities * BOM line quantities
-    const grossNeeds: Record<string, number> = {}
-    for (const mo of openMOs as any[]) {
-      if (mo.bom_id && bomLineMap[mo.bom_id]) {
-        for (const line of bomLineMap[mo.bom_id]) {
-          grossNeeds[line.product_id] = (grossNeeds[line.product_id] || 0) + line.quantity * Number(mo.quantity || 0)
-        }
-      }
-      if (mo.product_id) {
-        grossNeeds[mo.product_id] = (grossNeeds[mo.product_id] || 0) + Number(mo.quantity || 0)
-      }
-    }
-
-    // Generate proposals
     const proposals: Omit<MRPProposal, 'id' | 'created_at'>[] = []
-    for (const product of products as any[]) {
-      if (product.exclude_from_mrp) continue
+    for (const need of needs) {
+      // Une ligne à besoin net nul (couvert par le stock et les en-cours)
+      // n'est pas une proposition — même règle que l'ancien moteur.
+      if (Number(need.net_need) <= 0) continue
 
-      const grossNeed = grossNeeds[product.id] || 0
-      if (grossNeed <= 0) continue
-
-      const stock = stockMap[product.id] || 0
-      const openOrders = (openMOMap[product.id] || 0) + (openPOMap[product.id] || 0)
-      const netNeed = Math.max(0, grossNeed - stock - openOrders)
-
-      if (netNeed <= 0) continue
-
-      const hasBOM = bomByProduct[product.id]
-      const proposalType = hasBOM ? 'manufacture' : 'purchase'
-      const suggestedQty = Math.ceil(netNeed)
-
+      const bom = bomByProduct[need.product_id]
+      const product = productById[need.product_id]
       proposals.push({
         mrp_run_id: run.id,
-        product_id: product.id,
-        proposal_type: proposalType as any,
-        gross_need: grossNeed,
-        stock_available: stock,
-        open_orders: openOrders,
-        net_need: netNeed,
-        suggested_quantity: suggestedQty,
-        suggested_date: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
-        bom_id: hasBOM?.id || null,
-        supplier_id: product.supplier_id || null,
+        product_id: need.product_id,
+        proposal_type: bom ? 'manufacture' : 'purchase',
+        gross_need: Number(need.gross_need),
+        stock_available: Number(need.stock_available),
+        open_orders: Number(need.open_purchase_qty) + Number(need.open_production_qty),
+        net_need: Number(need.net_need),
+        suggested_quantity: Number(need.suggested_qty),
+        suggested_date: need.suggested_date,
+        bom_id: bom?.id || null,
+        supplier_id: product?.supplier_id || null,
         status: 'pending',
         notes: null,
       })
@@ -893,14 +1401,14 @@ export async function runMRPCalculation(): Promise<MRPRun> {
       // affichait « propositions générées » sans compter les refus.
       const { error: propErr } = await supabase.from('mrp_proposals').insert(ti(p, 'mrp_proposals', tid))
       if (propErr) {
-        console.error('generateMrpProposals (proposition non enregistrée):', propErr)
+        console.error('runMRPAndSave (proposition non enregistrée):', propErr)
         throw new Error(`Proposition MRP non enregistrée : ${propErr.message}`)
       }
     }
 
     // Update run with summary
     const summary = {
-      total_products: products.length,
+      total_products: products.filter((p: any) => !p.exclude_from_mrp).length,
       products_with_needs: proposals.length,
       total_net_need: proposals.reduce((sum, p) => sum + p.net_need, 0),
       manufacture_count: proposals.filter((p) => p.proposal_type === 'manufacture').length,
@@ -1397,6 +1905,24 @@ export async function deleteWarehouseLocation(id: string) {
   const tid = await getTenantId()
   const { error } = await tud(supabase.from('warehouse_locations').delete(), 'warehouse_locations', tid).eq('id', id)
   if (error) throw error
+}
+
+// STK-11 / E.3 : le stock ventilé par emplacement (655). `location_id` NULL =
+// stock d'entrepôt non affecté.
+export interface StockByLocationRow {
+  product_id: string
+  product_name: string
+  warehouse_id: string
+  location_id: string | null
+  location_code: string | null
+  location_type: string | null
+  quantity: number
+}
+
+export async function getStockByLocation(warehouseId?: string) {
+  const { data, error } = await supabase.rpc('stock_by_location', { p_warehouse_id: warehouseId ?? null })
+  if (error) throw error
+  return (data || []) as StockByLocationRow[]
 }
 
 

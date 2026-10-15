@@ -7,7 +7,7 @@ import type { EntryTemplate, Journal, TemplateLine, TemplateAmountType, ChartAcc
 import { useToast } from '@/lib/toast'
 import { getVatCodes } from '@/lib/queries/businessFunctions'
 import type { VatCode } from '@/lib/vatLines'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 export function EntryTemplatesPage() {
@@ -63,7 +63,7 @@ const [templates, setTemplates] = useState<EntryTemplate[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('templates.deleteConfirm'))) return
+    if (!(await confirmDialog(t('templates.deleteConfirm')))) return
     try {
       await deleteEntryTemplate(id)
       toast('success', tCommon('common.success'), t('templates.deleteSuccess'))

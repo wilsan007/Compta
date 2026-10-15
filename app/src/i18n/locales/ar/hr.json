@@ -1,5 +1,24 @@
 {
   "title": "الموارد البشرية",
+  "recruitment": {
+    "title": "التوظيف",
+    "subtitle": "انشر مناصبك وتابع الترشحات.",
+    "createPosting": "إنشاء منصب",
+    "postingTitle": "عنوان المنصب",
+    "department": "القسم",
+    "contractType": "نوع العقد",
+    "location": "المكان",
+    "create": "إنشاء",
+    "empty": "لا يوجد منصب بعد",
+    "posting": "المنصب",
+    "candidate": "المترشح",
+    "email": "البريد الإلكتروني",
+    "addApplication": "إضافة الترشح",
+    "applications": "الترشحات",
+    "moveTo": "الحالة",
+    "contractTypes": { "cdi": "دائم", "cdd": "محدد المدة", "stage": "تدريب", "alternance": "تناوب", "interim": "مؤقت", "freelance": "مستقل" },
+    "statuses": { "draft": "مسودة", "open": "مفتوح", "closed": "مغلق", "filled": "مُشغل", "received": "مستلمة", "screening": "فرز", "interview": "مقابلة", "offer": "عرض", "hired": "تم التوظيف", "rejected": "مرفوضة" }
+  },
   "dashboard": {
     "title": "لوحة تحكم الموارد البشرية",
     "subtitle": "نظرة عامة على مواردك البشرية",

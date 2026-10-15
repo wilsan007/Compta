@@ -8,7 +8,7 @@ import { errorMessage, formatDate } from '@/lib/utils'
 import { FileText, Plus, Trash2, X, Send, PenLine, CheckCircle2 } from 'lucide-react'
 import type { Employee, EmployeeDocument } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 const docTypeColors: Record<string, string> = {
   payslip: 'var(--color-primary)',
@@ -19,14 +19,17 @@ const docTypeColors: Record<string, string> = {
   other: 'var(--color-text-secondary)',
 }
 
+/** `getEmployeeDocuments` ne joint pas `employees` (défaut, demande R3) — l'écran le lit, donc il le nomme. */
+type EmployeeDocumentRow = EmployeeDocument & { employees?: { first_name: string | null; last_name: string | null } | null }
+
 export function EmployeeDocumentsPage() {
   const { toast } = useToast()
   const { t } = useTranslation('hr')
   const { t: tCommon } = useTranslation('common')
   const { t: tNav } = useTranslation('nav')
-  const [documents, setDocuments] = useState<any[]>([])
+  const [documents, setDocuments] = useState<EmployeeDocumentRow[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
-  const [payRuns, setPayRuns] = useState<any[]>([])
+  const [payRuns, setPayRuns] = useState<Awaited<ReturnType<typeof getPayRuns>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [showDistribute, setShowDistribute] = useState(false)
@@ -54,7 +57,7 @@ export function EmployeeDocumentsPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try { await deleteEmployeeDocument(id); await loadData() }
     catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }

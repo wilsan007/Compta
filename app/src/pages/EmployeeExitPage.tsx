@@ -20,11 +20,11 @@ export function EmployeeExitPage() {
   const { t } = useTranslation('hr')
   const { t: tCommon } = useTranslation('common')
   const { t: tNav } = useTranslation('nav')
-  const [processes, setProcesses] = useState<any[]>([])
+  const [processes, setProcesses] = useState<Awaited<ReturnType<typeof getExitProcesses>>>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [selectedProcess, setSelectedProcess] = useState<any>(null)
+  const [selectedProcess, setSelectedProcess] = useState<Awaited<ReturnType<typeof getExitProcesses>>[number] | null>(null)
 
   const loadData = useCallback(async () => {
     setLoading(true)

@@ -5,7 +5,7 @@ import { useToast } from '@/lib/toast'
 import { getRevisionCycles, createRevisionCycle, updateRevisionCycle, deleteRevisionCycle } from '@/lib/queries/misc'
 import { Plus, Trash2, Edit2, X, RefreshCw } from 'lucide-react'
 import type { RevisionCycle } from '@/types'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 export function RevisionCyclesPage() {
   const { t } = useTranslation('accounting')
@@ -76,7 +76,7 @@ export function RevisionCyclesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('revisionCycles.deleteConfirm'))) return
+    if (!(await confirmDialog(t('revisionCycles.deleteConfirm')))) return
     try {
       await deleteRevisionCycle(id)
       toast('success', t('revisionCycles.title'), t('revisionCycles.deleteSuccess'))

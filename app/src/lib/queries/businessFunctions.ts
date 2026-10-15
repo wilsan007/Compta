@@ -383,6 +383,12 @@ export async function performThreeWayMatch(purchaseInvoiceId: string) {
  * celle du contexte (`current_tenant_id()`), donc `p_tenant_id` s'omet et garde
  * son défaut. Le front envoyait `p_product_id` / `p_depth`, deux arguments qui
  * n'existent dans AUCUNE signature : l'appel ne pouvait pas aboutir.
+ *
+ * PRD-08 (11/10/2026) : ce RPC est désormais l'UNIQUE moteur de calcul des
+ * besoins nets — `runMRPAndSave` (queries/stock.ts) persiste ce qu'il
+ * retourne, et l'ancien moteur client (`runMRPCalculation`) est supprimé. Le
+ * type de retour porte donc TOUTES les colonnes que les propositions
+ * persistent (`gross_need`, `stock_available`, en-cours achat/production).
  */
 export async function runMRP(horizonDays = 90) {
   const { data, error } = await supabase.rpc('run_mrp', { p_horizon_days: horizonDays })
@@ -390,10 +396,16 @@ export async function runMRP(horizonDays = 90) {
   return data as {
     product_id: string
     product_name: string
+    gross_need: number
+    stock_available: number
+    open_purchase_qty: number
+    open_production_qty: number
     net_need: number
     suggested_qty: number
     suggested_date: string
+    low_level_code: number
     source: string
+    need_date: string | null
     is_late: boolean
   }[]
 }

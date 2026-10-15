@@ -17,7 +17,7 @@ export function CampaignsPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [statsFor, setStatsFor] = useState<string | null>(null)
-  const [stats, setStats] = useState<any>(null)
+  const [stats, setStats] = useState<Awaited<ReturnType<typeof getCampaignStats>> | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)

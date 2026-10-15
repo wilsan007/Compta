@@ -7,7 +7,7 @@ import { getSuppliers } from '@/lib/queries/partners'
 import { Plus, Trash2, X, FileText } from 'lucide-react'
 import type { BudgetCommitment, ChartAccount, FiscalYear, Supplier } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 const statusVariants: Record<string, 'success' | 'warning' | 'danger' | 'neutral'> = {
   active: 'warning',
@@ -55,7 +55,7 @@ export function BudgetCommitmentsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('budgetCommitments.deleteConfirm'))) return
+    if (!(await confirmDialog(t('budgetCommitments.deleteConfirm')))) return
     try { await deleteBudgetCommitment(id); await load() }
     catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError')) }
   }

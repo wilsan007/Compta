@@ -6,7 +6,7 @@ import type { ExpensePayrollLink } from '@/lib/queries/sprintDE'
 import { errorMessage, formatDate, formatCurrency } from '@/lib/utils'
 import { Receipt, Plus, X, Send, Trash2, ChevronRight } from 'lucide-react'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { ChainTimeline } from '@/components/ChainTimeline'
 import { ExplainAmount } from '@/components/ExplainAmount'
 
@@ -28,7 +28,7 @@ export function EmployeeExpensesPage() {
   const [reports, setReports] = useState<Awaited<ReturnType<typeof getMyExpenseReports>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [selectedReport, setSelectedReport] = useState<any>(null)
+  const [selectedReport, setSelectedReport] = useState<Awaited<ReturnType<typeof getMyExpenseReports>>[number] | null>(null)
   /** `id` de la note → son élément de paie. Absente = la note n'est jamais entrée en paie. */
   const [payrollByReport, setPayrollByReport] = useState<Map<string, ExpensePayrollLink>>(new Map())
 
@@ -53,7 +53,7 @@ export function EmployeeExpensesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try { await deleteMyExpenseReport(id); await loadData(); toast('success', tCommon('common.success'), tCommon('toast.deleted')) }
     catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
@@ -185,8 +185,8 @@ function ExpenseReportDetail({ report, onClose }: { report: any; onClose: () => 
   // I-01 — la Vue Chaîne, dans son propre espace de noms d'écran.
   const { t: tChain } = useTranslation('crossModule')
   const { toast } = useToast()
-  const [lines, setLines] = useState<any[]>([])
-  const [categories, setCategories] = useState<any[]>([])
+  const [lines, setLines] = useState<Awaited<ReturnType<typeof getExpenseReportLines>>>([])
+  const [categories, setCategories] = useState<Awaited<ReturnType<typeof getExpenseCategories>>>([])
   const [loading, setLoading] = useState(true)
   const [showLineForm, setShowLineForm] = useState(false)
   const [categoryId, setCategoryId] = useState('')

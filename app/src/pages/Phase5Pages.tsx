@@ -1,4 +1,4 @@
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { useEffect, useState, useCallback  } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
@@ -15,7 +15,7 @@ export function AssetDepreciationPlansPage() {
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const { formatCurrency } = useLocale()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<Awaited<ReturnType<typeof getAssetDepreciationPlans>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ asset_id: '', plan_type: 'economic' as const, depreciation_method: 'linear' as const, duration_months: 12, residual_value: 0, start_date: '', active: true })
@@ -44,7 +44,7 @@ export function AssetFamiliesPage() {
   const { t } = useTranslation('assets')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<Awaited<ReturnType<typeof getAssetFamilies>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ code: '', name: '', default_account: '', default_depreciation_account: '', default_duration_months: 60, default_method: 'linear' as const, depreciation_rate: 0, description: '' })
@@ -53,7 +53,7 @@ export function AssetFamiliesPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createAssetFamily(form as any); toast('success', tCommon('common.success'), t('families.created')); setShowForm(false); setForm({ code: '', name: '', default_account: '', default_depreciation_account: '', default_duration_months: 60, default_method: 'linear', depreciation_rate: 0, description: '' }); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
-  async function handleDelete(id: string) { if (!confirmSync(tCommon('form.confirmDelete'))) return; try { await deleteAssetFamily(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
+  async function handleDelete(id: string) { if (!(await confirmDialog(tCommon('form.confirmDelete')))) return; try { await deleteAssetFamily(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
 
   return (
     <div>
@@ -75,7 +75,7 @@ export function AssetRevaluationPage() {
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const { formatCurrency } = useLocale()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<Awaited<ReturnType<typeof getAssetRevaluations>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ asset_id: '', revaluation_date: '', old_value: 0, new_value: 0, reason: '' })
@@ -105,7 +105,7 @@ export function BatchDisposalPage() {
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const { formatCurrency } = useLocale()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<Awaited<ReturnType<typeof getAssetBatchDisposals>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ batch_number: '', disposal_date: '', notes: '' })

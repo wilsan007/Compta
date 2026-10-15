@@ -33,7 +33,7 @@ BEGIN
   EXECUTE 'RESET ROLE';
   t := _mk_tenant(p_nom, false);
   PERFORM ensure_standard_journals(t);
-  PERFORM _ledger_fixture(t, ARRAY['530000','511200','707000','445710','445711','658000','758000']);
+  PERFORM _ledger_fixture(t, ARRAY['530000','511000','707000','445710','445711','658000','758000']);
   INSERT INTO warehouses (tenant_id, code, name) VALUES (t, 'W-' || p_nom, 'Magasin') RETURNING id INTO wh;
   INSERT INTO products (tenant_id, name, sku, type, sale_price, cost_price, vat_rate)
     VALUES (t, 'Article ' || p_nom, 'SKU-' || p_nom, 'stock', 10, 5, 20) RETURNING id INTO prod;
@@ -86,7 +86,7 @@ BEGIN
   SELECT expected_amount, difference INTO ss FROM pos_sessions WHERE id = s.sess;
   SELECT max(e.status) st, sum(l.debit) d, sum(l.credit) c,
          sum(l.debit) FILTER (WHERE l.account_code = '530000') d530,
-         sum(l.debit) FILTER (WHERE l.account_code = '511200') d5112
+         sum(l.debit) FILTER (WHERE l.account_code = '511000') d5110
     INTO je FROM journal_entries e JOIN journal_lines l ON l.journal_id = e.id
    WHERE e.tenant_id = s.t AND e.journal_code = 'POS';
   SELECT count(*) INTO n_sess_out FROM stock_movements WHERE tenant_id = s.t AND reference_type = 'pos_session';
@@ -97,18 +97,20 @@ BEGIN
   PERFORM _rec('T02', 'session close : ticket refusé, par l''appel comme par l''écriture directe',
     e_rpc ~* 'close|ouverte' AND e_dir ~* 'ouverte',
     format('appel=%s | direct=%s', coalesce(e_rpc, 'ACCEPTÉ'), coalesce(e_dir, 'ACCEPTÉ')));
-  PERFORM _rec('T03', 'clôture : attendu 100 + 24 espèces = 124 (carte hors tiroir), écart 0 ; écriture POS validée, équilibrée (D530 24, D5112 12) ; aucune seconde sortie de stock',
-    ss.expected_amount = 124 AND ss.difference = 0 AND je.st = 'posted' AND je.d = je.c AND je.d530 = 24 AND je.d5112 = 12
+  -- 397 (LOC1-10) : la carte passe par MOYENS_PAIEMENT_A_ENCAISSER (511000) et
+  -- non plus par 511200, que le plan nomme « Dividendes à encaisser ».
+  PERFORM _rec('T03', 'clôture : attendu 100 + 24 espèces = 124 (carte hors tiroir), écart 0 ; écriture POS validée, équilibrée (D530 24, D5110 12) ; aucune seconde sortie de stock',
+    ss.expected_amount = 124 AND ss.difference = 0 AND je.st = 'posted' AND je.d = je.c AND je.d530 = 24 AND je.d5110 = 12
       AND n_sess_out = 0 AND q_close = q_void,
-    format('attendu=%s écart=%s ; écriture %s D=%s C=%s D530=%s D5112=%s ; sorties de clôture=%s ; stock %s → %s',
-           ss.expected_amount, ss.difference, je.st, je.d, je.c, je.d530, je.d5112, n_sess_out, q_void, q_close));
+    format('attendu=%s écart=%s ; écriture %s D=%s C=%s D530=%s D5110=%s ; sorties de clôture=%s ; stock %s → %s',
+           ss.expected_amount, ss.difference, je.st, je.d, je.c, je.d530, je.d5110, n_sess_out, q_void, q_close));
   PERFORM _rec('T04', 'un ticket annulé rend son stock (7 après la vente de 3, 7 + 3 = 10 → 7 = 10 − 2 − 1)',
     q_void = 7, format('stock après annulation=%s (attendu 7)', q_void));
 EXCEPTION WHEN undefined_function THEN
   EXECUTE 'RESET ROLE';
   PERFORM _rec('T01', 'encaissement atomique : 2 × 10 HT + TVA 20 % = 24 (1 saisi ignoré), rendu 26, 1 paiement de 24, stock 10 → 8', false, SQLERRM);
   PERFORM _rec('T02', 'session close : ticket refusé, par l''appel comme par l''écriture directe', false, SQLERRM);
-  PERFORM _rec('T03', 'clôture : attendu 100 + 24 espèces = 124 (carte hors tiroir), écart 0 ; écriture POS validée, équilibrée (D530 24, D5112 12) ; aucune seconde sortie de stock', false, SQLERRM);
+  PERFORM _rec('T03', 'clôture : attendu 100 + 24 espèces = 124 (carte hors tiroir), écart 0 ; écriture POS validée, équilibrée (D530 24, D5110 12) ; aucune seconde sortie de stock', false, SQLERRM);
   PERFORM _rec('T04', 'un ticket annulé rend son stock (7 après la vente de 3, 7 + 3 = 10 → 7 = 10 − 2 − 1)', false, SQLERRM);
 END $$;
 
@@ -131,14 +133,15 @@ BEGIN
   SELECT max(e.status) st, sum(l.debit) d, sum(l.credit) c INTO je
   FROM journal_entries e JOIN journal_lines l ON l.journal_id = e.id
   WHERE e.tenant_id = s.t AND e.journal_code = 'POS';
-  PERFORM _rec('T05', 'D-E : une société neuve a ses moyens de paiement (espèces 530000, carte 511200, chèque 511200)',
-    pm = 'cash=530000,card=511200,check=511200', coalesce(pm, 'aucun'));
+  -- 397 (LOC1-10) : carte et chèque sur MOYENS_PAIEMENT_A_ENCAISSER (511000).
+  PERFORM _rec('T05', 'D-E : une société neuve a ses moyens de paiement (espèces 530000, carte 511000, chèque 511000)',
+    pm = 'cash=530000,card=511000,check=511000', coalesce(pm, 'aucun'));
   PERFORM _rec('T06', 'ticket sans paiement ventilé : la clôture le reconstitue (1 paiement) et l''écriture est équilibrée',
     n_pay = 1 AND je.st = 'posted' AND je.d = je.c AND je.d = 12,
     format('paiements=%s écriture %s D=%s C=%s', n_pay, je.st, je.d, je.c));
 EXCEPTION WHEN OTHERS THEN
   EXECUTE 'RESET ROLE';
-  PERFORM _rec('T05', 'D-E : une société neuve a ses moyens de paiement (espèces 530000, carte 511200, chèque 511200)', false, SQLERRM);
+  PERFORM _rec('T05', 'D-E : une société neuve a ses moyens de paiement (espèces 530000, carte 511000, chèque 511000)', false, SQLERRM);
   PERFORM _rec('T06', 'ticket sans paiement ventilé : la clôture le reconstitue (1 paiement) et l''écriture est équilibrée', false, SQLERRM);
 END $$;
 

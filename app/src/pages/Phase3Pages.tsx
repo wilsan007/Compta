@@ -4,7 +4,7 @@ import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState
 import { useToast } from '@/lib/toast'
 import { useLocale } from '@/hooks/useLocale'
 import { Plus, Trash2 } from 'lucide-react'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import {
   getFutureAccountingMovements, createFutureAccountingMovement, updateFutureAccountingMovement, deleteFutureAccountingMovement,
   getTreasuryTransfers, createTreasuryTransfer, updateTreasuryTransfer, deleteTreasuryTransfer,
@@ -22,7 +22,7 @@ export function MCFPage() {
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const { formatCurrency } = useLocale()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<Awaited<ReturnType<typeof getFutureAccountingMovements>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ description: '', account_code: '', amount: 0, movement_type: 'debit' as const, expected_date: '', source_type: 'manual' as const })
@@ -32,7 +32,7 @@ export function MCFPage() {
 
   async function handleCreate() { try { await createFutureAccountingMovement(form as any); toast('success', tCommon('common.success'), t('mcf.created')); setShowForm(false); setForm({ description: '', account_code: '', amount: 0, movement_type: 'debit', expected_date: '', source_type: 'manual' }); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
   async function handleIncorporate(id: string) { try { await updateFutureAccountingMovement(id, { incorporated: true }); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
-  async function handleDelete(id: string) { if (!confirmSync(tCommon('form.confirmDelete'))) return; try { await deleteFutureAccountingMovement(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
+  async function handleDelete(id: string) { if (!(await confirmDialog(tCommon('form.confirmDelete')))) return; try { await deleteFutureAccountingMovement(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
 
   return (
     <div>
@@ -54,7 +54,7 @@ export function TreasuryTransfersPage() {
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const { formatCurrency } = useLocale()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<Awaited<ReturnType<typeof getTreasuryTransfers>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ number: '', from_account_id: '', to_account_id: '', amount: 0, transfer_date: '', value_date: '', notes: '' })
@@ -64,7 +64,7 @@ export function TreasuryTransfersPage() {
 
   async function handleCreate() { try { await createTreasuryTransfer(form as any); toast('success', tCommon('common.success'), t('transfers.created')); setShowForm(false); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
   async function handleExecute(id: string) { try { await updateTreasuryTransfer(id, { status: 'executed' }); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
-  async function handleDelete(id: string) { if (!confirmSync(tCommon('form.confirmDelete'))) return; try { await deleteTreasuryTransfer(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
+  async function handleDelete(id: string) { if (!(await confirmDialog(tCommon('form.confirmDelete')))) return; try { await deleteTreasuryTransfer(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
 
   return (
     <div>
@@ -86,7 +86,7 @@ export function CreditLinesPage() {
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const { formatCurrency } = useLocale()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<Awaited<ReturnType<typeof getCreditLines>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: '', type: 'credit_line' as const, limit_amount: 0, used_amount: 0, interest_rate: 0, start_date: '', end_date: '', monthly_payment: 0, notes: '' })
@@ -95,7 +95,7 @@ export function CreditLinesPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createCreditLine(form as any); toast('success', tCommon('common.success'), t('creditLines.created')); setShowForm(false); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
-  async function handleDelete(id: string) { if (!confirmSync(tCommon('form.confirmDelete'))) return; try { await deleteCreditLine(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
+  async function handleDelete(id: string) { if (!(await confirmDialog(tCommon('form.confirmDelete')))) return; try { await deleteCreditLine(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
 
   return (
     <div>
@@ -117,7 +117,7 @@ export function InvestmentsPage() {
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const { formatCurrency } = useLocale()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<Awaited<ReturnType<typeof getInvestments>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: '', type: 'opcv' as const, institution: '', initial_amount: 0, current_value: 0, acquisition_date: '', maturity_date: '', interest_rate: 0, notes: '' })
@@ -126,7 +126,7 @@ export function InvestmentsPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createInvestment(form as any); toast('success', tCommon('common.success'), t('investments.created')); setShowForm(false); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
-  async function handleDelete(id: string) { if (!confirmSync(tCommon('form.confirmDelete'))) return; try { await deleteInvestment(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
+  async function handleDelete(id: string) { if (!(await confirmDialog(tCommon('form.confirmDelete')))) return; try { await deleteInvestment(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
 
   return (
     <div>
@@ -146,7 +146,7 @@ export function InvestmentsPage() {
 export function ValueDateTrackingPage() {
   const { t } = useTranslation('treasury')
   const { formatCurrency } = useLocale()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<Awaited<ReturnType<typeof getValueDateTrackings>>>([])
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => { setLoading(true); try { setItems(await getValueDateTrackings() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) } }, [])
@@ -171,7 +171,7 @@ export function TreasuryRecurringPage() {
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const { formatCurrency } = useLocale()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<Awaited<ReturnType<typeof getTreasuryRecurring>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ description: '', bank_account_id: '', amount: 0, type: 'outgoing' as const, frequency: 'monthly' as const, next_date: '', end_date: '', active: true })
@@ -180,7 +180,7 @@ export function TreasuryRecurringPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createTreasuryRecurring(form as any); toast('success', tCommon('common.success'), t('recurring.created')); setShowForm(false); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
-  async function handleDelete(id: string) { if (!confirmSync(tCommon('form.confirmDelete'))) return; try { await deleteTreasuryRecurring(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
+  async function handleDelete(id: string) { if (!(await confirmDialog(tCommon('form.confirmDelete')))) return; try { await deleteTreasuryRecurring(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
 
   return (
     <div>
@@ -200,7 +200,7 @@ export function TreasuryRecurringPage() {
 export function ConsolidatedTreasuryPage() {
   const { t } = useTranslation('treasury')
   const { formatCurrency } = useLocale()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<Awaited<ReturnType<typeof getConsolidatedTreasury>>>([])
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => { setLoading(true); try { setItems(await getConsolidatedTreasury() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) } }, [])

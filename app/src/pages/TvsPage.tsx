@@ -6,7 +6,7 @@ import { useLocale } from '@/hooks/useLocale'
 import { Plus, Trash2, Car, X } from 'lucide-react'
 import type { TvsDeclaration } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 export function TvsPage() {
@@ -33,7 +33,7 @@ export function TvsPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('tvs.deleteConfirm'))) return
+    if (!(await confirmDialog(t('tvs.deleteConfirm')))) return
     try {
       await deleteTvsDeclaration(id)
       toast('success', tCommon('common.success'), t('tvs.deleteSuccess'))

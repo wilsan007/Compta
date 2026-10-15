@@ -62,6 +62,31 @@ export interface Database {
         },
       ]
     }
+    account_role_catalog: {
+      Row: {
+        role: string
+        family: string
+        normal_side: string
+        description: string | null
+        required_for: string[]
+      }
+      Insert: {
+        role: string
+        family: string
+        normal_side: string
+        description?: string
+        required_for?: string[]
+      }
+      Update: {
+        role?: string
+        family?: string
+        normal_side?: string
+        description?: string
+        required_for?: string[]
+      }
+      Relationships: [
+      ]
+    }
     account_tag_mappings: {
       Row: {
         id: string
@@ -206,6 +231,48 @@ export interface Database {
           isOneToOne: false,
           referencedRelation: "fiscal_periods",
           referencedColumns: ["tenant_id", "id"]
+        },
+      ]
+    }
+    alert_subscriptions: {
+      Row: {
+        id: string
+        tenant_id: string
+        rule_id: string
+        user_id: string
+        channel: string
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        rule_id: string
+        user_id: string
+        channel?: string
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        rule_id?: string
+        user_id?: string
+        channel?: string
+        created_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "alert_subscriptions_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "alert_subscriptions_user_id_fkey",
+          columns: ["user_id"],
+          isOneToOne: true,
+          referencedRelation: "users",
+          referencedColumns: ["id"]
         },
       ]
     }
@@ -2301,6 +2368,100 @@ export interface Database {
         },
       ]
     }
+    business_alert_rules: {
+      Row: {
+        id: string
+        tenant_id: string
+        name: string
+        alert_type: string
+        conditions: Json
+        severity: string
+        active: boolean
+        created_at: string
+        updated_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        name: string
+        alert_type: string
+        conditions?: Json
+        severity?: string
+        active?: boolean
+        created_at?: string
+        updated_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        name?: string
+        alert_type?: string
+        conditions?: Json
+        severity?: string
+        active?: boolean
+        created_at?: string
+        updated_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "business_alert_rules_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
+    business_connectors: {
+      Row: {
+        id: string
+        tenant_id: string
+        name: string
+        connector_type: string
+        base_url: string
+        auth_type: string
+        auth_ref: string | null
+        is_active: boolean
+        config: Json
+        created_at: string
+        updated_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        name: string
+        connector_type: string
+        base_url: string
+        auth_type?: string
+        auth_ref?: string
+        is_active?: boolean
+        config?: Json
+        created_at?: string
+        updated_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        name?: string
+        connector_type?: string
+        base_url?: string
+        auth_type?: string
+        auth_ref?: string
+        is_active?: boolean
+        config?: Json
+        created_at?: string
+        updated_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "business_connectors_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
     career_history: {
       Row: {
         id: string
@@ -3024,6 +3185,7 @@ export interface Database {
         parent_code: string | null
         sort_order: number | null
         created_at: string | null
+        source_id: string | null
       }
       Insert: {
         id?: string
@@ -3035,6 +3197,7 @@ export interface Database {
         parent_code?: string
         sort_order?: number
         created_at?: string
+        source_id?: string
       }
       Update: {
         id?: string
@@ -3046,6 +3209,7 @@ export interface Database {
         parent_code?: string
         sort_order?: number
         created_at?: string
+        source_id?: string
       }
       Relationships: [
         {
@@ -3966,6 +4130,7 @@ export interface Database {
         fixed_amount: number | null
         sort_order: number
         created_at: string
+        source_id: string | null
       }
       Insert: {
         id?: string
@@ -3980,6 +4145,7 @@ export interface Database {
         fixed_amount?: number
         sort_order?: number
         created_at?: string
+        source_id?: string
       }
       Update: {
         id?: string
@@ -3994,6 +4160,7 @@ export interface Database {
         fixed_amount?: number
         sort_order?: number
         created_at?: string
+        source_id?: string
       }
       Relationships: [
         {
@@ -4021,6 +4188,8 @@ export interface Database {
         is_default: boolean
         created_at: string
         updated_at: string
+        source_id: string | null
+        pack_code: string | null
       }
       Insert: {
         id?: string
@@ -4037,6 +4206,8 @@ export interface Database {
         is_default?: boolean
         created_at?: string
         updated_at?: string
+        source_id?: string
+        pack_code?: string
       }
       Update: {
         id?: string
@@ -4053,8 +4224,17 @@ export interface Database {
         is_default?: boolean
         created_at?: string
         updated_at?: string
+        source_id?: string
+        pack_code?: string
       }
       Relationships: [
+        {
+          foreignKeyName: "corporate_tax_grids_pack_code_fkey",
+          columns: ["tenant_id", "pack_code"],
+          isOneToOne: false,
+          referencedRelation: "legislation_packs",
+          referencedColumns: ["tenant_id", "code"]
+        },
         {
           foreignKeyName: "corporate_tax_grids_tenant_id_fkey",
           columns: ["tenant_id"],
@@ -4794,6 +4974,142 @@ export interface Database {
         },
       ]
     }
+    crm_scoring_rules: {
+      Row: {
+        id: string
+        tenant_id: string
+        name: string
+        field: string
+        operator: string
+        value: string | null
+        points: number
+        is_active: boolean
+        position: number
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        name: string
+        field: string
+        operator: string
+        value?: string
+        points: number
+        is_active?: boolean
+        position?: number
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        name?: string
+        field?: string
+        operator?: string
+        value?: string
+        points?: number
+        is_active?: boolean
+        position?: number
+        created_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "crm_scoring_rules_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
+    crm_sequence_steps: {
+      Row: {
+        id: string
+        tenant_id: string
+        sequence_id: string
+        step_order: number
+        delay_days: number
+        channel: string
+        subject: string | null
+        body: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        sequence_id: string
+        step_order: number
+        delay_days?: number
+        channel: string
+        subject?: string
+        body?: string
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        sequence_id?: string
+        step_order?: number
+        delay_days?: number
+        channel?: string
+        subject?: string
+        body?: string
+        created_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "crm_sequence_steps_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "crm_sequence_steps_tenant_id_sequence_id_fkey",
+          columns: ["tenant_id", "sequence_id"],
+          isOneToOne: false,
+          referencedRelation: "crm_sequences",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
+    }
+    crm_sequences: {
+      Row: {
+        id: string
+        tenant_id: string
+        name: string
+        description: string | null
+        is_active: boolean
+        created_by: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        name: string
+        description?: string
+        is_active?: boolean
+        created_by?: string
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        name?: string
+        description?: string
+        is_active?: boolean
+        created_by?: string
+        created_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "crm_sequences_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
     crm_territories: {
       Row: {
         id: string
@@ -4986,6 +5302,101 @@ export interface Database {
         },
         {
           foreignKeyName: "currency_revaluations_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
+    custom_field_definitions: {
+      Row: {
+        id: string
+        tenant_id: string
+        module: string
+        entity: string
+        field_key: string
+        label: string
+        field_type: string
+        options: Json
+        is_required: boolean
+        position: number
+        is_active: boolean
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        module: string
+        entity: string
+        field_key: string
+        label: string
+        field_type: string
+        options?: Json
+        is_required?: boolean
+        position?: number
+        is_active?: boolean
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        module?: string
+        entity?: string
+        field_key?: string
+        label?: string
+        field_type?: string
+        options?: Json
+        is_required?: boolean
+        position?: number
+        is_active?: boolean
+        created_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "custom_field_definitions_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
+    custom_field_values: {
+      Row: {
+        id: string
+        tenant_id: string
+        definition_id: string
+        record_id: string
+        value: Json
+        updated_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        definition_id: string
+        record_id: string
+        value: Json
+        updated_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        definition_id?: string
+        record_id?: string
+        value?: Json
+        updated_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "custom_field_values_tenant_id_definition_id_fkey",
+          columns: ["tenant_id", "definition_id"],
+          isOneToOne: false,
+          referencedRelation: "custom_field_definitions",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "custom_field_values_tenant_id_fkey",
           columns: ["tenant_id"],
           isOneToOne: true,
           referencedRelation: "tenants",
@@ -8447,6 +8858,76 @@ export interface Database {
         },
       ]
     }
+    group_members: {
+      Row: {
+        id: string
+        group_id: string
+        tenant_id: string
+        member_type: string
+        ownership_pct: number
+        consolidation_method: string
+        joined_at: string
+      }
+      Insert: {
+        id?: string
+        group_id: string
+        tenant_id: string
+        member_type?: string
+        ownership_pct?: number
+        consolidation_method?: string
+        joined_at?: string
+      }
+      Update: {
+        id?: string
+        group_id?: string
+        tenant_id?: string
+        member_type?: string
+        ownership_pct?: number
+        consolidation_method?: string
+        joined_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "group_members_group_id_fkey",
+          columns: ["group_id"],
+          isOneToOne: true,
+          referencedRelation: "groups",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "group_members_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
+    groups: {
+      Row: {
+        id: string
+        name: string
+        created_by: string
+        created_at: string
+        updated_at: string
+      }
+      Insert: {
+        id?: string
+        name: string
+        created_by: string
+        created_at?: string
+        updated_at?: string
+      }
+      Update: {
+        id?: string
+        name?: string
+        created_by?: string
+        created_at?: string
+        updated_at?: string
+      }
+      Relationships: [
+      ]
+    }
     honorarium_records: {
       Row: {
         id: string
@@ -8891,6 +9372,76 @@ export interface Database {
         },
       ]
     }
+    intra_group_transactions: {
+      Row: {
+        id: string
+        group_id: string
+        from_tenant_id: string
+        to_tenant_id: string
+        transaction_type: string
+        amount: number
+        currency: string
+        reference: string | null
+        label: string | null
+        transaction_date: string
+        status: string
+        created_by: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        group_id: string
+        from_tenant_id: string
+        to_tenant_id: string
+        transaction_type: string
+        amount: number
+        currency?: string
+        reference?: string
+        label?: string
+        transaction_date: string
+        status?: string
+        created_by?: string
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        group_id?: string
+        from_tenant_id?: string
+        to_tenant_id?: string
+        transaction_type?: string
+        amount?: number
+        currency?: string
+        reference?: string
+        label?: string
+        transaction_date?: string
+        status?: string
+        created_by?: string
+        created_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "intra_group_transactions_from_tenant_id_fkey",
+          columns: ["from_tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "intra_group_transactions_group_id_fkey",
+          columns: ["group_id"],
+          isOneToOne: true,
+          referencedRelation: "groups",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "intra_group_transactions_to_tenant_id_fkey",
+          columns: ["to_tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
     investments: {
       Row: {
         id: string
@@ -9246,6 +9797,122 @@ export interface Database {
           isOneToOne: false,
           referencedRelation: "journal_entries",
           referencedColumns: ["tenant_id", "id"]
+        },
+      ]
+    }
+    job_applications: {
+      Row: {
+        id: string
+        tenant_id: string
+        posting_id: string
+        candidate_name: string
+        candidate_email: string | null
+        candidate_phone: string | null
+        source: string | null
+        status: string
+        applied_at: string
+        notes: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        posting_id: string
+        candidate_name: string
+        candidate_email?: string
+        candidate_phone?: string
+        source?: string
+        status?: string
+        applied_at?: string
+        notes?: string
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        posting_id?: string
+        candidate_name?: string
+        candidate_email?: string
+        candidate_phone?: string
+        source?: string
+        status?: string
+        applied_at?: string
+        notes?: string
+        created_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "job_applications_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "job_applications_tenant_id_posting_id_fkey",
+          columns: ["tenant_id", "posting_id"],
+          isOneToOne: false,
+          referencedRelation: "job_postings",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
+    }
+    job_postings: {
+      Row: {
+        id: string
+        tenant_id: string
+        reference: string | null
+        title: string
+        description: string | null
+        department: string | null
+        contract_type: string
+        location: string | null
+        openings: number
+        status: string
+        published_at: string | null
+        closing_at: string | null
+        created_by: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        reference?: string
+        title: string
+        description?: string
+        department?: string
+        contract_type?: string
+        location?: string
+        openings?: number
+        status?: string
+        published_at?: string
+        closing_at?: string
+        created_by?: string
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        reference?: string
+        title?: string
+        description?: string
+        department?: string
+        contract_type?: string
+        location?: string
+        openings?: number
+        status?: string
+        published_at?: string
+        closing_at?: string
+        created_by?: string
+        created_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "job_postings_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
         },
       ]
     }
@@ -9622,6 +10289,28 @@ export interface Database {
         },
       ]
     }
+    journal_role_catalog: {
+      Row: {
+        role: string
+        journal_type: string
+        description: string | null
+        required_for: string[]
+      }
+      Insert: {
+        role: string
+        journal_type: string
+        description?: string
+        required_for?: string[]
+      }
+      Update: {
+        role?: string
+        journal_type?: string
+        description?: string
+        required_for?: string[]
+      }
+      Relationships: [
+      ]
+    }
     journals: {
       Row: {
         id: string
@@ -9866,6 +10555,45 @@ export interface Database {
           isOneToOne: false,
           referencedRelation: "landed_costs",
           referencedColumns: ["tenant_id", "id"]
+        },
+      ]
+    }
+    landed_cost_receipts: {
+      Row: {
+        id: string
+        tenant_id: string
+        landed_cost_id: string
+        receipt_id: string
+        created_at: string | null
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        landed_cost_id: string
+        receipt_id: string
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        landed_cost_id?: string
+        receipt_id?: string
+        created_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "landed_cost_receipts_landed_cost_fk",
+          columns: ["tenant_id", "landed_cost_id"],
+          isOneToOne: false,
+          referencedRelation: "landed_costs",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "landed_cost_receipts_receipt_fk",
+          columns: ["receipt_id", "tenant_id"],
+          isOneToOne: false,
+          referencedRelation: "goods_receipts",
+          referencedColumns: ["id", "tenant_id"]
         },
       ]
     }
@@ -10292,7 +11020,7 @@ export interface Database {
       Row: {
         code: string
         name: string
-        country_code: string
+        country_code: string | null
         country_name: string
         accounting_standard: string
         currency: string
@@ -10307,11 +11035,28 @@ export interface Database {
         created_at: string | null
         updated_at: string | null
         tenant_id: string
+        level: string
+        parent_code: string | null
+        sector: string | null
+        version: string
+        status: string
+        published_at: string | null
+        validated_by: string | null
+        price_decimals: number
+        quantity_decimals: number
+        rounding_mode: string
+        rounding_level: string
+        number_system: string
+        ui_languages: string[]
+        document_languages: string[]
+        week_start: number
+        weekend_days: number[]
+        source_ref: string | null
       }
       Insert: {
         code: string
         name: string
-        country_code: string
+        country_code?: string
         country_name: string
         accounting_standard: string
         currency?: string
@@ -10326,6 +11071,23 @@ export interface Database {
         created_at?: string
         updated_at?: string
         tenant_id: string
+        level?: string
+        parent_code?: string
+        sector?: string
+        version?: string
+        status?: string
+        published_at?: string
+        validated_by?: string
+        price_decimals?: number
+        quantity_decimals?: number
+        rounding_mode?: string
+        rounding_level?: string
+        number_system?: string
+        ui_languages?: string[]
+        document_languages?: string[]
+        week_start?: number
+        weekend_days?: number[]
+        source_ref?: string
       }
       Update: {
         code?: string
@@ -10345,8 +11107,32 @@ export interface Database {
         created_at?: string
         updated_at?: string
         tenant_id?: string
+        level?: string
+        parent_code?: string
+        sector?: string
+        version?: string
+        status?: string
+        published_at?: string
+        validated_by?: string
+        price_decimals?: number
+        quantity_decimals?: number
+        rounding_mode?: string
+        rounding_level?: string
+        number_system?: string
+        ui_languages?: string[]
+        document_languages?: string[]
+        week_start?: number
+        weekend_days?: number[]
+        source_ref?: string
       }
       Relationships: [
+        {
+          foreignKeyName: "legislation_packs_parent_code_fkey",
+          columns: ["tenant_id", "parent_code"],
+          isOneToOne: false,
+          referencedRelation: "legislation_packs",
+          referencedColumns: ["tenant_id", "code"]
+        },
         {
           foreignKeyName: "legislation_packs_tenant_id_fkey",
           columns: ["tenant_id"],
@@ -12091,6 +12877,413 @@ export interface Database {
       Relationships: [
       ]
     }
+    pack_account_roles: {
+      Row: {
+        pack_code: string
+        role: string
+        account_code: string
+        source_id: string | null
+      }
+      Insert: {
+        pack_code: string
+        role: string
+        account_code: string
+        source_id?: string
+      }
+      Update: {
+        pack_code?: string
+        role?: string
+        account_code?: string
+        source_id?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "pack_account_roles_pack_code_fkey",
+          columns: ["pack_code"],
+          isOneToOne: true,
+          referencedRelation: "legislation_packs",
+          referencedColumns: ["code"]
+        },
+        {
+          foreignKeyName: "pack_account_roles_role_fkey",
+          columns: ["role"],
+          isOneToOne: true,
+          referencedRelation: "account_role_catalog",
+          referencedColumns: ["role"]
+        },
+      ]
+    }
+    pack_capabilities: {
+      Row: {
+        pack_code: string
+        capability: string
+        enabled: boolean
+        config: Json
+      }
+      Insert: {
+        pack_code: string
+        capability: string
+        enabled?: boolean
+        config?: Json
+      }
+      Update: {
+        pack_code?: string
+        capability?: string
+        enabled?: boolean
+        config?: Json
+      }
+      Relationships: [
+        {
+          foreignKeyName: "pack_capabilities_pack_code_fkey",
+          columns: ["pack_code"],
+          isOneToOne: true,
+          referencedRelation: "legislation_packs",
+          referencedColumns: ["code"]
+        },
+      ]
+    }
+    pack_document_rules: {
+      Row: {
+        pack_code: string
+        document_type: string
+        mandatory_mentions: Json
+        numbering_pattern: string | null
+        numbering_reset: string
+        gapless: boolean
+        source_id: string | null
+      }
+      Insert: {
+        pack_code: string
+        document_type: string
+        mandatory_mentions?: Json
+        numbering_pattern?: string
+        numbering_reset?: string
+        gapless?: boolean
+        source_id?: string
+      }
+      Update: {
+        pack_code?: string
+        document_type?: string
+        mandatory_mentions?: Json
+        numbering_pattern?: string
+        numbering_reset?: string
+        gapless?: boolean
+        source_id?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "pack_document_rules_pack_code_fkey",
+          columns: ["pack_code"],
+          isOneToOne: true,
+          referencedRelation: "legislation_packs",
+          referencedColumns: ["code"]
+        },
+      ]
+    }
+    pack_holidays: {
+      Row: {
+        pack_code: string
+        holiday_date: string
+        label: string
+        label_ar: string | null
+        is_variable: boolean
+        source_id: string | null
+      }
+      Insert: {
+        pack_code: string
+        holiday_date: string
+        label: string
+        label_ar?: string
+        is_variable?: boolean
+        source_id?: string
+      }
+      Update: {
+        pack_code?: string
+        holiday_date?: string
+        label?: string
+        label_ar?: string
+        is_variable?: boolean
+        source_id?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "pack_holidays_pack_code_fkey",
+          columns: ["pack_code"],
+          isOneToOne: true,
+          referencedRelation: "legislation_packs",
+          referencedColumns: ["code"]
+        },
+      ]
+    }
+    pack_journal_roles: {
+      Row: {
+        pack_code: string
+        role: string
+        journal_code: string
+        journal_name: string | null
+        journal_type: string | null
+        source_id: string | null
+      }
+      Insert: {
+        pack_code: string
+        role: string
+        journal_code: string
+        journal_name?: string
+        journal_type?: string
+        source_id?: string
+      }
+      Update: {
+        pack_code?: string
+        role?: string
+        journal_code?: string
+        journal_name?: string
+        journal_type?: string
+        source_id?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "pack_journal_roles_pack_code_fkey",
+          columns: ["pack_code"],
+          isOneToOne: true,
+          referencedRelation: "legislation_packs",
+          referencedColumns: ["code"]
+        },
+        {
+          foreignKeyName: "pack_journal_roles_role_fkey",
+          columns: ["role"],
+          isOneToOne: true,
+          referencedRelation: "journal_role_catalog",
+          referencedColumns: ["role"]
+        },
+      ]
+    }
+    pack_legal_identifiers: {
+      Row: {
+        pack_code: string
+        identifier_type: string
+        label: string
+        label_ar: string | null
+        regex: string | null
+        checksum_algo: string | null
+        required_for: string[]
+        printed_on_invoice: boolean
+      }
+      Insert: {
+        pack_code: string
+        identifier_type: string
+        label: string
+        label_ar?: string
+        regex?: string
+        checksum_algo?: string
+        required_for?: string[]
+        printed_on_invoice?: boolean
+      }
+      Update: {
+        pack_code?: string
+        identifier_type?: string
+        label?: string
+        label_ar?: string
+        regex?: string
+        checksum_algo?: string
+        required_for?: string[]
+        printed_on_invoice?: boolean
+      }
+      Relationships: [
+        {
+          foreignKeyName: "pack_legal_identifiers_pack_code_fkey",
+          columns: ["pack_code"],
+          isOneToOne: true,
+          referencedRelation: "legislation_packs",
+          referencedColumns: ["code"]
+        },
+      ]
+    }
+    pack_other_taxes: {
+      Row: {
+        id: number
+        pack_code: string
+        tax_code: string
+        kind: string
+        rate: number | null
+        fixed_amount: number | null
+        base: string | null
+        account_role: string | null
+        effective_from: string | null
+        effective_to: string | null
+        source_id: string | null
+      }
+      Insert: {
+        id?: number
+        pack_code: string
+        tax_code: string
+        kind: string
+        rate?: number
+        fixed_amount?: number
+        base?: string
+        account_role?: string
+        effective_from?: string
+        effective_to?: string
+        source_id?: string
+      }
+      Update: {
+        id?: number
+        pack_code?: string
+        tax_code?: string
+        kind?: string
+        rate?: number
+        fixed_amount?: number
+        base?: string
+        account_role?: string
+        effective_from?: string
+        effective_to?: string
+        source_id?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "pack_other_taxes_pack_code_fkey",
+          columns: ["pack_code"],
+          isOneToOne: true,
+          referencedRelation: "legislation_packs",
+          referencedColumns: ["code"]
+        },
+      ]
+    }
+    pack_sources: {
+      Row: {
+        pack_code: string
+        source_id: string
+        title: string
+        issuer: string | null
+        reference: string | null
+        article: string | null
+        published_on: string | null
+        effective_from: string | null
+        url: string | null
+        file_sha256: string | null
+      }
+      Insert: {
+        pack_code: string
+        source_id: string
+        title: string
+        issuer?: string
+        reference?: string
+        article?: string
+        published_on?: string
+        effective_from?: string
+        url?: string
+        file_sha256?: string
+      }
+      Update: {
+        pack_code?: string
+        source_id?: string
+        title?: string
+        issuer?: string
+        reference?: string
+        article?: string
+        published_on?: string
+        effective_from?: string
+        url?: string
+        file_sha256?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "pack_sources_pack_code_fkey",
+          columns: ["pack_code"],
+          isOneToOne: true,
+          referencedRelation: "legislation_packs",
+          referencedColumns: ["code"]
+        },
+      ]
+    }
+    pack_statement_lines: {
+      Row: {
+        pack_code: string
+        template_code: string
+        line_code: string
+        label: string
+        label_ar: string | null
+        parent_line: string | null
+        sort_order: number
+        sign: string
+        account_ranges: string[]
+        formula: string | null
+        box_code: string | null
+      }
+      Insert: {
+        pack_code: string
+        template_code: string
+        line_code: string
+        label: string
+        label_ar?: string
+        parent_line?: string
+        sort_order?: number
+        sign?: string
+        account_ranges?: string[]
+        formula?: string
+        box_code?: string
+      }
+      Update: {
+        pack_code?: string
+        template_code?: string
+        line_code?: string
+        label?: string
+        label_ar?: string
+        parent_line?: string
+        sort_order?: number
+        sign?: string
+        account_ranges?: string[]
+        formula?: string
+        box_code?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "pack_statement_lines_pack_code_fkey",
+          columns: ["pack_code"],
+          isOneToOne: true,
+          referencedRelation: "legislation_packs",
+          referencedColumns: ["code"]
+        },
+        {
+          foreignKeyName: "pack_statement_lines_pack_code_template_code_fkey",
+          columns: ["pack_code", "template_code"],
+          isOneToOne: false,
+          referencedRelation: "pack_statement_templates",
+          referencedColumns: ["pack_code", "template_code"]
+        },
+      ]
+    }
+    pack_statement_templates: {
+      Row: {
+        pack_code: string
+        template_code: string
+        name: string
+        kind: string
+        periodicity: string | null
+      }
+      Insert: {
+        pack_code: string
+        template_code: string
+        name: string
+        kind: string
+        periodicity?: string
+      }
+      Update: {
+        pack_code?: string
+        template_code?: string
+        name?: string
+        kind?: string
+        periodicity?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "pack_statement_templates_pack_code_fkey",
+          columns: ["pack_code"],
+          isOneToOne: true,
+          referencedRelation: "legislation_packs",
+          referencedColumns: ["code"]
+        },
+      ]
+    }
     partner_bank_accounts: {
       Row: {
         id: string
@@ -13207,6 +14400,8 @@ export interface Database {
         valid_from: string
         valid_to: string | null
         source: string | null
+        source_id: string | null
+        pack_code: string | null
       }
       Insert: {
         id?: string
@@ -13217,6 +14412,8 @@ export interface Database {
         valid_from: string
         valid_to?: string
         source?: string
+        source_id?: string
+        pack_code?: string
       }
       Update: {
         id?: string
@@ -13227,8 +14424,17 @@ export interface Database {
         valid_from?: string
         valid_to?: string
         source?: string
+        source_id?: string
+        pack_code?: string
       }
       Relationships: [
+        {
+          foreignKeyName: "payroll_legal_parameters_pack_code_fkey",
+          columns: ["tenant_id", "pack_code"],
+          isOneToOne: false,
+          referencedRelation: "legislation_packs",
+          referencedColumns: ["tenant_id", "code"]
+        },
       ]
     }
     payroll_tax_grid_lines: {
@@ -13262,6 +14468,7 @@ export interface Database {
         min_gross_pmss: number | null
         rate_employer_param: string | null
         source: string | null
+        source_id: string | null
       }
       Insert: {
         id?: string
@@ -13293,6 +14500,7 @@ export interface Database {
         min_gross_pmss?: number
         rate_employer_param?: string
         source?: string
+        source_id?: string
       }
       Update: {
         id?: string
@@ -13324,6 +14532,7 @@ export interface Database {
         min_gross_pmss?: number
         rate_employer_param?: string
         source?: string
+        source_id?: string
       }
       Relationships: [
         {
@@ -13351,6 +14560,8 @@ export interface Database {
         is_default: boolean
         created_at: string
         updated_at: string
+        source_id: string | null
+        pack_code: string | null
       }
       Insert: {
         id?: string
@@ -13367,6 +14578,8 @@ export interface Database {
         is_default?: boolean
         created_at?: string
         updated_at?: string
+        source_id?: string
+        pack_code?: string
       }
       Update: {
         id?: string
@@ -13383,8 +14596,17 @@ export interface Database {
         is_default?: boolean
         created_at?: string
         updated_at?: string
+        source_id?: string
+        pack_code?: string
       }
       Relationships: [
+        {
+          foreignKeyName: "payroll_tax_grids_pack_code_fkey",
+          columns: ["tenant_id", "pack_code"],
+          isOneToOne: false,
+          referencedRelation: "legislation_packs",
+          referencedColumns: ["tenant_id", "code"]
+        },
         {
           foreignKeyName: "payroll_tax_grids_tenant_id_fkey",
           columns: ["tenant_id"],
@@ -17527,6 +18749,57 @@ export interface Database {
         },
       ]
     }
+    resource_capacities: {
+      Row: {
+        id: string
+        tenant_id: string
+        employee_id: string
+        period_start: string
+        period_end: string
+        weekly_hours: number
+        note: string | null
+        created_by: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        employee_id: string
+        period_start: string
+        period_end: string
+        weekly_hours: number
+        note?: string
+        created_by?: string
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        employee_id?: string
+        period_start?: string
+        period_end?: string
+        weekly_hours?: number
+        note?: string
+        created_by?: string
+        created_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "resource_capacities_tenant_id_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "resource_capacities_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
     revision_cycles: {
       Row: {
         id: string
@@ -19226,6 +20499,54 @@ export interface Database {
       Relationships: [
       ]
     }
+    stock_location_assignments: {
+      Row: {
+        id: string
+        tenant_id: string
+        product_id: string
+        warehouse_id: string
+        location_id: string
+        quantity: number
+        created_at: string | null
+        updated_at: string | null
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        product_id: string
+        warehouse_id: string
+        location_id: string
+        quantity?: number
+        created_at?: string
+        updated_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        product_id?: string
+        warehouse_id?: string
+        location_id?: string
+        quantity?: number
+        created_at?: string
+        updated_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "sla_location_fk",
+          columns: ["location_id", "tenant_id"],
+          isOneToOne: false,
+          referencedRelation: "warehouse_locations",
+          referencedColumns: ["id", "tenant_id"]
+        },
+        {
+          foreignKeyName: "sla_warehouse_fk",
+          columns: ["warehouse_id", "tenant_id"],
+          isOneToOne: false,
+          referencedRelation: "warehouses",
+          referencedColumns: ["id", "tenant_id"]
+        },
+      ]
+    }
     stock_movement_phantoms: {
       Row: {
         id: string
@@ -19570,6 +20891,13 @@ export interface Database {
         created_at?: string
       }
       Relationships: [
+        {
+          foreignKeyName: "stock_transfer_lines_product_fk",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
         {
           foreignKeyName: "stock_transfer_lines_transfer_id_fkey",
           columns: ["tenant_id", "transfer_id"],
@@ -20622,6 +21950,7 @@ export interface Database {
         is_base_affected: boolean | null
         analytic: boolean | null
         fixed_amount: number | null
+        source_id: string | null
       }
       Insert: {
         id?: string
@@ -20650,6 +21979,7 @@ export interface Database {
         is_base_affected?: boolean
         analytic?: boolean
         fixed_amount?: number
+        source_id?: string
       }
       Update: {
         id?: string
@@ -20678,6 +22008,7 @@ export interface Database {
         is_base_affected?: boolean
         analytic?: boolean
         fixed_amount?: number
+        source_id?: string
       }
       Relationships: [
         {
@@ -20747,6 +22078,72 @@ export interface Database {
         },
         {
           foreignKeyName: "tax_repartition_lines_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
+    tenant_account_roles: {
+      Row: {
+        tenant_id: string
+        role: string
+        account_code: string
+      }
+      Insert: {
+        tenant_id: string
+        role: string
+        account_code: string
+      }
+      Update: {
+        tenant_id?: string
+        role?: string
+        account_code?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "tenant_account_roles_role_fkey",
+          columns: ["role"],
+          isOneToOne: true,
+          referencedRelation: "account_role_catalog",
+          referencedColumns: ["role"]
+        },
+        {
+          foreignKeyName: "tenant_account_roles_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
+    tenant_journal_roles: {
+      Row: {
+        tenant_id: string
+        role: string
+        journal_code: string
+      }
+      Insert: {
+        tenant_id: string
+        role: string
+        journal_code: string
+      }
+      Update: {
+        tenant_id?: string
+        role?: string
+        journal_code?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "tenant_journal_roles_role_fkey",
+          columns: ["role"],
+          isOneToOne: true,
+          referencedRelation: "journal_role_catalog",
+          referencedColumns: ["role"]
+        },
+        {
+          foreignKeyName: "tenant_journal_roles_tenant_id_fkey",
           columns: ["tenant_id"],
           isOneToOne: true,
           referencedRelation: "tenants",
@@ -21293,58 +22690,6 @@ export interface Database {
           referencedRelation: "third_party_accounts",
           referencedColumns: ["tenant_id", "id"]
         },
-      ]
-    }
-    time_entries: {
-      Row: {
-        id: string
-        tenant_id: string
-        employee_id: string
-        date: string
-        start_time: string | null
-        end_time: string | null
-        break_minutes: number | null
-        total_minutes: number | null
-        activity_type: string | null
-        project_id: string | null
-        notes: string | null
-        status: string | null
-        approved_by: string | null
-        created_at: string | null
-      }
-      Insert: {
-        id?: string
-        tenant_id: string
-        employee_id: string
-        date: string
-        start_time?: string
-        end_time?: string
-        break_minutes?: number
-        total_minutes?: number
-        activity_type?: string
-        project_id?: string
-        notes?: string
-        status?: string
-        approved_by?: string
-        created_at?: string
-      }
-      Update: {
-        id?: string
-        tenant_id?: string
-        employee_id?: string
-        date?: string
-        start_time?: string
-        end_time?: string
-        break_minutes?: number
-        total_minutes?: number
-        activity_type?: string
-        project_id?: string
-        notes?: string
-        status?: string
-        approved_by?: string
-        created_at?: string
-      }
-      Relationships: [
       ]
     }
     timesheets: {

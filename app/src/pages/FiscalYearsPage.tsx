@@ -6,7 +6,7 @@ import { getFiscalYears, createFiscalYear, updateFiscalYear, deleteFiscalYear, g
 import { Calendar, Plus, Pencil, Trash2, X, ChevronDown, ChevronRight, Lock, Unlock } from 'lucide-react'
 import type { FiscalYear, FiscalPeriod } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 export function FiscalYearsPage() {
@@ -56,7 +56,7 @@ const [years, setYears] = useState<FiscalYear[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('fiscalYears.deleteConfirm'))) return
+    if (!(await confirmDialog(t('fiscalYears.deleteConfirm')))) return
     try {
       await deleteFiscalYear(id)
       await loadYears()

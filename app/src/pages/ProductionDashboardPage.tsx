@@ -6,19 +6,23 @@ import { Card, StatCard, Table, TableRow, TableCell, EmptyState, PageHeader, Bre
 import { getManufacturingOrders } from '@/lib/queries/production'
 import { getSTOrders, getMRPProposals, getMRPRuns } from '@/lib/queries/stock'
 import { errorMessage, formatDate } from '@/lib/utils'
+import type { ManufacturingOrder } from '@/types'
 import { Link } from 'react-router-dom'
 
 const statusVariants: Record<string, 'neutral' | 'warning' | 'success' | 'danger'> = {
   planned: 'neutral', in_progress: 'warning', completed: 'success', cancelled: 'danger',
 }
 
+/** `getManufacturingOrders` joint `products(name, sku)` — l'écran le lit, donc il le nomme. */
+type ManufacturingOrderRow = ManufacturingOrder & { products?: { name: string | null; sku: string | null } | null }
+
 export function ProductionDashboardPage() {
   const { t } = useTranslation('production')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [mos, setMOs] = useState<any[]>([])
-  const [stOrders, setSTOrders] = useState<any[]>([])
-  const [mrpProposals, setMRPProposals] = useState<any[]>([])
+  const [mos, setMOs] = useState<ManufacturingOrderRow[]>([])
+  const [stOrders, setSTOrders] = useState<Awaited<ReturnType<typeof getSTOrders>>>([])
+  const [mrpProposals, setMRPProposals] = useState<Awaited<ReturnType<typeof getMRPProposals>>>([])
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {

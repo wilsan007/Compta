@@ -70,8 +70,12 @@ DO $$
 DECLARE ta uuid; tb uuid; n int;
 BEGIN
   ta := _mk_tenant('QA01D');
-  INSERT INTO legislation_packs (code, name, country_code, country_name, accounting_standard, tenant_id, active)
-    VALUES ('QA01-PRIVE', 'Pack privé de A', 'ZZ', 'Nulle part', 'TEST', ta, true);
+  -- 380 (LOT 1-A) : un pack `country` doit porter un parent (hierarchy_chk) et la
+  -- clé de hiérarchie est COMPOSITE (tenant_id, parent_code) : un pack privé d'une
+  -- société ne peut se raccrocher qu'à un parent de SA société. On en fait donc un
+  -- référentiel (sans parent ni country_code) — le test n'observe que la RLS.
+  INSERT INTO legislation_packs (code, name, country_code, country_name, accounting_standard, tenant_id, active, level, parent_code)
+    VALUES ('QA01-PRIVE', 'Pack privé de A', NULL, 'Nulle part', 'TEST', ta, true, 'referential', NULL);
   tb := _mk_tenant('QA01E');
   PERFORM _as_user();
   SELECT count(*) INTO n FROM legislation_packs WHERE code = 'QA01-PRIVE';

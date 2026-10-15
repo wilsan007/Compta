@@ -5,7 +5,7 @@ import { getDistributionGrills, createDistributionGrill, deleteDistributionGrill
 import { Plus, Trash2, Grid3x3, X } from 'lucide-react'
 import type { DistributionGrill, DistributionGrillLine } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 export function DistributionGrillsPage() {
@@ -31,7 +31,7 @@ export function DistributionGrillsPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('grills.deleteConfirm'))) return
+    if (!(await confirmDialog(t('grills.deleteConfirm')))) return
     try {
       await deleteDistributionGrill(id)
       toast('success', tCommon('common.success'), t('grills.deleteSuccess'))

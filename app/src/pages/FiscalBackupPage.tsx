@@ -6,7 +6,7 @@ import { useLocale } from '@/hooks/useLocale'
 import { Plus, Trash2, Archive, Download } from 'lucide-react'
 import type { FiscalBackup } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 export function FiscalBackupPage() {
@@ -49,7 +49,7 @@ export function FiscalBackupPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try {
       await deleteFiscalBackup(id)
       toast('success', tCommon('common.success'), tCommon('toast.deleted'))

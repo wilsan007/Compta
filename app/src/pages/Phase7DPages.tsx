@@ -7,7 +7,7 @@ import { getPaymentTemplatesCompta, createPaymentTemplateCompta, updatePaymentTe
 import { getStandardLabels, createStandardLabel, deleteStandardLabel, getAnalyticJournalCodes, createAnalyticJournalCode, updateAnalyticJournalCode, deleteAnalyticJournalCode } from '@/lib/queries/accounting'
 import { Plus, Trash2, Edit2 } from 'lucide-react'
 import type { GridTemplate, PaymentTemplateCompta, StandardLabel, AnalyticJournalCode } from '@/types'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 // ============ Grid Templates Page (Modèles de grille) ============
@@ -65,7 +65,7 @@ export function GridTemplatesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try {
       await deleteGridTemplate(id)
       await load()
@@ -170,7 +170,7 @@ export function PaymentTemplatesComptaPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try {
       await deletePaymentTemplateCompta(id)
       await load()
@@ -267,7 +267,7 @@ export function StandardLabelsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try {
       await deleteStandardLabel(id)
       await load()
@@ -367,7 +367,7 @@ export function AnalyticJournalCodesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try {
       await deleteAnalyticJournalCode(id)
       await load()

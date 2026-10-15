@@ -21,7 +21,7 @@ export function DocumentManagementPage() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [payRuns, setPayRuns] = useState<PayRun[]>([])
   const [logs, setLogs] = useState<DocumentDistributionLog[]>([])
-  const [stats, setStats] = useState<any>(null)
+  const [stats, setStats] = useState<Awaited<ReturnType<typeof getDocumentStats>> | null>(null)
   const [showUpload, setShowUpload] = useState(false)
   const [selectedPayRun, setSelectedPayRun] = useState('')
   const [batchControl, setBatchControl] = useState<{ ok: boolean; issues: string[]; recipientCount: number } | null>(null)

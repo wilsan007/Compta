@@ -17,7 +17,7 @@ export function InterviewCampaignsPage() {
   const { t } = useTranslation('hr')
   const { t: tCommon } = useTranslation('common')
   const { t: tNav } = useTranslation('nav')
-  const [campaigns, setCampaigns] = useState<any[]>([])
+  const [campaigns, setCampaigns] = useState<Awaited<ReturnType<typeof getInterviewCampaigns>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
 

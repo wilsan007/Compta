@@ -19,18 +19,31 @@ on:
     # si elle est bonne — c'est-à-dire trop tard. La règle vaut pour toute
     # branche de travail, pas seulement pour celles dont le nom commence par
     # « partie ».
+    # ⚠️ 11/10/2026 — TROISIÈME occurrence, et cette fois la liste blanche est
+    # SUPPRIMÉE au lieu d'être rallongée.
+    #
+    # Les dix branches `plan6/*` (`a-chainages` … `f-plateforme`) n'y figuraient
+    # pas. Mesuré sur `plan6/e-operations` : `gh run list --branch
+    # plan6/e-operations` ne renvoyait **rien**, alors que la branche portait
+    # quatorze suites de tests — toutes vertes, et toutes branchées dans ce même
+    # fichier. Le **câblage** des suites était vérifié (`check-test-suites.mjs`,
+    # G5) ; le **déclenchement** du workflow ne l'était pas. Une suite que
+    # personne ne joue ne protège rien, et un workflow qui ne démarre pas joue
+    # ses étapes pour personne.
+    #
+    # Deux fois déjà on a rallongé cette liste (`qa/**`, `partie-*`) ; la
+    # troisième branche oubliée serait une quatrième. `push` joue donc TOUTES les
+    # branches : c'est la règle du dépôt — « une branche de travail qui n'est pas
+    # jouée n'est pas vérifiée » — appliquée **sans exception**. Et pour qu'elle
+    # ne puisse pas se reperdre, `check-test-suites.mjs` refuse désormais toute
+    # liste blanche à cet endroit (quatrième moitié de G5), avec une mesure
+    # rouge avant / verte après.
     branches:
-      - main
-      - master
-      - develop
-      - commercial-hr-paie
-      - 'qa/**'
-      - 'partie-*'
-      - 'fusion-*'
-      - 'plan6/**'
-      - harmonisation
+      - '**'
   pull_request:
-    branches: [main, master, develop, commercial-hr-paie, 'qa/**', 'partie-*', 'fusion-*', 'plan6/**']
+    # `branches` filtre la branche **cible**, pas la branche poussée : la limiter
+    # à `main`/`develop` laissait sans CI les PR d'une branche de travail vers une
+    # autre (`integration/plan6-b` → `plan6/b-regles-etat`). On ne filtre plus.
   schedule:
     # Every night at 2:00 AM UTC (regular regression testing)
     - cron: '0 2 * * *'
@@ -123,6 +136,16 @@ jobs:
 
       - name: 'Dette : plafond des `console.error`'
         run: node scripts/check-console-error-ceiling.mjs
+
+      # LOC1-10 (partie C, lot K) — règle E01 de l'annexe E du cahier de
+      # localisation : un compte écrit en clair dans le front (`'641000'`,
+      # `'411000'`…) empêche une société djiboutienne de lire son propre plan.
+      # Plafond GELÉ (`app/.country-neutral-ceiling.json`), même doctrine que
+      # les deux ci-dessus : une hausse casse, une baisse abaisse.
+      # Ici le FRONT seul : le gisement SQL (`pg_proc.prosrc`) est mesuré dans le
+      # job `db-integration`, le seul qui ait une base.
+      - name: 'LOC1-10 : garde-fou anti-code-en-dur (E01) — front'
+        run: node scripts/check-country-neutral.mjs --front-only
 
       # L2 / G5 — le câblage ET le verdict des suites. Trois moitiés de la règle
       # du dépôt (« un défaut = un test rouge avant, le câblage CI dans le même
@@ -410,6 +433,18 @@ jobs:
 
       - name: Appliquer les migrations
         run: node run-sql-migrations.mjs
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Règle E01 de l'annexe E du cahier de localisation : un compte écrit en
+      # clair là où le pack doit répondre. Ici le gisement de FOND — les
+      # définitions effectives des fonctions (`pg_proc.prosrc`) : c'est un
+      # trigger qui choisit `'641000'`, le front ne fait que recopier son choix.
+      # Plafond gelé dans `app/.country-neutral-ceiling.json` : une hausse casse
+      # la CI, une baisse abaisse le plafond. Contrôle AVANT les suites, comme
+      # les autres (`check_bt_grid`) : ce sont elles qui créent des fixtures.
+      - name: 'LOC1-10 : garde-fou anti-code-en-dur (E01) — front + SQL'
+        run: node scripts/check-country-neutral.mjs
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
@@ -2719,6 +2754,106 @@ jobs:
       #              app/src/lib/countries.ts ; écrans Paramètres ; doc/localisation/
       # Plage : 370→399, puis 600→649
 
+      - name: 'LOC1-01 : le modèle de données du pack (LOT 1-A)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/380_pack_model_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-02 : les tables de données du pack (LOT 1-A)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/381_pack_data_tables_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-03 : la résolution héritée du pack (LOT 1-A)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/382_pack_resolution_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-04 : le catalogue fermé des rôles (LOT 1-B)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/383_role_catalog_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-05 : resolve_account / resolve_journal (LOT 1-B)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/384_resolve_account_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-13 (prérequis) : les rôles du pack PCG'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/385_pcg_roles_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-06 : les 4 triggers de ventes/achats/règlements sur les rôles'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/386_roles_sales_purchases_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-07 (tranche POS) : la clôture de caisse sur les rôles'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/387_roles_operations_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-07 (tranche stock/production) : stock et OF sur les rôles'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/388_roles_stock_production_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-08 (tranche affectation/écarts) : clôture sur les rôles'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/389_roles_closing_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-08 (clôture d''exercice) : close_fiscal_year sur les rôles'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/390_roles_close_fiscal_year_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-09 (tranche 1) : les derniers journaux en dur'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/391_roles_journaux_restants_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-09 (tranche 2) : journaux en dur'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/392_roles_journaux_restants_2_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-09 (tranche 3) : les 4 derniers journaux en dur — LOC1-09 TERMINÉ'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/393_roles_journaux_restants_3_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-10 (tranche 1) : les comptes en dur des fonctions courtes'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/394_roles_comptes_1_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOC1-10 (tranche 3) : les comptes en dur des avoirs'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/395_roles_comptes_2_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # LOC1-10 (tranche 4) — les TROIS dernières fonctions que le garde-fou E01
+      # nomme encore : elles comparaissent en dur, la suite prouve qu'elles
+      # passent par `resolve_account` — reprise des valeurs existantes incluse.
+      - name: 'LOC1-10 (tranche 4) : les 3 dernières fonctions du garde-fou E01 (396)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/396_roles_comptes_3_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # LOC1-10 (tranche 5, LOT FINAL) — les 2 derniers comptes en dur : les
+      # rôles d'amortissement (681200/281000) et le compte d'encaissement
+      # (511200). T01 (E01 tenu sur tout le schéma) : le PRÉDICAT est celui du
+      # garde-fou (`check-country-neutral.mjs`, scanSql) — un littéral entre
+      # guillemets sur une ligne qui parle d'un compte. Mesuré le 13/10 : le
+      # motif brut comptait 195 fonctions (faux écart du test), le prédicat
+      # contextualisé mesure 0, comme le garde-fou.
+      - name: 'LOC1-10 (tranche 5) : les 2 derniers comptes en dur — E01 SQL = 0 (397)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/397_roles_comptes_4_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:d --- qualité des écrans, recette, livraison ---
       # Territoire : app/src/pages, app/src/components, e2e/, scripts/qa,
       #              app/src/__screen__, job Playwright
@@ -2729,10 +2864,328 @@ jobs:
       #              leurs tables coquilles
       # Plage : 650→699
 
+      # STK-03 (650) — le LIFO est interdit (IAS 2, PCG art. 213-1, SYSCOHADA) :
+      # `stock_valuation_method` n'admet plus que cump (défaut) et fifo (PEPS).
+      - name: 'E : STK-03 — méthode de valorisation, LIFO refusé (650)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/650_stock_valuation_method_lifo_rejected_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # PRD-03 (651) — consommation des prévisions (Sage/Odoo) : une commande
+      # ferme de la période consomme la prévision, elle n'est plus comptée deux fois.
+      - name: 'E : PRD-03 — consommation des prévisions (651)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/651_mrp_consommation_previsions_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # STK-14 (652) — les transferts inter-dépôts : expédier sort du dépôt source,
+      # réceptionner fait entrer au dépôt destination (le stock bouge enfin).
+      - name: 'E : STK-14 — transferts inter-dépôts (652)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/652_stock_transfer_execute_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # STK-09 (653) — suggestions de réapprovisionnement à partir de `reorder_rules`
+      # (minimum, maximum, multiple de conditionnement).
+      - name: 'E : STK-09 — règles de réapprovisionnement (653)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/653_reorder_suggestions_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # STK-09 (654) — inventaire tournant : liste des comptages dus + enregistrement
+      # d'un écart physique (mouvement valorisé).
+      - name: 'E : STK-09 — inventaire tournant (654)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/654_stock_count_cycles_engine_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # STK-11 (655) — le stock ventilé par emplacement (socle du WMS par casier).
+      - name: 'E : STK-11 — stock par emplacement (655)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/655_stock_by_location_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # PRD-11 (656) — alerte d'usure d'outillage à 95 % de la durée de vie.
+      - name: 'E : PRD-11 — alerte usure outillage (656)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/656_tooling_wear_alert_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # PRD-07 (657) — la capacité des postes (calendrier) croisée avec la charge.
+      - name: 'E : PRD-07 — capacité des postes (657)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/657_work_center_capacity_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # STK-08 (658) — les frais accessoires ne se répartissent que sur leurs
+      # réceptions ciblées, avec idempotence.
+      - name: 'E : STK-08 — frais accessoires (658)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/658_landed_cost_receipts_and_fix_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # STK-11 (659) — la ventilation du stock par casier (affectations).
+      - name: 'E : STK-11 — stock par casier (659)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/659_stock_location_assignments_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # STK-11 (660) — rangement (put-away) et prélèvement (removal).
+      - name: 'E : STK-11 — rangement et prélèvement (660)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/660_location_putaway_pick_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # PRD-06 (661) — déclaration d'atelier : temps réel, quantités, rebuts.
+      - name: 'E : PRD-06 — déclaration d''atelier (661)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/661_mo_operations_shop_floor_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # STK-13 (662) — plans de contrôle : plan applicable, échantillonnage, verdict d'un point.
+      - name: 'E : STK-13 — plans de contrôle qualité (662)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/662_quality_control_plans_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # PRD-06 (663) — écart de matière : prévu (nomenclature) contre réel (mouvements).
+      - name: 'E : PRD-06 — écart de matière (663)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/663_mo_consumptions_variance_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R3 / ISO-01 — la CI (`ci/check_tenant_guard.sql`) a trouvé deux fonctions
+      # de la partie E qui prenaient la société DU CLIENT : `work_center_capacity`
+      # (657) et `run_mrp` (651). Un appelant lisait l'atelier, les stocks et les
+      # commandes d'une société dont il n'est pas membre. Le trou a vécu des
+      # semaines : les suites 651 et 657 étaient vertes — ce qui l'a vu, c'est la
+      # CI enfin déclenchée sur la branche (R3). Cette suite exige désormais que
+      # la lecture ÉCHOUE (P0001) et que l'usage légitime continue de marcher.
+      - name: 'E : ISO-01 — garde de société sur le MRP et la capacité (664)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/664_tenant_guard_mrp_capacity_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+
+      # R3 / ISO-02, ISO-04, BUD-04 — la CI, une fois la garde de société franchie,
+      # a trouvé trois défauts de FORME dans les deux tables neuves de la partie E
+      # (658 landed_cost_receipts, 659 stock_location_assignments) : une clé
+      # étrangère mono-colonne entre deux tables cloisonnées, la RLS activée mais
+      # non forcée, aucun index de société. Aucun n'est visible par un scénario.
+      - name: 'E : ISO-02/04 + BUD-04 — les deux tables neuves de la partie E (665)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/665_landed_cost_location_guards_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # LOT7-04 — la suite n'a pas d'étape propre : elle est jouée ici, après les
+      # contrôles de schéma, parce que son défaut (PGRST200) ne se voit que devant
+      # un vrai PostgREST — précisément ce que ce job installe.
+      - name: 'E : LOT7-04 — la ligne de transfert tient son article (666)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/666_stock_transfer_lines_product_fk_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:f --- plateforme : sécurité, groupe, CRM, projets, documents ---
       # Territoire : supabase/functions/, écrans CRM, projets, paramètres,
       #              notifications ; leurs tables coquilles
       # Plage : 700→749
+
+      # ORPH-01 / SEC-02 (F.2) — authentification forte : `api_keys` et
+      # `user_totp` existaient depuis les migrations 92/93 et leurs RPC depuis
+      # la 130, et AUCUNE suite SQL ne les exerçait. La 700 pose la vérité du
+      # cycle de vie d'une clé dans UNE fonction (`authenticate_api_key` —
+      # refus nommés : not_found, revoked, expired) et la vérification TOTP
+      # RÉELLE (RFC 6238 : l'ancienne `verify_totp` acceptait tout code à 6
+      # chiffres et rendait le secret). Le rejeu d'une clé révoquée est refusé
+      # au niveau SQL (T05) ET au point d'entrée public-api (« clé révoquée →
+      # 401 », job Edge). Chaque scénario rouges-avant est dit dans le fichier.
+      - name: 'ORPH-01/SEC-02 : authentification forte — émission, usage, révocation, rejeu, expiration, TOTP (700)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/700_auth_forte_api_keys_totp_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # F.8 — « tables coquilles : brancher ou supprimer ». Le suivi annonce 37
+      # coquilles ; mesuré le 05/10, la liste est périmée pour deux raisons : la
+      # 164 en a DÉJÀ supprimé 22 (le calcul lit les CREATE sans les DROP), et
+      # `platform_admins` est lue par `is_platform_admin()` (le calcul ne voit
+      # que le front). Sur les 24 tables listées pour F, cinq existent : deux à
+      # brancher par F.7 (conventions collectives), `platform_admins` (lot K), et
+      # `time_entries` — un SECOND modèle de temps, jamais lu, à supprimer. La
+      # 701 le retire (garde « vide et non référencée » de la 164) et la suite
+      # mesure les deux moitiés : le leurre part, `timesheets` reste.
+      - name: 'F.8 : une seule table de temps — `time_entries` (dupliquée, jamais lue) supprimée (701)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/701_drop_time_entries_duplique_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # F.4 / GRP-01 + GRP-02 — la structure d'un groupe. Les trois tables de la
+      # 127 avaient été supprimées par la 164 (« nommées nulle part ») ; F.4 les
+      # rétablit CORRIGÉES : le maître `groups` est GLOBAL (un groupe relie
+      # PLUSIEURS sociétés — la 127 le rangeait sous une seule), l'appartenance
+      # vit dans `group_members`, et la lecture passe par `my_group_ids()`
+      # (SECURITY DEFINER, sinon deux politiques se référenceraient l'une l'autre).
+      # L'écriture n'a aucune politique : seules les RPC écrivent, après avoir
+      # vérifié que l'appelant est administrateur d'une société membre.
+      - name: 'F.4 : structure de groupe et opérations intra-groupe — GRP-01/02 (702)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/702_groupes_structure_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # F.4 / GRP-03 — la consolidation. Agrège le grand livre des sociétés
+      # membres par compte, en appliquant la MÉTHODE de chacune (full = 1,
+      # proportional = détention, equity/none exclus), borne la période, et
+      # PUBLIE les flux intra-groupe pour élimination (elle ne les élimine pas :
+      # la table porte le montant, pas l'écriture). Réservée à un administrateur
+      # d'une société membre — le seul cas où lire les livres d'autrui est
+      # légitime.
+      - name: 'F.4 : consolidation des comptes d''un groupe — GRP-03 (703)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/703_groupes_consolidation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # F.7 / PAY-08 — conventions collectives. Les deux tables de la 123 étaient
+      # des « coquilles » : RLS activée mais NON forcée (défaut ISO-04), et rien
+      # ne validait le rattachement d'un salarié (les clés composites de la 237
+      # garantissent la SOCIÉTÉ, pas la cohérence convention ↔ classification).
+      # La 704 force la RLS et pose le seul chemin d'affectation validé ; l'écran
+      # Paramètres → Conventions collectives les branche.
+      - name: 'F.7 : conventions collectives (PAY-08) — RLS forcée et rattachement validé (704)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/704_conventions_collectives_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # F.7 / RH-03 — le recrutement. Les tables d'un premier jet avaient été
+      # supprimées par la 164 (« nommées NULLE PART ») : la 705 les rétablit sur
+      # un modèle standard — un POSTE, ses CANDIDATURES, rattachées par une clé
+      # COMPOSITE (la candidature d'une société ne peut pas viser le poste d'une
+      # autre : ISO-02), statuts contraints des deux côtés, RLS forcée.
+      - name: 'F.7 : recrutement (RH-03) — postes et candidatures (705)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/705_recrutement_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # F.5 / PRJ-04 — les champs personnalisés. Deux tables neuves : une
+      # DÉFINITION par (module, entité), une VALEUR par enregistrement, rattachée
+      # par une clé COMPOSITE, et un DÉCLENCHEUR qui tient le TYPE (un champ
+      # `number` refuse du texte, un `select` refuse une valeur hors options). Le
+      # premier module branché est le projet ; le modèle est générique.
+      - name: 'F.5 : champs personnalisés (PRJ-04) — définitions, valeurs et type tenu (706)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/706_champs_personnalises_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # F.6 / GED-01 — le rattachement universel de documents, enfin VALIDÉ.
+      # `module_documents.entity_type/entity_id` (colonnes polymorphes, migration
+      # 68) n'étaient validées par RIEN : un document pouvait se rattacher à une
+      # pièce inexistante ou d'une autre société. La 707 pose le contrôle
+      # d'existence — les deux colonnes ou aucune, le type doit être un CODE DU
+      # REGISTRE `chain_document_types` (27 pièces, celui de la 450), et la pièce
+      # doit exister dans la société (lecture bornée par la RLS + filtre explicite).
+      - name: 'F.6 : rattachement de documents validé (GED-01) — existence, société, registre (707)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/707_rattachement_documents_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # F.5 / PRJ-02 — la capacité par ressource. Une table neuve : « ce salarié a
+      # N heures par semaine, de telle date à telle date », rattachée au salarié
+      # par une clé COMPOSITE, bornes contraintes, et un DÉCLENCHEUR qui interdit
+      # le CHEVAUCHEMENT pour le même salarié — la règle qu'aucune clé ni CHECK ne
+      # peut tenir (le socle n'a pas `btree_gist` pour un `EXCLUDE`).
+      - name: 'F.5 : capacité par ressource (PRJ-02) — bornes et non-chevauchement (708)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/708_capacite_ressource_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # F.5 / CRM-01 — les séquences de relance. Deux tables neuves : la CADENCE
+      # (une séquence, son nom unique par société) et ses ÉTAPES (rang unique
+      # dans la séquence, délai positif, canal contraint). Rattachement par clé
+      # COMPOSITE (ISO-02) : une étape ne vise que la séquence de sa société.
+      - name: 'F.5 : séquences de relance (CRM-01) — cadence, rangs et canaux (709)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/709_crm_sequences_relance_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # F.5 / CRM-02 — le scoring de lead. Une table de RÈGLES pondérées (nom
+      # unique par société, opérateur contraint, comparaison qui exige une valeur)
+      # et un MOTEUR `crm_lead_score` qui rend le TOTAL ET LES RÈGLES QUI ONT
+      # COMPTÉ. Un fait absent ne matche jamais ; `greater_than` compare en
+      # NOMBRE ; le moteur filtre la société EXPLICITEMENT (la RLS ne suffit pas
+      # au propriétaire).
+      - name: 'F.5 : scoring de lead (CRM-02) — règles pondérées et moteur (710)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/710_crm_scoring_rules_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # F.6 / API-03 — les connecteurs métier. Une table neuve : où l'on parle
+      # (webhook, API REST, Odoo, Sage, Stripe), un MODE d'authentification
+      # contraint, et JAMAIS le secret — seulement son nom. L'URL passe la garde
+      # SSRF du dépôt (`is_allowed_webhook_url`, 154/167) : HTTPS seul, hôte
+      # public seul.
+      - name: 'F.6 : connecteurs métier (API-03) — URL publique, jamais un secret (711)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/711_connecteurs_metier_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+      # F.6 / NOT-01 — les notifications sont PERSONNELLES, et c'est la base qui
+      # le tient. Un utilisateur ne voyait pas SES notifications : les quatre
+      # politiques RLS ne filtraient que la société, donc chacun lisait les
+      # vingt dernières de tout le monde, pouvait les marquer lues et les
+      # supprimer ; et le compteur de l'en-tête — appelé SANS argument par
+      # `NotificationCenter.tsx` — comptait la société entière, tandis que
+      # « tout marquer lu » marquait le courrier de tout le monde. Le correctif
+      # est ENTIÈREMENT EN BASE (le front n'est pas touché) : RLS bornée au
+      # destinataire, appel sans argument = « moi », `user_id IS NULL` =
+      # DIFFUSION qui reste visible, écriture par les seules fonctions, et le
+      # bulletin de paie adressé au COMPTE du salarié (`employees.auth_user_id`,
+      # plus `NEW.employee_id`). Mesuré : 10 rouges / 3 verts AVANT (les trois
+      # verts sont les non-régressions assumées — RLS forcée, diffusion
+      # visible, cloisonnement), 13/13 après.
+      - name: 'F.6 : notifications personnelles (NOT-01) — la RLS tient la boîte de chacun (712)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/712_notifications_personnelles_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # F.6 / ADM-04 — les modèles de documents (couleurs, logo, configuration).
+      # Mesuré avant : CINQ politiques sur `document_templates`, dont une `FOR ALL`
+      # qui recouvrait silencieusement les quatre par commande (famille ISO-03) ;
+      # aucune règle « un seul modèle par défaut et par TYPE » ; l'identité du
+      # modèle (nom vide, couleur « bleu » ou `#12345`, `template_config` tableau)
+      # n'était pas contrainte ; le logo n'était gardé par RIEN (une URL interne
+      # passait) ; et `authenticated` détenait `REFERENCES` et `TRIGGER` sur la
+      # table. Livré : index unique PARTIEL `uniq_document_templates_defaut`
+      # (un défaut par société et par type), RPC `set_default_document_template`
+      # (bascule transactionnelle, refus nommés), UNE politique par commande
+      # gardée par `can_perform`, quatre `CHECK` d'identité, déclencheur
+      # `validate_document_template` qui appelle la garde SSRF du dépôt
+      # (`is_allowed_webhook_url`, 154/167), retrait de `REFERENCES`/`TRIGGER`.
+      # Et une REPRISE des lignes déjà sales (nom vide, couleur non HEX, config
+      # non objet) — la table existante n'est pas laissée incohérente.
+      # Mesuré : 13 rouges / 1 vert AVANT (le vert est la non-régression — `anon`
+      # n'avait déjà aucun droit), 14/14 après.
+      - name: 'F.6 : modèles de documents (ADM-04) — un défaut par type, identité contrainte (713)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/713_modeles_documents_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # BI-01 (714) — le générateur d'états : `custom_report_templates` n'avait
+      # AUCUN `CHECK` (n'importe quelle valeur passait) et ses politiques
+      # n'avaient pas de `can_perform` (PERM-01) ; `reporting_plans` non plus.
+      # Reprise des données hors liste AVANT les CHECK. Suite mesurée 13/10 :
+      # 25/25 verts sur base dédiée.
+      - name: 'F.6 : générateur d états (BI-01) — CHECK, can_perform, reprise (714)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/714_bi_generateur_etats_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # NOT-02 (715) — les alertes métier : règles + abonnements + moteur
+      # (`evaluate_business_alert_rules`). Rouges-avant mesurés le 13/10 :
+      # suite cassée (le `END` du bloc T03 perdu → « syntax error at or near
+      # DECLARE ») et sans `_audit_assert` (G5) — corrigé, T07→T12 ajoutés
+      # (déclencheur non-membre, unicité, moteur, livraison à l'abonné,
+      # idempotence journalière, cloisonnement) : 21/21 verts.
+      - name: 'F.6 : alertes métier — règles, abonnements, moteur (715)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/715_alertes_metier_abonnements_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
   # ─────────────────────────────────────────────
   # Job 6: Build verification
