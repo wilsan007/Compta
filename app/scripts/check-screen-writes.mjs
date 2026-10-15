@@ -99,6 +99,7 @@ function walk(dir, out = []) {
 }
 const parse = (p) => ts.createSourceFile(p, fs.readFileSync(p, 'utf8'), ts.ScriptTarget.Latest, true, p.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS)
 const rel = (p) => path.relative(ROOT, p)
+const unwrap = (n) => { while (n && (ts.isAsExpression(n) || ts.isParenthesizedExpression(n) || ts.isSatisfiesExpression?.(n))) n = n.expression; return n }
 
 // 1. fonctions de requête écrivantes → table + clés retirées
 const fnTable = new Map()
@@ -122,7 +123,6 @@ for (const file of walk(path.join(SRC, 'lib'))) {
 }
 
 // 1 bis. fonctions du dépôt qui RENDENT un objet littéral (constructeurs de charge utile)
-const unwrap = (n) => { while (n && (ts.isAsExpression(n) || ts.isParenthesizedExpression(n) || ts.isSatisfiesExpression?.(n))) n = n.expression; return n }
 const builders = new Map()
 for (const file of walk(SRC)) {
   parse(file).forEachChild((node) => {
