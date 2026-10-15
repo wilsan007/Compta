@@ -149,7 +149,7 @@ const literals = (n) => {
 // paramètre de l'appelant (identifiant, spread de variable) : dans ce cas
 // les clés de l'appelant s'appliquent et le contrôle actuel s'applique.
 // Seul le premier .insert/.update/.upsert de la fonction est considéré.
-function payloadOfTi(arg, sf) {
+function payloadOfTi(arg) {
   let n = unwrap(arg)
   if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === 'ti' && n.arguments[0]) {
     return unwrap(n.arguments[0])
@@ -163,7 +163,7 @@ function writtenKeysOf(bodyNode, sf) {
     if (ts.isCallExpression(n)) {
       const callee = n.expression
       if (ts.isPropertyAccessExpression(callee) && (callee.name.text === 'insert' || callee.name.text === 'update' || callee.name.text === 'upsert') && n.arguments.length > 0) {
-        const payload = payloadOfTi(n.arguments[0], sf)
+        const payload = payloadOfTi(n.arguments[0])
         if (payload && ts.isObjectLiteralExpression(payload) && !payload.properties.some((p) => ts.isSpreadAssignment(p))) {
           return new Set(
             [...payload.properties]
