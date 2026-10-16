@@ -10,7 +10,7 @@ import { getLatestRate } from '@/lib/currencyRates'
 import type { SupplierPayment, Supplier, BankAccount, PurchaseInvoice } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { nextDocumentNumber } from '@/lib/queries/core'
 
 export function SupplierPaymentsPage() {
@@ -37,7 +37,7 @@ const [payments, setPayments] = useState<SupplierPayment[]>([])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-  if (!confirmSync(t('payments.deleteConfirm'))) return
+  if (!(await confirmDialog(t('payments.deleteConfirm')))) return
     try { await deleteSupplierPayment(id); await loadData() }
     catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError')) }
   }

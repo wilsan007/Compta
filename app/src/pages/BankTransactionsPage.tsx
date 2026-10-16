@@ -6,7 +6,7 @@ import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { ArrowLeftRight, Trash2, CheckCircle } from 'lucide-react'
 import type { BankTransaction, BankAccount } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 export function BankTransactionsPage() {
   const { toast } = useToast()
@@ -43,7 +43,7 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('transactions.deleteConfirm'))) return
+    if (!(await confirmDialog(t('transactions.deleteConfirm')))) return
     try {
       await deleteBankTransaction(id)
       await loadData()

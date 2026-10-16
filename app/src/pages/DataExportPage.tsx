@@ -34,7 +34,7 @@ export function DataExportPage() {
   const [totalRows, setTotalRows] = useState(0)
 
   // Mirror server state
-  const [mirrorStatus, setMirrorStatus] = useState<any>(null)
+  const [mirrorStatus, setMirrorStatus] = useState<Awaited<ReturnType<typeof getMirrorServerStatus>> | null>(null)
   const [mirrorLoading, setMirrorLoading] = useState(false)
   const [installing, setInstalling] = useState(false)
 

@@ -9,7 +9,7 @@ import { FolderKanban, Plus, Trash2, X, Calculator } from 'lucide-react'
 import type { Project, Customer } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useStatusLabels } from '@/lib/statusUtils'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 export function ProjectsPage() {
   const { toast } = useToast()
@@ -37,7 +37,7 @@ const [projects, setProjects] = useState<Project[]>([])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-  if (!confirmSync(t('projects.deleteConfirm'))) return
+  if (!(await confirmDialog(t('projects.deleteConfirm')))) return
     try {
       await deleteProject(id)
       await loadData()

@@ -73,10 +73,10 @@ L'essentiel en huit lignes :
 > | **`493` → `499`** | **plan6 A3** (moteur L16 → L24) | **2026-10-05** |
 > | **`750` → `759`** | **plan6 A3, familles restantes** — 1ʳᵉ extension, après saturation de `493` → `499` | **2026-10-06** |
 > | **`760` → `769`** | **plan6 A3, familles restantes** — 2ᵉ extension, après saturation de `750` → `759` (`760` : exercice clos → écriture d'affectation) | **2026-10-11** |
+> | **`770` → `779`** | **plan6 A3 (certificat d'intégrité, A3.4)** — **P1** : `chain_certificat_integrite`, l'attestation d'intégrité technique (jsonb de faits) — branche `plan6/a3-moteur` | **2026-10-11** |
+> | **`780` → `789`** | **garde de suppression des types récents** (suite de la `450` T11, ex-numéro `530` en double) — ⚠️ **le numéro est aussi un ORDRE** : sa boucle pose les gardes sur le registre **tel qu'il est à son passage**, donc elle doit tourner **APRÈS toutes les inscriptions de types** (tentative `457` rouge le 13/10, run `38424071395`) | **2026-10-13** |
+> | **`790` → `799`** | **plan6 intégration (correctifs de fusion)** — `790` : le garde de `create_notification` (712) n'exige le marqueur serveur **que hors déclencheur** (`pg_trigger_depth()`) + `REVOKE` de `zz_715_check_subscription_member` | **2026-10-13** |
 
-> | **`475` → `486`** | **plan6 A1 (preuve et indice)** — scission de la partie A : maillons RPC restants, invariants, relevé nocturne — branche `plan6/a-chainages` | **2026-10-05** |
-> | **`487` → `492`** | **plan6 A2 (Vue Chaîne et écrans)** — héberger la frise sur tous les types de documents, pages Robustesse/Cohérence — branche `plan6/a2-vue-chaine` | **2026-10-05** |
-> | **`493` → `499`** | **plan6 A3 (moteur L16-L24)** — chaînages internes, régénération, lettrage, moteur de règles, webhooks — branche `plan6/a3-moteur` | **2026-10-05** |
 >
 > *Règle de coexistence : une session qui travaille sur une série déjà
 > occupée prend la **prochaine libre** et l'inscrit ici. Le runner échoue

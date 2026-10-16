@@ -1,12 +1,12 @@
 import { useState, useCallback, useEffect } from 'react'
 import { Card, PageHeader, Breadcrumb, Button, Badge } from '@/components/ui'
-import { getOnboardingState, updateOnboardingStep, isOnboardingComplete } from '@/lib/queries/admin'
+import { getOnboardingState, updateOnboardingStep, isOnboardingComplete, type OnboardingState } from '@/lib/queries/admin'
 import { CheckCircle, Circle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '@/lib/toast'
 import { errorMessage } from '@/lib/utils'
 
-const STEPS = [
+const STEPS: { key: keyof OnboardingState; label: string }[] = [
   { key: 'step_identity', label: 'Identité et forme juridique' },
   { key: 'step_legislation', label: 'Législation et devise' },
   { key: 'step_fiscal_year', label: 'Exercice et périodicité' },
@@ -23,7 +23,7 @@ export function OnboardingDashboardPage() {
   const { t: tNav } = useTranslation('nav')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [state, setState] = useState<any>(null)
+  const [state, setState] = useState<OnboardingState | null>(null)
   const [complete, setComplete] = useState(false)
 
   const loadData = useCallback(async () => {
@@ -38,7 +38,7 @@ export function OnboardingDashboardPage() {
   // (rendu → lecture → setState → rendu). Une lecture au montage suffit.
   useEffect(() => { loadData() }, [loadData])
 
-  const handleToggle = async (step: string) => {
+  const handleToggle = async (step: keyof OnboardingState) => {
     try {
       const current = state?.[step] || false
       await updateOnboardingStep(step, !current)

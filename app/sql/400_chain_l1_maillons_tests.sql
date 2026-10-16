@@ -531,13 +531,21 @@ END $$;
 --   par `anon` ou PUBLIC. Ces cinq fonctions doivent donc être révoquées — et
 --   c'est sans effet sur les déclencheurs (mesuré : un déclencheur se déclenche
 --   même quand le rôle appelant n'a pas EXECUTE sur lui).
+--
+--   PRÉCISION D'INTÉGRATION : `chain_l1_%` capturait AUSSI la famille `chain_l16_*`
+--   (le préfixe `chain_l1` est un préfixe de `chain_l16`), que la 495 et ses sœurs
+--   accordent DÉLIBÉRÉMENT à `authenticated` (`REVOKE ALL … FROM PUBLIC, anon` puis
+--   `GRANT EXECUTE … TO authenticated`). Ce contrôle regarde la TRANCHE 1 : il exclut
+--   donc explicitement la famille L16, dont l'exposition est l'affaire de ses propres
+--   suites.
 -- ═════════════════════════════════════════════════════════════
 DO $$
 DECLARE v_n int; v_mauvais int; v_detail text; v_tranche1 int;
 BEGIN
   SELECT count(*) INTO v_n
   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-  WHERE n.nspname = 'public' AND p.proname LIKE 'chain_l1_%';
+  WHERE n.nspname = 'public' AND p.proname LIKE 'chain_l1_%'
+    AND p.proname NOT LIKE 'chain_l16_%';
 
   -- Les cinq de la tranche 1, nommés : la 311 en ajoute trois, qui doivent elles
   -- aussi être révoquées (mesuré par sa propre suite).
@@ -549,6 +557,7 @@ BEGIN
   SELECT count(*), string_agg(p.proname, ', ') INTO v_mauvais, v_detail
   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public' AND p.proname LIKE 'chain_l1_%'
+    AND p.proname NOT LIKE 'chain_l16_%'
     AND (p.proacl IS NULL
          OR EXISTS (SELECT 1 FROM aclexplode(p.proacl) a
                     WHERE (a).privilege_type = 'EXECUTE' AND (a).grantee = 0)

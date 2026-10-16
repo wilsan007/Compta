@@ -6,7 +6,7 @@ import { Plus, Trash2, X, Power, PowerOff } from 'lucide-react'
 import type { BankRule } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useLegislation } from '@/lib/legislation'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 export function BankRulesPage() {
@@ -40,7 +40,7 @@ const [rules, setRules] = useState<BankRule[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try {
       await deleteBankRule(id)
       await loadData()

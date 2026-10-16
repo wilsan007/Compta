@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { Fragment, useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
 import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
@@ -6,7 +6,7 @@ import { getThirdPartyAccounts, getUnletteredLines, getLetteredLines, applyLettr
 import { Link2, Unlink, Search, Wand2 } from 'lucide-react'
 import type { ThirdPartyAccount } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 export function LettragePage() {
   const { toast } = useToast()
@@ -88,7 +88,7 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
   }
 
   async function handleDelettrer(lineIds: string[]) {
-    if (!confirmSync(t('lettrage.unletterConfirm'))) return
+    if (!(await confirmDialog(t('lettrage.unletterConfirm')))) return
     try {
       await removeLettrage(lineIds)
       await loadLines()
@@ -269,7 +269,7 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
                   </div>
                   <Table headers={[t('lettrage.letterCode'), t('entries.date'), t('saisie.pieceNumber'), t('closure.journal'), t('entries.description'), t('entries.debit'), t('entries.credit'), t('entries.actions')]}>
                     {Object.entries(letteredGroups).map(([code, lines]) => (
-                      <div key={code}>
+                      <Fragment key={code}>
                         {lines.map((line, idx) => (
                           <TableRow key={line.id}>
                             <TableCell className="font-mono text-xs font-semibold">{idx === 0 ? code : ''}</TableCell>
@@ -289,7 +289,7 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
                             </TableCell>
                           </TableRow>
                         ))}
-                      </div>
+                      </Fragment>
                     ))}
                   </Table>
                 </Card>

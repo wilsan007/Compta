@@ -5,7 +5,7 @@ import { getFiscalYears, getJournalPeriodStatus, closeJournalPeriod, reopenJourn
 import { Lock, Unlock, AlertTriangle } from 'lucide-react'
 import type { FiscalYear, FiscalPeriod, Journal } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 interface ClosureEntry {
@@ -95,7 +95,7 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
       toast('info', tCommon('toast.info'), t('closure.entriesNotBalanced'))
       return
     }
-    if (!confirmSync(t('closure.closeJournalConfirm', { code: journalCode }))) return
+    if (!(await confirmDialog(t('closure.closeJournalConfirm', { code: journalCode })))) return
     setActionLoading(`${journalCode}-${periodId}`)
     try {
       await closeJournalPeriod(journalCode, periodId)
@@ -108,7 +108,7 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
   }
 
   async function handleReopenJournal(journalCode: string, periodId: string) {
-    if (!confirmSync(t('closure.reopenJournalConfirm', { code: journalCode }))) return
+    if (!(await confirmDialog(t('closure.reopenJournalConfirm', { code: journalCode })))) return
     setActionLoading(`${journalCode}-${periodId}`)
     try {
       await reopenJournalPeriod(journalCode, periodId)
@@ -129,7 +129,7 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
       toast('info', tCommon('toast.info'), t('closure.allJournalsMustBeClosed'))
       return
     }
-    if (!confirmSync(t('closure.closePeriodConfirm', { label: period.period_label }))) return
+    if (!(await confirmDialog(t('closure.closePeriodConfirm', { label: period.period_label })))) return
     setActionLoading(`period-${periodId}`)
     try {
       await closeFiscalPeriod(periodId)
@@ -142,7 +142,7 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
   }
 
   async function handleReopenPeriod(periodId: string) {
-    if (!confirmSync(t('closure.reopenPeriodConfirm'))) return
+    if (!(await confirmDialog(t('closure.reopenPeriodConfirm')))) return
     setActionLoading(`period-${periodId}`)
     try {
       await reopenFiscalPeriod(periodId)

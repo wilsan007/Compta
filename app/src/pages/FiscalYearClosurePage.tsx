@@ -6,7 +6,7 @@ import { errorMessage, formatCurrency } from '@/lib/utils'
 import { Lock, AlertTriangle, Plus, Trash2 } from 'lucide-react'
 import type { FiscalYear } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 // Décision n° 3 : l'affectation du résultat est obligatoire avant de clôturer l'exercice suivant.
 // Comptes proposés : bénéfice → réserves, report à nouveau, dividendes, compte de l'exploitant ;
@@ -135,7 +135,7 @@ const [years, setYears] = useState<FiscalYear[]>([])
       toast('warning', tCommon('common.warning'), t('fiscalYearClosure.targetMustDiffer'))
       return
     }
-    if (!confirmSync(t('fiscalYearClosure.confirmClose'))) return
+    if (!(await confirmDialog(t('fiscalYearClosure.confirmClose')))) return
     setClosing(true)
     try {
       const result = await closeFiscalYear(selectedYear, targetYear)

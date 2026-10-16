@@ -95,9 +95,12 @@ BEGIN
   -- couples, dont 11 en portaient trois). Le plancher est volontairement large :
   -- ce qui compte est qu'une exécution à vide ou un détecteur cassé ne fasse pas
   -- tout passer au vert.
+  -- 13/10/2026 (fusion plan6 E + F) : la mesure est à 1307 — les tables neuves
+  -- des deux parties apportent leurs politiques. La borne haute passe à 1350 ;
+  -- le plancher (1200) est inchangé, pour la même raison.
   PERFORM _rec('T08', 'le volume de politiques permissives reste celui attendu (détecteur vivant)',
-    v_permissives BETWEEN 1200 AND 1300,
-    format('politiques permissives=%s (attendu ~1233)', v_permissives));
+    v_permissives BETWEEN 1200 AND 1350,
+    format('politiques permissives=%s (attendu 1200 à 1350)', v_permissives));
 END $$;
 
 -- ── T03/T04/T05 : la garde devient opposable, sans fermer la porte légitime

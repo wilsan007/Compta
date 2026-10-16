@@ -5,7 +5,7 @@ import { PageHeader, Button, Table, TableRow, TableCell, Input, Select, Badge, E
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/lib/toast'
 import { Mail, Plus, Trash2, Edit, Eye, Code } from 'lucide-react'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 interface EmailTemplate {
@@ -127,7 +127,7 @@ export function EmailTemplatesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync('Supprimer ce template ?')) return
+    if (!(await confirmDialog('Supprimer ce template ?'))) return
     try {
       const { error } = await supabase.from('email_templates').delete().eq('id', id)
       if (error) throw error

@@ -402,6 +402,10 @@
     "color": "Colors",
     "empty": "No document templates",
     "created": "Template created successfully",
+    "default": "Default",
+    "defaultLabel": "Default",
+    "setDefault": "Set as default",
+    "defaultSet": "Template set as default",
     "types": {
       "invoice": "Invoice",
       "quote": "Quote",

@@ -121,6 +121,64 @@ const sansVerdict = suites.filter((f) => {
   return !verifs.some((m) => !GARDE_DE_MONTAGE.test(m[2]))
 })
 
+// 4. LE DÉCLENCHEUR DU WORKFLOW — le trou que le contrôle n°1 ne voyait pas.
+//    Le contrôle n°1 prouve que chaque suite est **branchée** dans ci.yml. Il ne
+//    prouve pas que ci.yml **démarre** sur la branche où l'on travaille. Mesuré
+//    le 11/10/2026 : `plan6/e-operations` portait quatorze suites, toutes
+//    branchées, toutes vertes — et `gh run list --branch plan6/e-operations` ne
+//    renvoyait **rien** : la liste blanche de `push.branches` ne contenait ni
+//    `plan6/**`, ni `plan6/*`. Deux fois déjà (`qa/**`, `partie-*`) cette liste
+//    avait été rallongée après coup ; la règle du dépôt — « une branche de
+//    travail qui n'est pas jouée n'est pas vérifiée » — vaut pour TOUTE branche.
+//    `push` ne doit donc filtrer personne, et ce contrôle refuse le retour d'une
+//    liste blanche.
+const declencheur = (() => {
+  const lignes = ci.split('\n')
+  const iOn = lignes.findIndex((l) => /^on:\s*$/.test(l))
+  if (iOn === -1) return ['`on:` est introuvable dans ci.yml — le déclenchement ne peut pas être vérifié.']
+  const iApresOn = lignes.findIndex((l, i) => i > iOn && /^\S/.test(l))
+  const blocOn = lignes.slice(iOn + 1, iApresOn === -1 ? undefined : iApresOn)
+
+  const iPoush = blocOn.findIndex((l) => /^ {2}push:\s*$/.test(l))
+  if (iPoush === -1) {
+    return ['`on: push:` est introuvable : rien ne prouve que le workflow démarre sur un push.']
+  }
+  const apresPush = blocOn.slice(iPoush + 1)
+  const iFinPush = apresPush.findIndex((l) => /^ {2}\S/.test(l))
+  const blocPush = iFinPush === -1 ? apresPush : apresPush.slice(0, iFinPush)
+
+  const problemes = []
+  if (blocPush.some((l) => /^\s*branches-ignore:\s*/.test(l))) {
+    problemes.push(
+      '`push` exclut des branches (`branches-ignore`) : aucune branche de travail ne doit être écartée du jeu.'
+    )
+  }
+
+  const iBranches = blocPush.findIndex((l) => /^\s*branches:\s*/.test(l))
+  if (iBranches !== -1) {
+    // Forme en ligne (`branches: [main, 'qa/**']`) ou forme en bloc (`branches:` + `- main`).
+    const enLigne = blocPush[iBranches].match(/branches:\s*\[([^\]]*)\]/)
+    const entrees = enLigne
+      ? enLigne[1]
+          .split(',')
+          .map((s) => s.trim().replace(/^['"]|['"]$/g, ''))
+          .filter(Boolean)
+      : blocPush
+          .slice(iBranches + 1)
+          .map((l) => l.match(/^\s*-\s*'?([^'#]+?)'?\s*$/))
+          .filter(Boolean)
+          .map((m) => m[1].trim())
+
+    if (entrees.length === 0 || entrees.some((e) => e !== '**')) {
+      problemes.push(
+        `\`push\` restreint les branches (${entrees.join(', ') || 'liste vide'}) : une branche absente de cette liste n'est JAMAIS jouée — ` +
+          'les suites qu\'elle porte sont branchées dans ce fichier et ne tournent pour personne.'
+      )
+    }
+  }
+  return problemes
+})()
+
 console.log(
   `Câblage des suites : ${suites.length} fichier(s) dans sql/, ${referenced.size} référence(s) dans ci.yml.`
 )
@@ -128,6 +186,11 @@ console.log(`Non branchées     : ${notWired.length === 0 ? 'aucune' : notWired.
 console.log(`Références fantômes : ${ghosts.length === 0 ? 'aucune' : ghosts.join(', ')}`)
 console.log(
   `Sans verdict       : ${sansVerdict.length === 0 ? 'aucune' : sansVerdict.join(', ')}`
+)
+console.log(
+  `Déclenchement      : ${
+    declencheur.length === 0 ? 'push joue toutes les branches' : declencheur.join(' ')
+  }`
 )
 
 if (notWired.length > 0) {
@@ -158,9 +221,27 @@ if (sansVerdict.length > 0) {
   )
 }
 
-if (notWired.length > 0 || ghosts.length > 0 || sansVerdict.length > 0) process.exit(1)
+if (declencheur.length > 0) {
+  console.error(
+    `\n❌ Le workflow ne se déclenche pas sur toutes les branches :\n  ${declencheur.join('\n  ')}\n` +
+      `  Mesuré le 11/10/2026 : \`plan6/e-operations\` portait quatorze suites, toutes branchées\n` +
+      `  et toutes vertes, et ne recevait AUCUN passage de CI (\`gh run list --branch\n` +
+      `  plan6/e-operations\` : liste vide) — la liste blanche de \`push.branches\` ne\n` +
+      `  contenait ni \`plan6/**\`, ni \`plan6/*\`.\n\n` +
+      `  Ne rallongez pas la liste : une liste blanche ne protège que les noms qu'on a\n` +
+      `  pensé à y mettre — trois fois de suite elle a oublié des branches vivantes\n` +
+      `  (\`qa/**\`, \`partie-*\`, \`plan6/**\`). Laissez \`push\` jouer TOUTES les branches,\n` +
+      `  et n'excluez aucune famille :\n\n` +
+      `    on:\n      push:\n        branches:\n          - '**'\n`
+  )
+}
+
+if (notWired.length > 0 || ghosts.length > 0 || sansVerdict.length > 0 || declencheur.length > 0) {
+  process.exit(1)
+}
 
 console.log(
   `\n✅ Toutes les suites du dépôt (${suites.length}) sont jouées par la CI, aucune référence ne pointe un` +
-    `\n   fichier absent, et chacune peut faire échouer la CI (verdict).\n`
+    `\n   fichier absent, chacune peut faire échouer la CI (verdict), et \`push\` joue toutes les` +
+    `\n   branches — aucune branche de travail ne peut plus être silencieusement non jouée.\n`
 )

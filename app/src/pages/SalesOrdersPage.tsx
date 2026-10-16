@@ -14,7 +14,7 @@ import { ChainTimeline } from '@/components/ChainTimeline'
 import { ExplainAmount } from '@/components/ExplainAmount'
 import type { SalesOrder, SalesOrderLine, Customer, Product } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { nextDocumentNumber } from '@/lib/queries/core'
 
 const statusKeys: string[] = ['draft', 'confirmed', 'delivered', 'invoiced', 'cancelled']
@@ -52,7 +52,7 @@ const [orders, setOrders] = useState<SalesOrder[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try { await deleteSalesOrder(id); await loadData() }
     catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError')) }
   }

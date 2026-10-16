@@ -10,7 +10,7 @@ import { previewOvertimePay, calculateSickLeavePay } from '@/lib/queries/busines
 import type { PayRun, Employee, PayrollVariableElement, PayrollComponent } from '@/types'
 import { useToast } from '@/lib/toast'
 import { Wand2, Plus, Trash2, X, ArrowRight, ArrowLeft, Calculator, Upload } from 'lucide-react'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 type Step = 1 | 2 | 3 | 4 | 5
 
@@ -89,7 +89,7 @@ export function PayrollPreparationPage() {
   }
 
   async function handleDeleteElement(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try { await deleteVariableElement(id); await loadVariableElements() }
     catch (err: any) { toast('error', tCommon('common.error'), err.message) }
   }

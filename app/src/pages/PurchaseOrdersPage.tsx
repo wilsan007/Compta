@@ -1,19 +1,20 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
-import { getPurchaseOrders, createPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder } from '@/lib/queries/purchases'
+import { getPurchaseOrders, createPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder, getPurchaseOrderLines } from '@/lib/queries/purchases'
 import { getSuppliers } from '@/lib/queries/partners'
 import { getProducts } from '@/lib/queries/stock'
 import { OrderLinesEditor } from '@/components/OrderLinesEditor'
 import { emptyOrderLine, orderLinesPayload, orderLinesTotals, type OrderLineDraft } from '@/lib/orderLines'
 import { useLegislation } from '@/lib/legislation'
 import { getChartAccounts, getFiscalYears, checkBudgetAvailability, createBudgetCommitment } from '@/lib/queries/accounting'
-import { Plus, Trash2, X, FileText, AlertTriangle } from 'lucide-react'
+import { Plus, Trash2, X, FileText, AlertTriangle, Eye } from 'lucide-react'
 import type { PurchaseOrder, Supplier, ChartAccount, FiscalYear, BudgetControlResult, Product } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { nextDocumentNumber } from '@/lib/queries/core'
+import { ChainTimeline } from '@/components/ChainTimeline'
 
 export function PurchaseOrdersPage() {
   const { t } = useTranslation('purchases')
@@ -28,6 +29,7 @@ export function PurchaseOrdersPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [statusFilter, setStatusFilter] = useState('')
+  const [detailOrder, setDetailOrder] = useState<PurchaseOrder | null>(null)
 
   const loadData = useCallback(async () => {
     try {
@@ -49,7 +51,7 @@ export function PurchaseOrdersPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('orders.deleteConfirm'))) return
+    if (!(await confirmDialog(t('orders.deleteConfirm')))) return
     try { await deletePurchaseOrder(id); await loadData() }
     catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
@@ -94,6 +96,8 @@ export function PurchaseOrdersPage() {
                     </select>
                   </TableCell>
                   <TableCell>
+                    <button onClick={() => setDetailOrder(o)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" aria-label={t('orders.view')} title={t('orders.view')}>
+                      <Eye className="w-4 h-4" aria-hidden="true" /></button>
                     <button onClick={() => handleDelete(o.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
                       <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </TableCell>
@@ -105,6 +109,7 @@ export function PurchaseOrdersPage() {
       )}
 
       {showForm && <POForm suppliers={suppliers} products={products} accounts={accounts} years={years} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); loadData() }} />}
+      {detailOrder && <PurchaseOrderDetailModal order={detailOrder} onClose={() => setDetailOrder(null)} />}
     </div>
   )
 }
@@ -151,7 +156,7 @@ function POForm({ suppliers, products, accounts, years, onClose, onSaved }: { su
     setSaving(true)
     try {
       if (budgetCheck?.would_exceed) {
-        if (!confirmSync(t('orders.budgetExceedConfirm', { amount: formatCurrency(total), overshoot: formatCurrency(budgetCheck.overshoot_amount) }))) {
+        if (!(await confirmDialog(t('orders.budgetExceedConfirm', { amount: formatCurrency(total), overshoot: formatCurrency(budgetCheck.overshoot_amount) })))) {
           setSaving(false)
           return
         }
@@ -239,6 +244,85 @@ function POForm({ suppliers, products, accounts, years, onClose, onSaved }: { su
             <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
+      </div>
+    </div>
+  )
+}
+
+// ============================================================
+// I-01 — la Vue Chaîne sur la COMMANDE D'ACHAT : commande → réception →
+// facture fournisseur → règlement. Le composant de frise est générique : il lit
+// `document_links` (460) et le registre `chain_document_types` (`purchase_orders`,
+// 450). Ce modal ne recalcule aucun montant — les lignes et le total sont ceux
+// de la commande.
+function PurchaseOrderDetailModal({ order, onClose }: { order: PurchaseOrder; onClose: () => void }) {
+  const { t } = useTranslation('purchases')
+  const { t: tCommon } = useTranslation('common')
+  const [lines, setLines] = useState<Awaited<ReturnType<typeof getPurchaseOrderLines>>>([])
+  const [loading, setLoading] = useState(true)
+  const [erreur, setErreur] = useState<string | null>(null)
+
+  useEffect(() => {
+    let annule = false
+    setLoading(true)
+    setErreur(null)
+    getPurchaseOrderLines(order.id)
+      .then((l) => {
+        if (!annule) setLines(l || [])
+      })
+      .catch((err: unknown) => !annule && setErreur(errorMessage(err)))
+      .finally(() => !annule && setLoading(false))
+    return () => {
+      annule = true
+    }
+  }, [order.id])
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4 overflow-y-auto">
+      <div className="card shadow-2xl my-8" style={{ width: '100%', maxWidth: '46rem' }}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
+          <h2 className="text-lg font-semibold">{t('orders.view')} — <span className="font-mono">{order.number}</span></h2>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
+        </div>
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('orders.date')}</span><span>{formatDate(order.order_date)}</span></div>
+            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('orders.expectedDate')}</span><span>{order.expected_date ? formatDate(order.expected_date) : '—'}</span></div>
+            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('orders.status')}</span><span>{t(`orders.statuses.${order.status}`) as string}</span></div>
+            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('orders.amount')}</span><span className="font-mono">{formatCurrency(Number(order.total))}</span></div>
+          </div>
+          {loading ? (
+            <SkeletonTable rows={3} cols={3} />
+          ) : erreur ? (
+            <p className="text-sm text-[var(--color-danger)]">{erreur}</p>
+          ) : lines.length === 0 ? (
+            <EmptyState icon={<FileText className="w-8 h-8" />} title={t('orders.lines')} description={t('orders.noOrdersDescription')} />
+          ) : (
+            <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
+              <table className="app-table min-w-[420px]">
+                <thead className="bg-[var(--color-neutral-50)]">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-semibold">{t('orders.description')}</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold">{t('orders.quantity')}</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold">{t('orders.totalAmount')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lines.map((l) => (
+                    <tr key={l.id} className="border-t border-[var(--color-border)]">
+                      <td className="px-3 py-2 text-sm">{l.description || '—'}</td>
+                      <td className="px-3 py-2 text-right text-sm font-mono">{l.quantity}</td>
+                      <td className="px-3 py-2 text-right text-sm font-mono">{formatCurrency(Number(l.line_total))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <div className="pt-2 border-t border-[var(--color-border)]">
+            <ChainTimeline type="purchase_orders" id={order.id} libelle={t('orders.title')} />
+          </div>
+        </div>
       </div>
     </div>
   )

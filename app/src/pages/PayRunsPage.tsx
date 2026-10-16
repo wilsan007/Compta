@@ -2,14 +2,15 @@ import { localDateString } from '@/lib/dateRange'
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
-import { getPayRuns, createPayRun, updatePayRun, deletePayRun, getEmployees, generatePayRunSlips } from '@/lib/queries/payroll'
+import { getPayRuns, createPayRun, updatePayRun, deletePayRun, getEmployees, generatePayRunSlips, getPaySlips } from '@/lib/queries/payroll'
 import { generatePayrollJournal, payPayrollRun } from '@/lib/queries/misc'
-import { formatCurrency, formatDate} from '@/lib/utils'
-import { Calendar, Plus, Trash2, X, FileText, Banknote, Sparkles } from 'lucide-react'
+import { formatCurrency, formatDate, errorMessage } from '@/lib/utils'
+import { Calendar, Plus, Trash2, X, FileText, Banknote, Sparkles, Eye } from 'lucide-react'
 import type { PayRun, Employee } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { PaymentDialog, type PaymentValues } from '@/components/PaymentDialog'
+import { ChainTimeline } from '@/components/ChainTimeline'
 
 export function PayRunsPage() {
   const { toast } = useToast()
@@ -28,6 +29,7 @@ const [payRuns, setPayRuns] = useState<PayRun[]>([])
   // date et compte bancaire choisis, comme pour les factures. Sans elle, tout
   // partait au compte 512000 / journal BQ, à la date du jour.
   const [payRunToPay, setPayRunToPay] = useState<PayRun | null>(null)
+  const [detailRun, setDetailRun] = useState<PayRun | null>(null)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -45,7 +47,7 @@ const [payRuns, setPayRuns] = useState<PayRun[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try { await deletePayRun(id); await loadData() } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }
 
@@ -146,6 +148,8 @@ const [payRuns, setPayRuns] = useState<PayRun[]>([])
                         <Banknote className="w-4 h-4" aria-hidden="true" />
                       </button>
                     )}
+                    <button onClick={() => setDetailRun(pr)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" aria-label={t('payRuns.view')} title={t('payRuns.view')}>
+                      <Eye className="w-4 h-4" aria-hidden="true" /></button>
                     <button onClick={() => handleDelete(pr.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </div>
                 </TableCell>
@@ -168,6 +172,8 @@ const [payRuns, setPayRuns] = useState<PayRun[]>([])
           onClose={() => setPayRunToPay(null)}
         />
       )}
+
+      {detailRun && <PayRunDetailModal run={detailRun} onClose={() => setDetailRun(null)} />}
     </div>
   )
 }
@@ -232,6 +238,84 @@ function PayRunForm({ employees, onClose, onSaved }: { employees: Employee[]; on
             <Button type="submit" disabled={saving || employees.length === 0}>{saving ? tCommon('actions.saving') : t('payRuns.generate')}</Button>
           </div>
         </form>
+      </div>
+    </div>
+  )
+}
+
+// ============================================================
+// I-01 — la Vue Chaîne sur la CAMPAGNE DE PAIE : le lot de paie est un nœud
+// de la chaîne RH → comptabilité → trésorerie (bulletins générés, écriture
+// comptable de paie, versement). Le composant de frise est générique : il lit
+// `document_links` (460) et le registre `chain_document_types` (`pay_runs`,
+// 450). Ce modal ne recalcule aucun montant — il lit `pay_slips` et les
+// totaux du lot, tels quels.
+function PayRunDetailModal({ run, onClose }: { run: PayRun; onClose: () => void }) {
+  const { t } = useTranslation('hr')
+  const { t: tCommon } = useTranslation('common')
+  const [slips, setSlips] = useState<Awaited<ReturnType<typeof getPaySlips>>>([])
+  const [loading, setLoading] = useState(true)
+  const [erreur, setErreur] = useState<string | null>(null)
+
+  useEffect(() => {
+    let annule = false
+    setLoading(true)
+    setErreur(null)
+    getPaySlips(run.id)
+      .then((s) => {
+        if (!annule) setSlips(s || [])
+      })
+      .catch((err: unknown) => !annule && setErreur(errorMessage(err)))
+      .finally(() => !annule && setLoading(false))
+    return () => {
+      annule = true
+    }
+  }, [run.id])
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4 overflow-y-auto">
+      <div className="card shadow-2xl my-8" style={{ width: '100%', maxWidth: '46rem' }}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
+          <h2 className="text-lg font-semibold">{t('payRuns.view')} — <span className="font-mono">{run.number}</span></h2>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
+        </div>
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('payRuns.period')}</span><span>{formatDate(run.period_start)} → {formatDate(run.period_end)}</span></div>
+            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('payRuns.payDate')}</span><span>{formatDate(run.pay_date)}</span></div>
+            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('payRuns.grossTotal')}</span><span className="font-mono">{formatCurrency(Number(run.gross_total))}</span></div>
+            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('payRuns.netTotal')}</span><span className="font-mono">{formatCurrency(Number(run.net_total))}</span></div>
+          </div>
+          {loading ? (
+            <SkeletonTable rows={4} cols={2} />
+          ) : erreur ? (
+            <p className="text-sm text-[var(--color-danger)]">{erreur}</p>
+          ) : slips.length === 0 ? (
+            <EmptyState icon={<FileText className="w-8 h-8" />} title={t('payRuns.title')} description={t('payRuns.noPayRunsDescription')} />
+          ) : (
+            <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
+              <table className="app-table min-w-[360px]">
+                <thead className="bg-[var(--color-neutral-50)]">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-semibold">{t('paySlips.employee')}</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold">{t('paySlips.netSalary')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {slips.map((s) => (
+                    <tr key={s.id} className="border-t border-[var(--color-border)]">
+                      <td className="px-3 py-2 text-sm">{s.employees?.name || '—'}</td>
+                      <td className="px-3 py-2 text-right text-sm font-mono">{formatCurrency(Number(s.net_salary))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <div className="pt-2 border-t border-[var(--color-border)]">
+            <ChainTimeline type="pay_runs" id={run.id} libelle={t('payRuns.title')} />
+          </div>
+        </div>
       </div>
     </div>
   )

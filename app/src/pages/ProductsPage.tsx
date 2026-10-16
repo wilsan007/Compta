@@ -8,7 +8,7 @@ import { Package, Plus, Trash2, X, AlertTriangle, ArrowUpDown, Pencil } from 'lu
 import type { Product, StockMovement, Warehouse } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useLegislation } from '@/lib/legislation'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { usePermission } from '@/hooks/usePermission'
 
 export function ProductsPage() {
@@ -43,7 +43,7 @@ const [products, setProducts] = useState<Product[]>([])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-  if (!confirmSync(tCommon('form.confirmDelete'))) return
+  if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try {
       await deleteProduct(id)
       await loadData()

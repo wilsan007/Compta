@@ -122,6 +122,10 @@ const InventoryPage = lazy(() => import('@/pages/InventoryPage').then(m => ({ de
 const ReorderPage = lazy(() => import('@/pages/ReorderPage').then(m => ({ default: m.ReorderPage })))
 const PriceListsPage = lazy(() => import('@/pages/PriceListsPage').then(m => ({ default: m.PriceListsPage })))
 const BOMPage = lazy(() => import('@/pages/BOMPage').then(m => ({ default: m.BOMPage })))
+const StockTransfersPage = lazy(() => import('@/pages/StockTransfersPage').then(m => ({ default: m.StockTransfersPage })))
+const StockUomsPage = lazy(() => import('@/pages/StockUomsPage').then(m => ({ default: m.StockUomsPage })))
+const StockCountsPage = lazy(() => import('@/pages/StockCountsPage').then(m => ({ default: m.StockCountsPage })))
+const LandedCostsPage = lazy(() => import('@/pages/LandedCostsPage').then(m => ({ default: m.LandedCostsPage })))
 const ManufacturingOrdersPage = lazy(() => import('@/pages/ManufacturingOrdersPage').then(m => ({ default: m.ManufacturingOrdersPage })))
 const RoutingsPage = lazy(() => import('@/pages/RoutingsPage').then(m => ({ default: m.RoutingsPage })))
 const MachinesPage = lazy(() => import('@/pages/MachinesPage').then(m => ({ default: m.MachinesPage })))
@@ -143,9 +147,15 @@ const PaySlipsPage = lazy(() => import('@/pages/PaySlipsPage').then(m => ({ defa
 const PayrollAccountingPage = lazy(() => import('@/pages/PayrollAccountingPage').then(m => ({ default: m.PayrollAccountingPage })))
 const LeaveRequestsPage = lazy(() => import('@/pages/LeaveRequestsPage').then(m => ({ default: m.LeaveRequestsPage })))
 const LeaveRulesPage = lazy(() => import('@/pages/settings/LeaveRulesPage').then(m => ({ default: m.LeaveRulesPage })))
+const RecruitmentPage = lazy(() => import('@/pages/hr/RecruitmentPage').then(m => ({ default: m.RecruitmentPage })))
 const ApiWebhooksPage = lazy(() => import('@/pages/settings/ApiWebhooksPage').then(m => ({ default: m.ApiWebhooksPage })))
 const EmailTemplatesPage = lazy(() => import('@/pages/settings/EmailTemplatesPage').then(m => ({ default: m.EmailTemplatesPage })))
 const TwoFactorPage = lazy(() => import('@/pages/settings/TwoFactorPage').then(m => ({ default: m.TwoFactorPage })))
+const GroupsPage = lazy(() => import('@/pages/settings/GroupsPage').then(m => ({ default: m.GroupsPage })))
+const CollectiveAgreementsPage = lazy(() => import('@/pages/settings/CollectiveAgreementsPage').then(m => ({ default: m.CollectiveAgreementsPage })))
+const CustomFieldsPage = lazy(() => import('@/pages/settings/CustomFieldsPage').then(m => ({ default: m.CustomFieldsPage })))
+const ResourceCapacityPage = lazy(() => import('@/pages/settings/ResourceCapacityPage').then(m => ({ default: m.ResourceCapacityPage })))
+const BusinessConnectorsPage = lazy(() => import('@/pages/settings/BusinessConnectorsPage').then(m => ({ default: m.BusinessConnectorsPage })))
 const ApiDocsPage = lazy(() => import('@/pages/settings/ApiDocsPage').then(m => ({ default: m.ApiDocsPage })))
 const Nf525AuditPage = lazy(() => import('@/pages/settings/Nf525AuditPage').then(m => ({ default: m.Nf525AuditPage })))
 const LeaveBalancesPage = lazy(() => import('@/pages/hr/LeaveBalancesPage').then(m => ({ default: m.LeaveBalancesPage })))
@@ -170,6 +180,8 @@ const AcceptInvitationPage = lazy(() => import('@/pages/AcceptInvitationPage').t
 const TenantSelectionPage = lazy(() => import('@/pages/TenantSelectionPage').then(m => ({ default: m.TenantSelectionPage })))
 const AuditLogPage = lazy(() => import('@/pages/AuditLogPage').then(m => ({ default: m.AuditLogPage })))
 const CoherencePage = lazy(() => import('@/pages/CoherencePage').then(m => ({ default: m.CoherencePage })))
+const RobustessePage = lazy(() => import('@/pages/RobustessePage').then(m => ({ default: m.RobustessePage })))
+const CertificatPage = lazy(() => import('@/pages/CertificatPage').then(m => ({ default: m.CertificatPage })))
 const TrainingPage = lazy(() => import('@/pages/TrainingPage').then(m => ({ default: m.TrainingPage })))
 const SocialDeclarationsPage = lazy(() => import('@/pages/hr/SocialDeclarationsPage').then(m => ({ default: m.SocialDeclarationsPage })))
 const BdesPage = lazy(() => import('@/pages/hr/BdesPage').then(m => ({ default: m.BdesPage })))
@@ -212,6 +224,8 @@ const SalesForecastPage = lazy(() => import('@/pages/crm/SalesForecastPage').the
 const TicketsPage = lazy(() => import('@/pages/crm/TicketsPage').then(m => ({ default: m.TicketsPage })))
 const ServiceContractsPage = lazy(() => import('@/pages/crm/ServiceContractsPage').then(m => ({ default: m.ServiceContractsPage })))
 const KnowledgeBasePage = lazy(() => import('@/pages/crm/KnowledgeBasePage').then(m => ({ default: m.KnowledgeBasePage })))
+const SequencesPage = lazy(() => import('@/pages/crm/SequencesPage').then(m => ({ default: m.SequencesPage })))
+const ScoringRulesPage = lazy(() => import('@/pages/crm/ScoringRulesPage').then(m => ({ default: m.ScoringRulesPage })))
 const CustomerPortalPage = lazy(() => import('@/pages/crm/CustomerPortalPage').then(m => ({ default: m.CustomerPortalPage })))
 const MCFPage = lazy(() => import('@/pages/Phase3Pages').then(m => ({ default: m.MCFPage })))
 const TreasuryTransfersPage = lazy(() => import('@/pages/Phase3Pages').then(m => ({ default: m.TreasuryTransfersPage })))
@@ -451,6 +465,10 @@ function App() {
           <Route path="/stock/reorder" element={<ReorderPage />} />
           <Route path="/stock/price-lists" element={<PriceListsPage />} />
           <Route path="/stock/boms" element={<BOMPage />} />
+          <Route path="/stock/transfers" element={<StockTransfersPage />} />
+          <Route path="/stock/uoms" element={<StockUomsPage />} />
+          <Route path="/stock/counts" element={<StockCountsPage />} />
+          <Route path="/stock/landed-costs" element={<LandedCostsPage />} />
           <Route path="/stock/manufacturing" element={<ManufacturingOrdersPage />} />
 
           {/* Production */}
@@ -539,6 +557,7 @@ function App() {
           <Route path="/hr/payroll-accounting" element={<PayrollAccountingPage />} />
           <Route path="/hr/leave-requests" element={<LeaveRequestsPage />} />
           <Route path="/hr/leave-rules" element={<LeaveRulesPage />} />
+          <Route path="/hr/recruitment" element={<RecruitmentPage />} />
           <Route path="/hr/leave-balances" element={<LeaveBalancesPage />} />
           <Route path="/hr/leave-planning" element={<LeavePlanningPage />} />
           <Route path="/hr/absence-anomalies" element={<AbsenceAnomaliesPage />} />
@@ -584,11 +603,18 @@ function App() {
           <Route path="/settings/api-webhooks" element={<AdminRoute><ApiWebhooksPage /></AdminRoute>} />
           <Route path="/settings/email-templates" element={<AdminRoute><EmailTemplatesPage /></AdminRoute>} />
           <Route path="/settings/2fa" element={<ProtectedRoute><TwoFactorPage /></ProtectedRoute>} />
+          <Route path="/settings/groups" element={<AdminRoute><GroupsPage /></AdminRoute>} />
+          <Route path="/settings/collective-agreements" element={<AdminRoute><CollectiveAgreementsPage /></AdminRoute>} />
+          <Route path="/settings/custom-fields" element={<AdminRoute><CustomFieldsPage /></AdminRoute>} />
+          <Route path="/settings/resource-capacity" element={<AdminRoute><ResourceCapacityPage /></AdminRoute>} />
+          <Route path="/settings/connectors" element={<AdminRoute><BusinessConnectorsPage /></AdminRoute>} />
           <Route path="/settings/api-docs" element={<ProtectedRoute><ApiDocsPage /></ProtectedRoute>} />
           <Route path="/settings/nf525-audit" element={<AdminRoute><Nf525AuditPage /></AdminRoute>} />
           <Route path="/system/fiscal-years" element={<AdminRoute><FiscalYearsPage /></AdminRoute>} />
           <Route path="/system/audit-log" element={<AdminRoute><AuditLogPage /></AdminRoute>} />
           <Route path="/system/coherence" element={<AdminRoute><CoherencePage /></AdminRoute>} />
+          <Route path="/system/robustesse" element={<AdminRoute><RobustessePage /></AdminRoute>} />
+          <Route path="/system/certificat" element={<AdminRoute><CertificatPage /></AdminRoute>} />
 
           {/* Reporting & BI */}
           <Route path="/reporting" element={<ModuleHubPage moduleId="reporting" />} />
@@ -622,6 +648,8 @@ function App() {
           <Route path="/crm/opportunities" element={<OpportunitiesPage />} />
           <Route path="/crm/activities" element={<ActivitiesPage />} />
           <Route path="/crm/campaigns" element={<CampaignsPage />} />
+          <Route path="/crm/sequences" element={<SequencesPage />} />
+          <Route path="/crm/scoring-rules" element={<ScoringRulesPage />} />
           <Route path="/crm/territories" element={<TerritoriesPage />} />
           <Route path="/crm/forecasts" element={<SalesForecastPage />} />
           <Route path="/crm/tickets" element={<TicketsPage />} />

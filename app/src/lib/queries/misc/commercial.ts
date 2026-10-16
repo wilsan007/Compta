@@ -171,6 +171,13 @@ export async function deleteDocumentTemplate(id: string) {
   const { error } = await tud(supabase.from('document_templates').delete(), 'document_templates', tid).eq('id', id)
   if (error) throw error
 }
+// Un seul modèle par défaut par (société, type) : la bascule est un ACTE de la
+// base (`set_default_document_template`, migration 713) — elle démarque l'ancien
+// puis marque le nouveau dans la même transaction, et refuse un lecteur.
+export async function setDefaultDocumentTemplate(id: string) {
+  const { error } = await supabase.rpc('set_default_document_template', { p_template_id: id })
+  if (error) throw error
+}
 
 
 

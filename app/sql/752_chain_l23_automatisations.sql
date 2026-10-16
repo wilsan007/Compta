@@ -195,6 +195,20 @@ CREATE OR REPLACE FUNCTION public.zz_l23_automatiser()
  SET search_path TO 'public', 'pg_temp'
 AS $fn$
 BEGIN
+  -- RÉCONCILIÉ AVEC MAIN (session d'intégration) — UN ÉVÉNEMENT D'UNE AUTRE SOCIÉTÉ
+  -- N'EST PAS UNE FAUTE ICI. La plateforme émet LÉGITIMEMENT pour une société donnée
+  -- alors que le contexte actif est celui d'une AUTRE : mesuré par la `402` C08,
+  -- `chain_liens_fermer(tenantA, …)` appelé depuis le contexte de B — « fermer chez A
+  -- ne ferme rien chez B ». La garde d'APPEL DIRECT de `chain_l23_automatiser` (un
+  -- appelant rattaché à une société ne joue que ses propres événements) reste : ici,
+  -- c'est un DÉCLENCHEUR, et refuser ferait échouer l'ÉMISSION elle-même. Le moteur ne
+  -- joue de toute façon que les règles de la société de l'événement : on le laisse donc
+  -- passer pour les événements hors contexte — sans rien jouer pour autant.
+  IF current_tenant_id() IS NOT NULL
+     AND NEW.tenant_id IS DISTINCT FROM current_tenant_id() THEN
+    RETURN NEW;
+  END IF;
+
   PERFORM public.chain_l23_automatiser(NEW.id);
   RETURN NEW;
 END $fn$;

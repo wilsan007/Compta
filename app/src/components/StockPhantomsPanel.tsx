@@ -9,7 +9,7 @@ import { Button, Card } from '@/components/ui'
 import { formatDate } from '@/lib/utils'
 import { getStockMovementPhantoms, resolveStockMovementPhantom, type StockMovementPhantom } from '@/lib/queries/stockPhantoms'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 export function StockPhantomsPanel({ onResolved }: { onResolved?: () => void }) {
   const { t } = useTranslation('stock')
@@ -26,7 +26,7 @@ export function StockPhantomsPanel({ onResolved }: { onResolved?: () => void }) 
   useEffect(() => { load() }, [load])
 
   async function decide(id: string, decision: 'replayed' | 'ignored') {
-    if (!confirmSync(t(decision === 'replayed' ? 'phantoms.confirmReplay' : 'phantoms.confirmIgnore'))) return
+    if (!(await confirmDialog(t(decision === 'replayed' ? 'phantoms.confirmReplay' : 'phantoms.confirmIgnore')))) return
     setBusy(id)
     try {
       await resolveStockMovementPhantom(id, decision)

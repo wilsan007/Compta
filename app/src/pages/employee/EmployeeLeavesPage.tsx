@@ -4,6 +4,7 @@ import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Skele
 import { Plus, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { getTenantId } from '@/lib/queries/core'
+import type { Row } from '@/types/dbRow'
 import { errorMessage, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 
@@ -13,8 +14,8 @@ export function EmployeeLeavesPage() {
   const { t: tNav } = useTranslation('nav')
   const { toast } = useToast()
   const [tab, setTab] = useState<'requests' | 'balance' | 'planning'>('requests')
-  const [requests, setRequests] = useState<any[]>([])
-  const [balances, setBalances] = useState<any[]>([])
+  const [requests, setRequests] = useState<Row<'leave_requests'>[]>([])
+  const [balances, setBalances] = useState<Row<'leave_balances'>[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [leaveType, setLeaveType] = useState('')
@@ -173,10 +174,10 @@ export function EmployeeLeavesPage() {
               <div className="p-4">
                 <p className="text-sm font-medium mb-2">{t(`leaves.types.${b.leave_type}`) || b.leave_type}</p>
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div><span className="text-[var(--color-text-secondary)]">{t('leaves.acquired')}: </span><span className="font-mono">{b.acquired_days}</span></div>
-                  <div><span className="text-[var(--color-text-secondary)]">{t('leaves.taken')}: </span><span className="font-mono">{b.taken_days}</span></div>
-                  <div><span className="text-[var(--color-text-secondary)]">{t('leaves.pending')}: </span><span className="font-mono">{b.pending_days}</span></div>
-                  <div><span className="text-[var(--color-text-secondary)]">{t('leaves.remaining')}: </span><span className="font-mono font-bold">{b.current_balance}</span></div>
+                  <div><span className="text-[var(--color-text-secondary)]">{t('leaves.acquired')}: </span><span className="font-mono">{b.acquired}</span></div>
+                  <div><span className="text-[var(--color-text-secondary)]">{t('leaves.taken')}: </span><span className="font-mono">{b.taken}</span></div>
+                  <div><span className="text-[var(--color-text-secondary)]">{t('leaves.pending')}: </span><span className="font-mono">{b.pending}</span></div>
+                  <div><span className="text-[var(--color-text-secondary)]">{t('leaves.remaining')}: </span><span className="font-mono font-bold">{b.remaining}</span></div>
                 </div>
               </div>
             </Card>

@@ -2,9 +2,11 @@
 -- 450_chain_integrite_referentielle_tests.sql — Partie 5 : l'intégrité
 --   référentielle des chaînages (migrations 450 → 455)
 --
---   T01  le REGISTRE est complet : chaque table (et table de lignes) existe, et
---        lignes) existe, et CHAQUE type écrit en dur dans un appel à
---        link_documents par un maillon est inscrit ;
+--   T01  le REGISTRE est complet : au moins 37 types (plancher daté du 11/10/2026,
+--        puis 39 avec les deux types de la vague A3 — product_batches 761,
+--        landed_costs 765), chaque table (et table de lignes) existe, et CHAQUE
+--        type écrit en dur dans un appel à link_documents par un maillon est
+--        inscrit ;
 --   T02  un type INCONNU est refusé (23503) ;
 --   T03  un amont INEXISTANT est refusé, et un amont d'une AUTRE société aussi ;
 --   T04  une ligne amont inexistante est refusée ; une ligne réelle passe ;
@@ -18,7 +20,8 @@
 --        rend la quantité réservée, ferme le lien (rompu, motif) ; ensuite la
 --        suppression passe ;
 --   T10  un lecteur (viewer) ne libère pas une réservation (42501) ;
---   T11  STRUCTURE : chaque table du registre (et de lignes) porte sa garde ;
+--   T11  STRUCTURE : chaque table du registre (et de lignes) porte sa garde
+--        (45 en date du 11/10/2026 : 37 types + 8 tables de lignes) ;
 --        les fonctions internes ne sont pas exposées ;
 --   T12  INV-19 est MESURABLE : un orphelin fabriqué le rend « rompu »,
 --        chain_fermer_orphelins le ferme (1 puis 0), INV-19 redevient « tenu » ;
@@ -99,9 +102,9 @@ BEGIN
   WHERE NOT EXISTS (SELECT 1 FROM chain_document_types d WHERE d.code = x.ty);
 
   PERFORM _rec('T01',
-    'le registre est complet : toutes les tables existent, et chaque type écrit en dur dans un maillon est inscrit',
-    n_types > 0 AND n_tables_absentes = 0 AND v_non_inscrits IS NULL,
-    format('types=%s tables absentes=%s types de maillon non inscrits=%s',
+    'le registre est complet : au moins 37 types (39 depuis la vague A3), toutes les tables existent, et chaque type écrit en dur dans un maillon est inscrit',
+    n_types >= 37 AND n_tables_absentes = 0 AND v_non_inscrits IS NULL,
+    format('types=%s (37 au moins, 39 depuis la vague A3) tables absentes=%s types de maillon non inscrits=%s',
            n_types, n_tables_absentes, COALESCE(v_non_inscrits, 'aucun')));
 EXCEPTION WHEN OTHERS THEN
   PERFORM _rec('T01', 'le registre est complet', false, SQLERRM);
@@ -333,7 +336,7 @@ BEGIN
       AND NOT has_function_privilege('anon', 'release_stock_reservation(uuid)', 'EXECUTE')
       AND (SELECT count(*) FROM pg_trigger WHERE tgname LIKE 'zz_garde_p5_suppression%')
           = (SELECT count(*) + count(ligne_table) FROM chain_document_types),
-    format('sans garde=%s exposées=%s gardes posées=%s (attendu dynamique : %s type(s) + %s table(s) de lignes = %s)',
+    format('sans garde=%s exposées=%s gardes posées=%s (attendu dynamique : %s type(s) + %s table(s) de lignes = %s — plancher daté : 45 au 11/10, 47 depuis la vague A3)',
            COALESCE(v_sans_garde, 'aucune'),
            COALESCE(v_expose, 'aucune'),
            (SELECT count(*) FROM pg_trigger WHERE tgname LIKE 'zz_garde_p5_suppression%'),

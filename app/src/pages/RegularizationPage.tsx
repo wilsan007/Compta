@@ -7,7 +7,7 @@ import { useLocale } from '@/hooks/useLocale'
 import { Plus, Trash2, Pencil, Zap, X } from 'lucide-react'
 import type { RegularizationEntry, FiscalYear } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 export function RegularizationPage() {
@@ -47,7 +47,7 @@ export function RegularizationPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('regularization.deleteConfirm'))) return
+    if (!(await confirmDialog(t('regularization.deleteConfirm')))) return
     try {
       await deleteRegularizationEntry(id)
       toast('success', tCommon('common.success'), t('regularization.deleteSuccess'))

@@ -3,10 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { Calculator, Trash2, Check, X, Eye, Clock, Factory, ShoppingCart } from 'lucide-react'
 import { Card, Button, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { getMRPRuns, runMRPCalculation, deleteMRPRun, getMRPProposals, updateMRPProposal, deleteMRPProposal, getMRPPendingDocs, deleteMRPPendingDoc } from '@/lib/queries/stock'
-import { runMRP } from '@/lib/queries/businessFunctions'
+import { getMRPRuns, runMRPAndSave, deleteMRPRun, getMRPProposals, updateMRPProposal, deleteMRPProposal, getMRPPendingDocs, deleteMRPPendingDoc } from '@/lib/queries/stock'
 import { errorMessage, formatDate } from '@/lib/utils'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 const proposalTypeIcons: Record<string, any> = { purchase: ShoppingCart, manufacture: Factory, subcontract: Factory }
 const proposalStatusVariants: Record<string, 'neutral' | 'success' | 'danger' | 'warning'> = { pending: 'neutral', approved: 'success', rejected: 'danger', converted: 'warning' }
@@ -15,12 +14,11 @@ export function MRPPage() {
   const { toast } = useToast()
   const { t } = useTranslation('production')
   const { t: tCommon } = useTranslation('common')
-  const [runs, setRuns] = useState<any[]>([])
+  const [runs, setRuns] = useState<Awaited<ReturnType<typeof getMRPRuns>>>([])
   const [loading, setLoading] = useState(true)
   const [calculating, setCalculating] = useState(false)
-  const [mrpLoading, setMrpLoading] = useState(false)
-  const [selectedRun, setSelectedRun] = useState<any>(null)
-  const [proposals, setProposals] = useState<any[]>([])
+  const [selectedRun, setSelectedRun] = useState<Awaited<ReturnType<typeof runMRPAndSave>> | null>(null)
+  const [proposals, setProposals] = useState<Awaited<ReturnType<typeof getMRPProposals>>>([])
 
   const loadData = useCallback(async () => {
     try { setRuns(await getMRPRuns() || []) }
@@ -33,28 +31,17 @@ export function MRPPage() {
   async function handleCalculate() {
     setCalculating(true)
     try {
-      const run = await runMRPCalculation()
+      // PRD-08 : le calcul est au serveur (`run_mrp`, 651/664) — le client ne
+      // fait que PERSISTER le lancement et ses propositions. L'ancien moteur
+      // local (bouton « Lancer le MRP », supprimé) répondait différemment à la
+      // même question (+7 jours en dur, Math.ceil nu, prévisions ignorées).
+      const run = await runMRPAndSave()
       toast('success', t('mrp.mrpCalculated'), t('mrp.proposalsGenerated', { count: run.summary?.products_with_needs || 0 }))
       await loadData()
       setSelectedRun(run)
       setProposals(await getMRPProposals(run.id))
     } catch (err) { toast('error', t('mrp.mrpError'), errorMessage(err)) }
     finally { setCalculating(false) }
-  }
-
-  async function handleRunMRP() {
-    setMrpLoading(true)
-    try {
-      // W10 : `run_mrp` ne prend pas de produit — elle parcourt les besoins de la
-      // société sur un HORIZON en jours (défaut 90). L'ancien appel
-      // `runMRP('', 5)` envoyait une chaîne vide dans `p_product_id`, un argument
-      // qui n'existe dans aucune signature : il ne pouvait pas aboutir.
-      const result = await runMRP(90)
-      const count = Array.isArray(result) ? result.length : 0
-      toast('success', t('mrp.mrpCalculated'), `${count} besoin(s) net(s) calculé(s)`)
-      await loadData()
-    } catch (err) { toast('error', t('mrp.mrpError'), errorMessage(err)) }
-    finally { setMrpLoading(false) }
   }
 
   async function handleSelectRun(run: any) {
@@ -64,7 +51,7 @@ export function MRPPage() {
   }
 
   async function handleDeleteRun(id: string) {
-    if (!confirmSync(t('mrp.confirmDeleteRun'))) return
+    if (!(await confirmDialog(t('mrp.confirmDeleteRun')))) return
     try { await deleteMRPRun(id); await loadData(); setSelectedRun(null) }
     catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
@@ -89,12 +76,9 @@ export function MRPPage() {
       <Breadcrumb items={[{ label: t('mrp.title'), path: '/production' }, { label: t('mrp.titleFull') }]} />
       <PageHeader title={t('mrp.titleFull')} subtitle={`${runs.length} ${t('mrp.runsCount')}`}
         action={
-          <div className="flex items-center gap-2">
-            <Button onClick={handleRunMRP} disabled={mrpLoading} variant="secondary">
-              <Calculator className="w-4 h-4" /> {mrpLoading ? t('mrp.calculating') : 'Lancer le MRP'}
-            </Button>
-            <Button onClick={handleCalculate} disabled={calculating}><Calculator className="w-4 h-4" /> {calculating ? t('mrp.calculating') : t('mrp.launchCalculation')}</Button>
-          </div>
+          <Button onClick={handleCalculate} disabled={calculating}>
+            <Calculator className="w-4 h-4" /> {calculating ? t('mrp.calculating') : t('mrp.launchCalculation')}
+          </Button>
         } />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -182,7 +166,7 @@ export function MRPPendingDocsPage() {
   const { toast } = useToast()
   const { t } = useTranslation('production')
   const { t: tCommon } = useTranslation('common')
-  const [docs, setDocs] = useState<any[]>([])
+  const [docs, setDocs] = useState<Awaited<ReturnType<typeof getMRPPendingDocs>>>([])
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {

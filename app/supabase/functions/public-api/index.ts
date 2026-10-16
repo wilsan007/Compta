@@ -27,14 +27,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 const RATE_LIMIT_WINDOW = 60_000  // 1 minute
 const RATE_LIMIT_MAX = 100        // 100 requests per minute
 
-// SEC-01 : Hash SHA-256 des clés API avant recherche en base
-async function sha256(input: string): Promise<string> {
-  const data = new TextEncoder().encode(input)
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data)
-  return Array.from(new Uint8Array(hashBuffer))
-    .map(b => b.toString(16).padStart(2, "0"))
-    .join("")
-}
+// SEC-01 : le hash SHA-256 d'une clé vit côté BASE depuis la 700 — la clé
+// n'y traverse jamais la requête en clair. La fonction qui hache et répond
+// du cycle de vie (active / révoquée / expirée) est `authenticate_api_key`,
+// appelée plus bas ; ce fichier n'en garde aucune copie.
 
 // Rate limit store (in-memory, per instance)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
@@ -152,22 +148,26 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 
-    // Vérifier la clé API en base (SEC-01 : hash SHA-256, jamais en clair)
-    const hashedKey = await sha256(apiKey)
+    // ORPH-01 / SEC-02 (700) : la vérité du cycle de vie de la clé (connue,
+    // active, RÉVOQUÉE, EXPIRÉE) vit dans la base, dans UNE fonction —
+    // `authenticate_api_key` —, qui hache la clé côté serveur (SEC-01 : la
+    // clé ne traverse pas la requête en clair, c'est déjà le hash qui est
+    // stocké) et refuse NOMMÉMENT une clé révoquée ou expirée. Ce point
+    // d'entrée n'en garde AUCUNE copie : il route, il ne décide pas.
+    // L'ancien chemin lisait la table en direct et ne regardait QUE
+    // `active = true` : une clé EXPIRÉE ouvrait l'API indéfiniment.
     const authClient = createClient(supabaseUrl, serviceRoleKey)
     const { data: keyData, error: keyErr } = await authClient
-      .from("api_keys")
-      .select("id, tenant_id, active, permissions")
-      .eq("key_hash", hashedKey)
-      .eq("active", true)
-      .single()
+      .rpc("authenticate_api_key", { p_raw_key: apiKey })
 
-    if (keyErr || !keyData) {
-      return json({ error: "Clé API invalide" }, 401)
+    if (keyErr || !keyData?.authenticated) {
+      const reason = keyData?.reason || (keyErr ? "erreur base" : "not_found")
+      return errorResponse("UNAUTHORIZED", `Clé API refusée : ${reason}`, 401)
     }
 
     // Créer un client avec le tenant de la clé API
     const tenantId = keyData.tenant_id
+    const apiKeyId = keyData.api_key_id
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       global: { headers: { "x-tenant-id": tenantId } }
     })
@@ -216,7 +216,7 @@ serve(async (req) => {
       if (idempotencyKey) {
         const existing = await checkIdempotency(authClient, idempotencyKey, tenantId)
         if (existing) {
-          await logApiCall(authClient, keyData.id, tenantId, method, path, existing.status, idempotencyKey)
+          await logApiCall(authClient, apiKeyId, tenantId, method, path, existing.status, idempotencyKey)
           return json(existing.response, existing.status)
         }
       }
@@ -228,7 +228,7 @@ serve(async (req) => {
       // la valider dans l'interface. Le refus est donc explicite, à la porte.
       const { lines, ...invoice } = body || {}
       if (!Array.isArray(lines) || lines.length === 0) {
-        await logApiCall(authClient, keyData.id, tenantId, method, path, 400, idempotencyKey || undefined)
+        await logApiCall(authClient, apiKeyId, tenantId, method, path, 400, idempotencyKey || undefined)
         return errorResponse(
           "VALIDATION_ERROR",
           "Au moins une ligne est requise (champ « lines ») : une facture sans ligne n'est ni validable ni approuvable",
@@ -248,7 +248,7 @@ serve(async (req) => {
       })
       if (error || !created?.success) {
         const message = error?.message || created?.error || "Création impossible"
-        await logApiCall(authClient, keyData.id, tenantId, method, path, 400, idempotencyKey || undefined)
+        await logApiCall(authClient, apiKeyId, tenantId, method, path, 400, idempotencyKey || undefined)
         return errorResponse("VALIDATION_ERROR", message, 400)
       }
 
@@ -259,14 +259,14 @@ serve(async (req) => {
         .eq("tenant_id", tenantId)
         .single()
       if (readErr) {
-        await logApiCall(authClient, keyData.id, tenantId, method, path, 400, idempotencyKey || undefined)
+        await logApiCall(authClient, apiKeyId, tenantId, method, path, 400, idempotencyKey || undefined)
         return errorResponse("VALIDATION_ERROR", readErr.message, 400)
       }
 
       if (idempotencyKey) {
         await storeIdempotency(authClient, idempotencyKey, tenantId, { data }, 201)
       }
-      await logApiCall(authClient, keyData.id, tenantId, method, path, 201, idempotencyKey || undefined)
+      await logApiCall(authClient, apiKeyId, tenantId, method, path, 201, idempotencyKey || undefined)
       return json({ data }, 201)
     }
 

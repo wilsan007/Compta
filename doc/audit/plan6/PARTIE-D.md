@@ -18,12 +18,12 @@
 
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
-| D.1 | Vrai dialogue de confirmation à la place de `confirmSync` (100 fichiers), **par module, un lot par jour** | 1.8, AUD-I01 | 4 j | ⬜ |
-| D.2 | Typer les 80 états d'écran restants (RH, production, trésorerie, immobilisations, CRM) | DAT-02, suite de 2.16 | 5 j | ⬜ |
-| D.3 | Alignement des colonnes sur 10 écrans | étape 0.5 | 1 j | ⬜ |
+| D.1 | Vrai dialogue de confirmation à la place de `confirmSync` (100 fichiers), **par module, un lot par jour** | 1.8, AUD-I01 | 4 j | ✅ **tous les usages migrés (05/10)** |
+| D.2 | Typer les 80 états d'écran restants (RH, production, trésorerie, immobilisations, CRM) | DAT-02, suite de 2.16 | 5 j | ✅ **terminé — 80 états (05/10)** |
+| D.3 | Alignement des colonnes sur 10 écrans | étape 0.5 | 1 j | ✅ **4 restants faits (05/10) — 6 déjà en `main`** |
 | D.4 | Lectures du chemin de l'écran (159 fonctions non couvertes) ; immobilisations et tableaux de bord à l'écran | 4.5, 4.11, 4.12 | 5 j | ⬜ |
-| D.5 | Playwright sur chaque PR vers `main` ; 4 parcours qui lisent un chiffre | 4.3, 4.4, AUD-J01/J02 | 3 j | ⬜ |
-| D.6 | Les 14 parcours à l'écran, 2 sociétés, 4 gabarits ; correction des écarts bloquants ; re-notation des modules | 4.6, 4.7, P0-08 | recette | ⬜ |
+| D.5 | Playwright sur chaque PR vers `main` ; 4 parcours qui lisent un chiffre | 4.3, 4.4, AUD-J01/J02 | 3 j | 🟢 **4 parcours verts en local (11/10)** — en CI, il reste les secrets E2E |
+| D.6 | Les 14 parcours à l'écran, 2 sociétés, 4 gabarits ; correction des écarts bloquants ; re-notation des modules | 4.6, 4.7, P0-08 | recette | 🟡 **kit prêt (05/10) — verdict attendu** |
 | D.7 | Rejeu sur copie de production (porte G7 sous le vrai propriétaire), relecture des paramètres globaux et de `banks` | 4.8, 4.9 | 2 j | ⬜ |
 | D.8 | Contraste : appliquer la décision D-7 | AUD-I05 | 1 j | ⬜ |
 
@@ -43,13 +43,550 @@ Un balayage de 100 fichiers livré d'un bloc produirait des conflits de
 plusieurs jours sur des fichiers que A, C et E déplacent. **Un lot par jour**,
 c'est la condition.
 
-## D.3 — reprise gelée
+## D.1 — le dialogue de confirmation, par module
+
+**Cible.** `confirmSync` (= `window.confirm`) → `confirmDialog` (async) de
+`@/lib/confirm`. C'est le motif **déjà en place dans ce module**
+(`ChartPacksAdminPage.tsx` fait `await confirmDialog({...})`) et le remplacement
+que les commentaires de `lib/confirm.tsx` annoncent (« sera remplacé
+progressivement par `confirmDialog` »).
+
+**Un motif par module, pas par fichier.** AUD-I01 et le §7 acceptent
+`useConfirm` **ou** `confirmDialog`. Comme le module `system` en a déjà un
+d'ouvert, le lot continue `confirmDialog` — on ne mélange pas deux motifs d'un
+écran à l'autre. Le lot suivant garde la même règle.
+
+**Effet sur la mesure du suivi** (à régénérer par l'intégration, R4/R6) :
+`confirmSync` **100 → 93** ; `useConfirm` / `confirmDialog` **4 → 11**.
+
+### Lot 1 — module `system` (Paramètres), 05/10
+
+7 écrans, 9 appels, tous routés sous `/settings` ou `/system` :
+
+| Écran | Appels |
+|---|---|
+| `pages/settings/ApiWebhooksPage.tsx` | 3 |
+| `pages/settings/TwoFactorPage.tsx` | 1 |
+| `pages/settings/EmailTemplatesPage.tsx` | 1 |
+| `pages/CurrenciesPage.tsx` | 1 |
+| `pages/TeamPage.tsx` | 1 |
+| `pages/TaxGridSettingsPage.tsx` | 1 |
+| `pages/FiscalYearsPage.tsx` | 1 |
+
+`LeaveRulesPage.tsx` (sous `pages/settings/` mais routé `/hr/leave-rules`) est
+du module **hr** : il n'est pas dans ce lot.
+
+**Preuve.** `tsc -b --noEmit` ✅ · `oxlint` **0** sur les 7 fichiers ✅ ·
+Vitest **1661 / 1699** (38 sautés) ✅.
+
+### Lot 2 — module `hr`, 05/10
+
+16 écrans, 17 appels, tous routés `/hr/*` (dont `settings/LeaveRulesPage`, routé
+`/hr/leave-rules`) : `EmployeesPage` · `PayRunsPage` · `TimesheetsPage` ·
+`PaySlipsPage` · `PayrollAccountingPage` · `LeaveRequestsPage` ·
+`settings/LeaveRulesPage` · `ContractsPage` · `LegalDeclarationsPage` ·
+`WorkHardshipPage` · `CareerHistoryPage` · `CPFPage` · `EmployeeDocumentsPage` ·
+`EmployeeExpensesPage` · `payroll/PayrollPreparationPage` ·
+`payroll/SepaPaymentsPage`.
+
+Tous `tCommon('form.confirmDelete')` **sauf** `SepaPaymentsPage`
+(`t('sepa.confirmTransmit')`).
+
+**Preuve.** `grep confirmSync` = 0 sur le module ✅ · `tsc -b --noEmit` ✅ ·
+`oxlint` **0** sur les 16 fichiers ✅ · Vitest **1661 / 1699** (38 sautés) ✅.
+
+### Lot 3 — module `accounting`, 05/10
+
+30 écrans, 41 appels, routés `/accounting/*` : `AccountTags` · `AnalyticPlans` ·
+`AnalyticSections` · `BankReconciliationRules` · `Brouillard` ·
+`BudgetCommitments` · `Budgets` · `ChartAccounts` · `CurrencyRevaluation` ·
+`DistributionGrills` · `EdiTva` · `EntryTemplates` · `FiscalBackup` ·
+`FiscalPositions` · `FiscalYearClosure` · `FixedAssets` · `FusionComptes` ·
+`JournalClosure` · `JournalEntries` · `JournalSaisie` (3 appels, dont 1
+**positif** ligne 531) · `Journals` · `Lettrage` · `PaymentTerms` ·
+`PlanReporting` · `RecurringEntries` · `Regularization` · `ReminderLevels` ·
+`RevisionCycles` · `TaxRates` · `Tvs`.
+
+**Preuve.** `grep confirmSync` = 0 sur le module ✅ · `tsc -b --noEmit` ✅ ·
+`oxlint` **0** sur les 30 fichiers ✅ · Vitest **1661 / 1699** (38 sautés) ✅.
+
+### Lot 4 — les modules restants, 05/10
+
+Lots 1 → 3 faits, D.1 termine **tout le reste** (la fenêtre « un lot par jour »
+est levée à la demande du chef de produit) : 41 écrans/composants + 5 mocks.
+
+| Module | Écrans / composants |
+|---|---|
+| `treasury` | `BankRules`, `BankSync`, `BankTransactions`, `PaymentOrders` |
+| `commercial` | `CreditNotes`, `CustomerPayments`, `DeliveryNotes`, `Invoices`, `PurchaseCreditNotes`, `PurchaseInvoices`, `PurchaseOrders`, `Quotes`, `SalesOrders`, `SupplierPayments`, `PriceLists` |
+| `stock` | `Products`, `StockReservations`, `Warehouses`, `GoodsReceipt`, `components/StockPhantomsPanel` |
+| `production` | `BOM`, `Machines`, `ManufacturingOrders`, `Routings`, `Toolings`, `SubcontractingPages`, `Forecasts`, `Planning`, `MRPPages` |
+| `projectManagement` | `Projects`, `components/project-management/DocView`, `.../DynamicTable`, `components/documents/DocumentList` |
+| `reporting` + lots divers | `VatReturns`, `ComplementaryPages`, `Phase2Pages` → `Phase7DPages`, `components/PartnerBankAccountsModal` |
+
+**Deux cas profonds** hors de la règle uniforme (l'argument imbrique
+`formatCurrency(...)`) traités à la main : `PurchaseOrdersPage`
+(`budgetExceedConfirm`) et `PurchaseInvoicesPage` (`budgetExceedWarning`).
+
+**Un défaut de typage corrigé** — `DynamicTable.handleDeleteTask` était un
+`useCallback` **non `async`** ; `tsc` l'a attrapé (la relecture, non). Devenu `async`.
+
+**Preuve.** `grep confirmSync app/src` = **0 hors la définition** ✅ ·
+`tsc -b --noEmit` ✅ · `oxlint` **0** sur les 46 fichiers ✅ ·
+Vitest **1661 / 1699** (38 sautés) ✅ · mesure : `confirmSync` **100 → 1**,
+`useConfirm`/`confirmDialog` **4 → 103**.
+
+### D.1 — terminé (~100 fichiers)
+
+Tous les appels `confirmSync` (le `window.confirm` déguisé) sont passés au vrai
+dialogue `confirmDialog`. Le suivi tombe de **100 → 1** : le `1` est la
+définition morte ci-dessous, hors de mon territoire.
+
+### Demande hors territoire (R3)
+
+`app/src/lib/confirm.tsx` (§2 ne le met pas dans le territoire de D) porte encore
+la définition devenue morte :
+
+```ts
+export function confirmSync(message: string): boolean { return window.confirm(message) }
+```
+
+**Demande à l'intégration :** la **supprimer** (le suivi passerait à
+`confirmSync` = 0) et poser la **garde CI qui interdit `confirmSync`**, comme
+1.8 / AUD-I01 le demandent. Aucun usage restant (mesuré : `grep confirmSync
+app/src` = cette seule ligne).
+
+**Deuxième demande** — `app/src/lib/queries/production.ts` : `getManufacturingOrders`
+**rend** `ManufacturingOrder` alors que la requête **joint** `boms(name, code)`,
+`products(name, sku)`, `warehouses(name)`, `routings(name, code)`. Le type
+devrait modéliser ces jointures (`Joined<…>` de `@/types/dbRow`) ; sans cela,
+chaque écran qui lit une jointure doit la **renommer lui‑même** (ce que fait
+`ProductionDashboardPage`, tranche 3). Aucune migration — un changement de type.
+
+**Troisième demande** — `app/src/lib/queries/dematRh.ts` : `getEmployeeDocuments`
+fait `.select('*')` et **ne joint pas** `employees`. Or `EmployeeDocumentsPage`
+lit `d.employees.first_name` : **la colonne « Salarié » affiche « — » depuis
+toujours**. Ajouter `employees(first_name, last_name)` au `select` (comme
+`lib/queries/stock.ts` le fait pour ses jointures). Défaut révélé par le typage
+(tranche 4).
+
+## D.2 — typer les états d'écran (suite de 2.16)
+
+**Méthode 2.16** : nommer le type d'un état depuis sa fonction de requête —
+`useState<Awaited<ReturnType<typeof FN>>>` (ou `[number]` pour l'élément).
+
+**Ce que la mesure dit d'abord.** L'audit du 02/10
+([ETAT-DES-LIEUX-TYPAGE-ETATS-TRANCHE-2](../ETAT-DES-LIEUX-TYPAGE-ETATS-TRANCHE-2-2026-10-02.md))
+a montré que le lot « 85 états » était une **hypothèse** et que **son lot de
+défauts produits est vide**. D.2 est donc de l'**hygiène** de typage (faire
+baisser le plafond `any`), pas la fermeture de défauts annoncés.
+
+### Tranche 1 — 05/10 (11 états, 7 écrans)
+
+| Écran | États typés |
+|---|---|
+| `EmployeeExpensesPage` | `selectedReport` |
+| `EmployeeExitPage` | `processes`, `selectedProcess` |
+| `ManagerExpenseApprovalsPage` | `reports`, `selectedReport`, `lines` |
+| `crm/CampaignsPage` | `stats` |
+| `TreasuryDashboardPage` | `data` |
+| `TreasuryForecastPage` | `data` |
+| `HRDashboardPage` | `timesheets`, `dashData` |
+
+**Défaut révélé ET fermé** — `HRDashboardPage` : la garde
+`dashData?.medical?.overdue > 0` ne **couvrait pas** la lecture
+`dashData.medical.overdue` qui suivait (accès **non chaîné**). `tsc` l'a attrapé
+dès que l'état a été typé ; corrigé en `(… ?? 0) > 0` + `dashData?.medical?.overdue`.
+
+**Preuve.** `tsc -b --noEmit` ✅ · `oxlint` **0** sur les 7 ✅ ·
+Vitest **1661 / 1699** (38 sautés) ✅ · plafond `any` de production **936 → 925**
+(`.any-ceiling.json` est régénéré par l'intégration — règle R6, laissé au gel ici).
+
+### Tranche 2 — 05/10 (9 états, 5 écrans)
+
+| Écran | États typés |
+|---|---|
+| `hr/DocumentManagementPage` | `stats` |
+| `ExpenseCategoriesPage` | `records`, `editRecord` |
+| `MRPPages` | `runs`, `selectedRun`, `proposals` |
+| `employee/EmployeeProfilePage` | `profile`, `alerts` |
+| `DataExportPage` | `mirrorStatus` |
+
+**Preuve.** `tsc -b --noEmit` ✅ · `oxlint` **0** sur les 5 ✅ ·
+Vitest **1661 / 1699** (38 sautés) ✅ · plafond `any` de production **936 → 916**
+(**20 `any`** en moins sur les deux tranches).
+
+> **Dit** : plusieurs de ces états sont nommés depuis des requêtes dont le **type
+> de retour n'est pas encore déclaré** — l'état est nommé et le `any` explicite
+> disparaît, mais la sécurité ne progresse vraiment que là où la requête est déjà
+> typée (p. ex. `getRhDashboardData`, qui a révélé le défaut de la tranche 1).
+> La **« voie C »** de 2.16 — déclarer le type de retour des requêtes **avant** de
+> nommer les états — reste à faire.
+
+### Tranche 3 — 05/10 (13 états, 7 écrans — production / stock)
+
+| Écran | États typés |
+|---|---|
+| `SubcontractingPages` | `orders`, `mos`, `shipments`, `receipts`, `data` |
+| `RoutingsPage` | `routings` |
+| `ProductionDashboardPage` | `mos`, `stOrders`, `mrpProposals` |
+| `WorkStoppagesPage` | `records` |
+| `ForecastsPage` | `forecasts` |
+| `PlanningPage` | `slots` |
+| `MRPPages` | `docs` |
+
+**Un défaut révélé (et corrigé côté écran)** — `ProductionDashboardPage` lit
+`mo.products?.name`, mais `getManufacturingOrders` **rend** `ManufacturingOrder`,
+un type qui **ne modélise pas ses jointures** (`boms`, `products`, `warehouses`,
+`routings`). La lecture est **juste à l'exécution** (la requête joint bien
+`products`) ; c'est le **type qui ment**. Corrigé **dans le territoire de D** :
+`ManufacturingOrderRow = ManufacturingOrder & { products?: … }`. Le vrai
+correctif — modéliser les jointures dans `lib/queries/production.ts` — est **hors
+territoire** → voir la 2ᵉ demande R3.
+
+**Preuve.** `tsc -b --noEmit` ✅ · `oxlint` **0** sur les 7 ✅ ·
+Vitest **1661 / 1699** (38 sautés) ✅ · plafond `any` de production **936 → 903**
+(**33 `any`** en moins sur les trois tranches).
+
+### Tranche 4 — 05/10 (10 états, 8 écrans — RH)
+
+| Écran | États typés |
+|---|---|
+| `LeaveRequestsPage` | `requests` |
+| `MedicalExamsPage` | `records` |
+| `EmployeeInterviewsPage` | `objectives`, `campaigns` |
+| `CareerHistoryPage` | `records` |
+| `CPFPage` | `accounts` |
+| `EmployeeDocumentsPage` | `documents`, `payRuns` |
+| `WorkHardshipPage` | `records` |
+| `InterviewCampaignsPage` | `campaigns` |
+
+**Un défaut révélé** — `EmployeeDocumentsPage` lit `d.employees.first_name` pour la
+colonne « Salarié », mais `getEmployeeDocuments` fait `.select('*')` : **aucune
+jointure `employees`** → la colonne affiche **« — » depuis toujours**. Le
+correctif (ajouter la jointure) est **hors territoire** → 3ᵉ demande R3. En
+territoire, l'écran nomme la jointure attendue (`EmployeeDocumentRow`).
+
+**Preuve.** `tsc -b --noEmit` ✅ · `oxlint` **0** sur les 8 ✅ ·
+Vitest **1661 / 1699** (38 sautés) ✅ · plafond `any` de production **936 → 893**
+(**43 `any`** en moins sur les quatre tranches).
+
+### Tranche 5 — 05/10 (9 états, 5 écrans — RH/social, frais)
+
+| Écran | États typés |
+|---|---|
+| `hr/SocialDeclarationsPage` | `anomalies`, `ciceResults`, `pasRates`, `atRates` |
+| `hr/LeavePlanningPage` | `requests` |
+| `hr/RhReportsPage` | `reports` |
+| `employee/ManagerLeaveApprovalsPage` | `requests` |
+| `EmployeeExpensesPage` | `lines`, `categories` |
+
+**Preuve.** `tsc -b --noEmit` ✅ · `oxlint` **0** sur les 5 ✅ ·
+Vitest **1661 / 1699** (38 sautés) ✅ · plafond `any` de production **936 → 884**
+(**52 `any`** en moins sur les cinq tranches).
+
+### Tranche 6 — 05/10 (12 états, 4 écrans)
+
+| Écran | États typés |
+|---|---|
+| `ComplementaryPages` | `workflows`, `equivalences`, `accessList` |
+| `DashboardPage` | `recentInvoices`, `bankAccounts` |
+| `AuditLogPage` | `logs` |
+| `ManufacturingOrderDetailPage` | `mo`, `labels`, `lots`, `consumptions`, `subMOs`, `productionCost` |
+
+**Preuve.** `tsc -b --noEmit` ✅ · `oxlint` **0** sur les 4 ✅ ·
+Vitest **1661 / 1699** (38 sautés) ✅ · plafond `any` de production **936 → 872**
+(**64 `any`** en moins sur les six tranches).
+
+### Tranche 7 — 05/10 (13 états, 3 écrans)
+
+| Écran | États typés |
+|---|---|
+| `Phase3Pages` | `items` ×7 (MCF, transferts, lignes de crédit, placements, dates de valeur, récurrents, consolidation) |
+| `Phase5Pages` | `items` ×4 (plans d'amortissement, familles, réévaluations, mises au rebut) |
+| `employee/EmployeeLeavesPage` | `requests`, `balances` (lectures inline `supabase` → `Row<…>`) |
+
+> Les états `items` des deux bundles sont bien **nommés depuis leur requête** (un
+> composant = une table), malgré sept noms d'état identiques : l'appariement suit
+> l'ordre des composants (7 + 4).
+
+**Un défaut révélé ET corrigé (dans le territoire de D)** — l'onglet « soldes » de
+`EmployeeLeavesPage` lisait `b.acquired_days`, `b.taken_days`, `b.pending_days`,
+`b.current_balance` : **ces colonnes n'existent pas** (`leave_balances` porte
+`acquired`, `taken`, `pending`, `remaining`). Les libellés étaient justes, les
+**lectures non** → l'écran affichait `undefined`. Corrigé : `b.acquired`,
+`b.taken`, `b.pending`, `b.remaining`.
+
+**Preuve.** `tsc -b --noEmit` ✅ · `oxlint` **0** sur les 3 ✅ ·
+Vitest **1661 / 1699** (38 sautés) ✅ · plafond `any` de production **936 → 859**
+(**77 `any`** en moins sur les sept tranches).
+
+### Tranche 8 — 05/10 (3 états, 3 écrans — clôture)
+
+| Écran | État | Traitement |
+|---|---|---|
+| `OnboardingDashboardPage` | `state` | `OnboardingState | null`, et les **clés** typées (`keyof OnboardingState`) pour l'accès dynamique `state?.[step]` |
+| `hr/RhReportsPage` | `statsData` (+ `data` local) | **union** des 5 requêtes (`getEffectifEvolution | getSalaryAnalysis | …`) |
+| `components/employee/MobileApproval` | `items` | type `ApprovalItem` (congé ou note de frais) |
+
+**Preuve.** `tsc -b --noEmit` ✅ · `oxlint` **0** sur les 3 ✅ ·
+Vitest **1661 / 1699** (38 sautés) ✅ · plafond `any` de production **936 → 854**
+(**82 `any`** en moins sur les huit tranches).
+
+**Un écran mort, signalé** — `components/employee/MobileApproval` n'est **importé
+par aucune route** (mesuré : un seul `grep` le trouve, sa propre définition) et sa
+donnée n'est **jamais chargée** : les gardes d'approbation mobile n'existent pas.
+Son type ne fait que dire ce qu'il **prétend** lire — à reprendre comme **écran**
+(charger les congés et notes de frais en attente), pas comme type.
+
+### D.2 — terminé (80 états, 8 tranches)
+
+`useState<any>` : **62 → 0**. Plafond `any` de production **936 → 854**.
+Vitest **1661 / 1699** à chaque tranche.
+
+## D.3 — alignement des colonnes (reprise gelée)
 
 Voir [REPRISE-2-ALIGNEMENT-COLONNES.md](REPRISE-2-ALIGNEMENT-COLONNES.md) :
-10 écrans, l'instantané `f5cda2f`. **Mesurer d'abord** — `CreditNotesPage.tsx`
-a bougé depuis le gel, le patch peut ne plus s'appliquer tel quel.
+10 écrans, l'instantané `f5cda2f`.
+
+**Mesuré le 05/10** — le gel est **à moitié déjà dans `main`** : `BOMPage`,
+`CreditNotesPage`, `FixedAssetsPage`, `QuotesPage`, `SearchEntriesPage` ont déjà
+`<Fragment>` ; `ChartAccountsPage` aussi (son `<div key={i}>` est une grille de
+formulaire, hors table). **Il restait 4 écrans :**
+
+| Écran | Correction |
+|---|---|
+| `LettragePage` | `<div key={code}>` → `<Fragment key={code}>` |
+| `PurchaseCreditNotesPage` | `<div key={cn.id}>` → `<Fragment key={cn.id}>` |
+| `PriceListsPage` | idem + ligne dépliée `<div>` → `<tr><td colSpan={5}>` |
+| `RoutingsPage` | idem + ligne dépliée `<div>` → `<tr><td colSpan={6}>` |
+
+Le défaut : un `<div>` dans `<tbody>` (HTML invalide) — React le rend **hors du
+tableau** et **désaligne les colonnes**. Corrigé **au mot près** du gel `f5cda2f`.
+
+**Preuve.** `grep '<div key'` sur les 4 = **0** ✅ · `tsc -b --noEmit` ✅ ·
+`oxlint` **0** sur les 4 ✅ · Vitest **1661 / 1699** (38 sautés) ✅.
+
+> **Non joué ici :** la suite d'écrans (`npx vitest run src/__screen__/` + job
+> `screen-path`) exige le banc PostgreSQL/PostgREST (`SCREEN_RIG`), absent du
+> poste. À rejouer par l'intégration, seule à avoir la base.
+
+## D.6 — la recette (P0-08) : industrialisée, pas laissée à la main
+
+**Le constat du plan d'origine** : les 14 parcours P0-08 « demandent un
+navigateur, un compte et des captures » — 🔴 *non automatisable*. C'est vrai du
+**verdict** ; c'est faux de tout le reste. D.6 est donc traité en deux temps.
+
+### Ce que le kit fixe (et ne décide pas)
+
+Un générateur — `app/scripts/qa/recette.mjs`, **sans aucune dépendance** — fige
+le **référentiel** des 14 parcours (recopié de `RESTE-A-FAIRE` § P0-08, la seule
+source qui fait foi) et en tire trois artefacts :
+
+| Artefact | Rôle |
+|---|---|
+| `recette/parcours.json` | le référentiel **machine-lisible** — base du futur scénario Playwright (D.5) |
+| `recette/PROCES-VERBAL-P0-08.md` | le **PV à signer** : 14 parcours × verdict, matrice 2 états × 4 gabarits, critères de sortie |
+| `recette/CERTIFICAT-RECETTE.html` | le **certificat** : imprimable, daté, **empreint (SHA-256)**, re-notation des modules |
+
+```bash
+node app/scripts/qa/recette.mjs          # écrit les trois artefacts
+```
+
+Le certificat agrège les **notes de module** si `app/.qa-out/findings.json`
+existe (tournée de l'essaim `/qa`) ; sinon il écrit « non mesuré » et nomme la
+commande — **jamais un faux vert**.
+
+### Pourquoi cela reste « vous »
+
+D.6 **attend votre présence** pour une seule chose : le **verdict et la
+signature** (le 👤 de P0-08). Ce qui ne se délègue pas, c'est dire « ce parcours
+me convient » et « cet écart est **bloquant** ». Le kit ne remplace pas cette
+décision — il la **réduit à une heure** : arriver avec les 112 passages cadrés,
+les chiffres déjà lus, et n'avoir qu'à valider et signer.
+
+### L'angle marketing (choisi, pas imposé)
+
+Le certificat est aussi un **argument** : là où l'usage veut qu'une recette se
+perde dans un mail ou un tableur, celle-ci produit un **document vérifiable** —
+daté, empreint, signable. Même réflexe de preuve que le **certificat
+d'intégrité** (P1) : *la preuve, pas la promesse*. **Sans complication** : le
+kit n'ajoute ni service, ni dépendance, ni étape — il **range** ce qui existait.
+
+### État
+- [x] le référentiel des 14 parcours est figé et machine-lisible ;
+- [x] le PV et le certificat se génèrent (empreinte stable `ce92316f…`) ;
+- [ ] les 14 verdicts + la signature (**vous**) ;
+- [ ] les écarts bloquants corrigés (moi, à votre verdict) — le « 4.7 ».
+
+## D.5 — les quatre parcours qui lisent un chiffre
+
+**Joué : 4 parcours sur 4 verts** (11/10/2026). En CI, D.5 « attend encore les
+secrets E2E » (§7) : sans eux, l'application reste sur `/login` et tout test
+porterait sur l'écran de connexion — `e2e/helpers.ts` s'abstient alors
+explicitement (`E2E_CREDENTIALS_CONFIGURED`). Les scénarios tournent donc
+**localement**, contre la pile Supabase de bout en bout.
+
+**Ce qui manquait.** `business-flows.spec.ts` (P1 → P10) ne fait que **nommer** les
+écrans (URL + `h1`). Aucun parcours ne **lit un montant**. Les quatre ajoutés le
+font :
+
+| # | Parcours | Le chiffre lu |
+|---|---|---|
+| C1 | inscription → plan semé | le plan comptable porte des comptes (`table tbody tr` > 0) |
+| C2 | vente → écriture | la balance est **équilibrée** : total débit = total crédit, **au centime** |
+| C3 | paie → bulletin | **brut − retenues = net**, au centime |
+| C4 | caisse → clôture | la session affiche un total |
+
+**L'outil** — `e2e/chiffres.ts` : lit le **texte visible** et en extrait les
+montants **dans les deux écritures** (« 1 234,56 » **et** « €100.00 »), en exigeant
+**deux décimales** pour qu'un code de compte (`401000`) ne passe pas pour une
+somme ; puis il cherche une relation `a + b = c` ou `a − b = c`. Volontairement
+robuste : pas de sélecteur de champ qui casse à chaque refonte d'écran.
+
+**Joué le 11/10/2026** contre la pile locale complète : **4 verts sur 4** ✅, et la
+suite entière (**78 tests, tous fichiers**) reste verte ✅ · `oxlint` **0** ✅.
+
+**Reste à faire** : **rendre le job `e2e-tests` obligatoire sur chaque PR vers
+`main`** — aujourd'hui il est étiqueté `run-e2e`. ⚠️ Ce déclenchement ne doit
+arriver **qu'avec** les secrets : sans `VITE_SUPABASE_*`, l'application ne démarre
+pas et la PR rougirait.
+
+### Joué en local — 11/10/2026
+
+Un **compte de test local** a été créé (`e2e@test.local`) avec une société
+provisionnée par la RPC réelle (712 comptes, 10 journaux, 1 exercice), et le
+harnais a été **joué contre le stack Supabase local** (`127.0.0.1:54321` — jamais
+la production ; `.env.local` est ignoré par git). La connexion, la navigation et
+le rendu fonctionnent : **le harnais vit**.
+
+Deux constats, et ils comptent :
+
+1. L'écran des comptes affiche **« 0 account(s) »** alors que la base en porte
+   **712** pour cette société. Cause isolée : la RLS exige
+   `tenant_id = current_tenant_id()`, qui lit l'en-tête `x-tenant-id` ; l'en-tête
+   n'était pas appliqué à cette requête. **C'est exactement ce qu'un test à
+   l'écran est là pour attraper** — la mesure ne se contente pas de « la page
+   s'est ouverte ».
+2. ⚠️ **Le stack local est en retard : 324 migrations appliquées sur 470** au
+   dépôt. Il ne peut donc pas servir d'**oracle** pour le code courant : le
+   constat (1) doit être **reconfirmé sur un banc à jour** (`supabase db reset`
+   puis migrations, ou reprise des migrations manquantes) avant d'en faire un
+   défaut du produit.
+
+**Correction apportée au passage** : l'attente de C1 portait sur
+`table tbody tr, h1, h2` — un titre suffisait, donc le comptage pouvait tomber
+avant le tableau. Elle attend désormais **une ligne**.
+
+### Base locale remontée — 11/10/2026
+
+Le stack local était **en retard (324 / 470)**. Il a été **remonté à neuf** :
+schéma `public` reconstruit depuis `sql/00_schema_dump.sql` puis **333 migrations
+appliquées — 0 erreur** (`node run-sql-migrations.mjs`). Le cache PostgREST a été
+rechargé, le compte de test recréé (société `E2E Test SARL`, **712 comptes, 10
+journaux, 1 exercice**).
+
+**Résultat des 4 parcours sur la base à jour — 11/10/2026 :**
+
+| # | Parcours | Verdict | Amorcé par le produit (jamais par SQL) |
+|---|---|---|---|
+| **C1** | inscription → le plan comptable porte des comptes | ✅ **vert** | — (le plan comptable est semé à l'inscription) |
+| **C2** | la balance est équilibrée (débit = crédit) | ✅ **vert** | une écriture équilibrée **100 / 100** |
+| **C3** | bulletin : brut − retenues = net | ✅ **vert** | un salarié + un lot → **le moteur** calcule le bulletin |
+| **C4** | session de caisse : un total | ✅ **vert** | terminal + session → **encaissement** → clôture ; article de stock vendu — **le stock suit, mesuré** |
+
+**4 verts sur 4.** Mais ce que le passage réel a appris vaut plus que les verts —
+quatre défauts, tous dans **l'outillage de mesure**, aucun dans le produit :
+
+1. **L'extracteur de montants ne lisait que la virgule française.** L'écran rend
+   `€100.00` (point décimal, symbole devant) : C2 voyait **0 montant** alors que la
+   balance affichait bel et bien 100 au débit et 100 au crédit. `e2e/chiffres.ts`
+   lit désormais **les deux écritures**, et exige **deux décimales** pour ne pas
+   prendre `401000` (un code de compte) pour un montant.
+2. **Amorcer une écriture passe par le produit** : `post_journal_entry` crée un
+   **brouillon**, `validate_journal_entries` le **valide** (`posted`,
+   `VT-2026-000001`, débit = crédit = 100). Le garde refuse tout `posted` à
+   l'insertion : la protection a tenu, exactement comme prévu — aucun
+   contournement.
+3. **La visite guidée couvrait l'écran.** `Layout.tsx` affiche « Welcome to
+   Compta! » tant que `localStorage['compta-onboarded']` est absent — et **chaque
+   test ouvre un contexte neuf**, donc la visite revenait à chaque fois. Sur C3,
+   le tableau des bulletins **existait** mais était absent de l'arbre
+   d'accessibilité, derrière la fenêtre : on lisait la visite, pas la paie.
+   `navigateWithAuth` la congédie maintenant comme l'utilisateur (bouton
+   **Skip**), et pose la clé **que le produit pose lui-même** en fermant.
+4. **Un écran qui n'affiche rien n'est pas forcément un écran vide.** Les
+   bulletins sont **groupés par lot** et un groupe n'est déplié que s'il est
+   **sélectionné** (`PaySlipsPage.tsx`) : sans choisir le lot, l'écran est
+   légitimement vide. C3 fait donc le geste de l'utilisateur — **choisir le
+   lot** — et lit alors brut / retenues / net.
+
+**Ce que la paie a prouvé, chiffres du moteur** : `total_gross` **2400,00**,
+`total_deductions` **557,24**, `net_salary` **1 842,76** (2400 − 557,24 = 1842,76,
+au centime). Le moteur a **généré 1 bulletin sur 2 salariés** et a **refusé
+l'autre en le nommant** : *« e2e@test.local — salaire non renseigné — aucun
+bulletin »* — le compte technique « Admin » n'a pas de salaire, et il ne « touche
+0 » pas : il n'a rien à calculer. C'est le défaut que le banc écran X0 avait
+trouvé, et il se défend encore ici.
+
+**Ce que la caisse a prouvé** : ticket HT **100**, TVA **20**, TTC **120** ;
+clôture avec un tiroir compté à **220** → attendu **220**, **écart 0**. L'attendu,
+l'écart et l'écriture de clôture sont posés par le **déclencheur de clôture** ;
+l'écran ne fait que relire.
+
+**Et « le stock suit », mesuré (complément du 11/10)** : un dépôt, un article de
+type `stock` (SKU `E2E-ART-1`) dont le stock initial est un **mouvement** de 10 à
+12,00 € (la base refuse qu'un écran pose `stock_quantity`), puis une vente de
+**2** articles en caisse (`TICKET-E2E-0002`, TTC 240). Le parcours C4 lit alors
+**trois nombres sur deux écrans** — l'entrée **+10** et la sortie **−2** sur
+`/stock/movements`, le solde **8** sur `/stock/quantities` — et vérifie
+`10 + (−2) = 8`. Si le stock ne suivait pas la vente, le solde mentirait : la
+sortie de la vente est la **seule** sortie du dépôt. Le ticket sans article ne
+sortait **rien** (le maillon le décide) ; avec l'article, il sort et c'est mesuré.
+
+**Un piège du banc, à savoir** : reconstruire un schéma `public` **efface les
+privilèges par défaut** que Supabase accorde aux nouvelles fonctions
+(`has_permission`, `can_perform`). Sans `GRANT EXECUTE … TO authenticated`, la
+validation d'écriture répond `permission denied` — ce n'est pas un défaut du
+produit, c'est une propriété du banc reconstruit à la main.
+
+**Ce que ça dit, et c'est le point.** C1 **passe** : le banc, le compte, la
+connexion et l'écran fonctionnent. C2 échoue **à juste titre** : une société
+neuve n'a **aucune écriture**, donc il n'y a **aucun chiffre à lire** — un test
+qui « passerait » là ne prouverait rien. Les parcours C2/C3/C4 exigent la
+**« société remplie »** de la recette (§4.6, 2 sociétés : remplie et vide).
+
+**Et le seed ne peut pas se faire en SQL.** Une première tentative d'écriture
+directe a été **refusée par `journal_entry_guard()`** : une écriture comptable ne
+s'écrit que par le **produit**. C'est exactement ce que l'essaim `/qa` fait à
+l'étape `npm run qa:amorce` (données métier par l'API du produit). C'est donc la
+suite naturelle — pas un contournement.
+
+> **État, sans enjolivure** : la base locale est **à jour et saine** ; le banc e2e
+> **fonctionne** ; **1 parcours sur 4 est certifié** ; les 3 autres attendent la
+> société remplie, que seule la tournée `/qa` sait produire.
 
 ## Journal
 
 | Date | Lot | Module | Ce qui est fait | Batterie | Commit |
 |---|---|---|---|---|---|
+| 05/10 | D.1 · lot 1 | `system` | 7 écrans (`ApiWebhooks`, `TwoFactor`, `EmailTemplates`, `Currencies`, `Team`, `TaxGridSettings`, `FiscalYears`) : `confirmSync` → `confirmDialog`, 9 appels | tsc ✅ · oxlint 0 · Vitest 1661/1699 | `2a01631` |
+| 05/10 | D.1 · lot 2 | `hr` | 16 écrans : `confirmSync` → `confirmDialog`, 17 appels | grep 0 · tsc ✅ · oxlint 0 · Vitest 1661/1699 | `1b60cbb` |
+| 05/10 | D.1 · lot 3 | `accounting` | 30 écrans : `confirmSync` → `confirmDialog`, 41 appels | grep 0 · tsc ✅ · oxlint 0 · Vitest 1661/1699 | `f9b9079` |
+| 05/10 | D.1 · lot 4 | modules restants | 41 fichiers + 5 mocks : `confirmSync` → `confirmDialog` | grep 0 · tsc ✅ · oxlint 0 · Vitest 1661/1699 | `8f57910` |
+| 05/10 | D.3 | écrans | 4 écrans : `<div key>` → `<Fragment>` (+ `<tr><td colSpan>`), reprise `f5cda2f` (6 déjà en `main`) | tsc ✅ · oxlint 0 · Vitest 1661/1699 | `10a51bb` |
+| 05/10 | D.2 · tranche 1 | RH/trésorerie/CRM | 11 états typés depuis les requêtes (méthode 2.16) + 1 défaut de narrowing fermé | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→925 | `e3ea341` |
+| 05/10 | D.2 · tranche 2 | RH/employee/trésorerie | 9 états typés (5 écrans) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→916 (cumul 20) | `1777807` |
+| 05/10 | D.2 · tranche 3 | production/stock | 13 états typés (7 écrans) + 1 défaut de jointure révélé (corrigé côté écran, fix requête en R3) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→903 (cumul 33) | `b22a44e` |
+| 05/10 | D.2 · tranche 4 | RH | 10 états typés (8 écrans) + 1 défaut de jointure manquante révélé (R3) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→893 (cumul 43) | `1c90744` |
+| 05/10 | D.2 · tranche 5 | RH/social/frais | 9 états typés (5 écrans) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→884 (cumul 52) | `dd65316` |
+| 05/10 | D.2 · tranche 6 | complémentaires/dashboard/audit/OF | 12 états typés (4 écrans) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→872 (cumul 64) | `c544ec1` |
+| 05/10 | D.2 · tranche 7 | Phase3/5Pages + soldes | 13 états typés (3 écrans) + 1 défaut de colonnes corrigé | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→859 (cumul 77) | `cabf927` |
+| 05/10 | D.2 · tranche 8 | clôture | 3 états typés — `useState<any>` = **0** | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→854 (cumul 82) | `aaaddbe` |
+| 05/10 | D.5 | recette | 4 parcours qui lisent un chiffre (`e2e/chiffres.ts` + spec) — prêts, non joués (secrets absents) | `playwright --list` 78/6 ✅ · oxlint 0 | `78c7d63` |
+| 11/10 | D.5 · local | recette | compte de test local (`e2e@test.local`) + harnais **joué contre 127.0.0.1** ; C1 attend une ligne ; banc local **en retard (324/470)** | playwright C1 exécuté (échec documenté) · oxlint 0 | `ca345cd` |
+| 11/10 | D.5 · base locale | recette | base locale **remontée à neuf** (`00_schema_dump` + **333 migrations, 0 erreur**) + compte recréé ; **C1 vert** ; C2/C3/C4 attendent la « société remplie » (le seed SQL est refusé par `journal_entry_guard`) | runner 333/333 ✅ · playwright **C1 ✅** | `420dff6` |
+| 11/10 | D.5 · parcours | recette | **4 parcours sur 4 VERTS** (C1 → C4). Trois défauts d'**outillage** trouvés par la mesure et corrigés : extracteur de montants (point décimal), visite guidée qui couvrait l'écran, lot de paie à choisir. Paie et caisse amorcées **par le produit** (moteur `calculate_payslip` ; `create_pos_ticket` + clôture) | playwright **4/4** · suite complète **78 verts** · oxlint | `e246de2` |
+| 11/10 | D.5 · rejouable | livrable | **`app/scripts/qa/amorce-chiffres.mjs`** : l'amorçage des trois jeux de chiffres **par l'API du produit** (écriture → `post_journal_entry` puis validation ; paie → le moteur ; caisse → encaissement puis clôture), **idempotent** et documenté (`scripts/qa/SKILL.md`). Le harnais pose `compta-onboarded` par `addInitScript`, **comme la tournée QA** (`worker.mjs`) | exécuté 2× (aucun doublon) · oxlint 0 · suite **78 verts** | `18f77e1` |
+| 11/10 | D.5 · stock | recette | **C4 complété : « le stock suit » est mesuré** — dépôt + article `stock` (initial **10** par un mouvement, la base refusant `stock_quantity`) + vente de **2** en caisse → C4 lit `+10` et `−2` sur `/stock/movements`, **8** sur `/stock/quantities`, et vérifie `10 + (−2) = 8`. Nouvelle lecture ciblée `celluleSousEnTete` (colonne désignée par son **en-tête**, ligne par un repère). **Collision de bancs trouvée** : un serveur d'UNE AUTRE application (ODF Manager) occupait 5174 et `reuseExistingServer` l'a repris — le piège E1 de la config ; remède documenté : `PW_BASE_URL` sur un port dédié (5199) | parcours **4/4** · oxlint 0 | `020b94e` |
+| 05/10 | D.6 | recette | kit P0-08 : référentiel 14 parcours + PV + certificat (empreinte `ce92316f…`, 112 passages) | script OK · oxlint 0 | `56892d6` |
