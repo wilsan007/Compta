@@ -2598,6 +2598,19 @@ jobs:
       - name: 'L10 : frais accessoires → CUMP (765)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/765_chain_l16_cump_ecriture_tests.sql
 
+      # P10 (766) — la RÉGÉNÉRATION EN CASCADE : corriger la racine rejoue
+      # ses effets par le repreneur déclaré au registre chain_repreneurs
+      # (fermeture `remplace` des liens actifs AVANT exécution, journal
+      # chain_regenerate, descente anti-cycle bornée à 8 niveaux, événement
+      # chain.cascade_regenerated au catalogue). 8 verdicts : le nominal
+      # (CUMP 55 → 60, liens remplacés + créés, journal avec sa cause),
+      # les trois refus (société, cause, lien), le triplet
+      # journal/événement/catalogue, la garde d'idempotence 765 (T06), et
+      # les deux non-suivis NOMMÉS (sans repreneur, lien rompu).
+      - name: 'L10 : régénération en cascade (766)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/766_chain_regenerer_en_cascade_tests.sql
+
+
 
       # P1 (A3.4) — l'ATTESTATION D'INTÉGRITÉ TECHNIQUE : un `jsonb` de FAITS
       # (dernier relevé des invariants, écarts nommés, rapport du banc — non_joue

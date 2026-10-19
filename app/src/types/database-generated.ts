@@ -3092,6 +3092,31 @@ export interface Database {
         },
       ]
     }
+    chain_repreneurs: {
+      Row: {
+        effet: string
+        fonction: string
+        libelle_fr: string
+        actif: boolean
+        created_at: string
+      }
+      Insert: {
+        effet: string
+        fonction: string
+        libelle_fr: string
+        actif?: boolean
+        created_at?: string
+      }
+      Update: {
+        effet?: string
+        fonction?: string
+        libelle_fr?: string
+        actif?: boolean
+        created_at?: string
+      }
+      Relationships: [
+      ]
+    }
     chain_settings: {
       Row: {
         tenant_id: string

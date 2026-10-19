@@ -71,6 +71,24 @@ BEGIN
   SELECT * INTO v_lc FROM landed_costs WHERE id = p_landed_cost_id AND tenant_id = v_tid;
   IF NOT FOUND THEN RAISE EXCEPTION 'Frais accessoire introuvable'; END IF;
 
+  -- Garde d'idempotence (promesse de la 765) : un frais DÉJÀ réparti ne se
+  -- répartit pas deux fois. Rejouer REND l'état sans réécrire ni les
+  -- landed_cost_lines ni la CUMP (le total_amount appliqué deux fois
+  -- fausserait le coût unitaire).
+  IF v_lc.status = 'distributed' THEN
+    RETURN jsonb_build_object(
+      'success', true,
+      'already_distributed', true,
+      'note', 'Frais accessoire déjà réparti : état maintenu, aucune ré-écriture'
+    );
+  END IF;
+
+  -- Un frais ANNULÉ n'est pas réparti (le rejeu ne retombe pas).
+  IF v_lc.status = 'cancelled' THEN
+    RAISE EXCEPTION 'Frais accessoire annulé : refus de la répartition'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
   -- Calculer la base de répartition
   SELECT COALESCE(SUM(
     CASE v_lc.distribution_method

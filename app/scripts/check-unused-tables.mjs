@@ -124,6 +124,7 @@ const SERVER_ONLY_TABLES = {
   chain_invariant_alertes: '414 (L4) — alertes de dégradation de l\'indice : écrites par le relevé, lues par chain_degradation_detectee(), jamais en direct ; la page « Cohérence » (tâche 4.2) les affichera',
   metric_definitions: '461 (I-08) — dictionnaire des indicateurs : lu par chain_metric_definition(), jamais en direct (la définition en vigueur à une date est résolue par la base)',
   chain_document_types: '450 (Partie 5) — registre des types de document des chaînages : lu par link_documents(), la garde de suppression (453) et INV-19 (455) ; l\'écran traduit les types par i18n (errors:chain.types)',
+  chain_repreneurs: '766 (L20 tranche 2) — registre des repreneurs de régénération : effet → fonction, lu par chain_regenerer_en_cascade() ; jamais en direct — un écran l\'exposera avec le rapport de cascade',
 }
 
 function isBusinessTable(name) {
