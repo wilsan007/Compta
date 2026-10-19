@@ -27,10 +27,22 @@
 -- tiendraient qu'UN lien (le dernier écraserait les autres, ils disparaîtraient
 -- de la frise).
 --
--- IDEMPOTENCE — la doctrine du pont de la 415 : un frais DÉJÀ réparti
--- (`status = 'distributed'`) ne se répartit pas deux fois. Rejouer REND l'état
--- sans réécrire ni les `landed_cost_lines` ni la CUMP (le `total_amount`
--- appliqué deux fois fausserait le coût unitaire). Un frais ANNULÉ est refusé.
+-- REJEU ET CIBLAGE — le contrat de la 658 (plan6 E, appliquée AVANT celle-ci
+-- en ordre de numérotation) est le socle : les frais se répartissent SUR LES
+-- RÉCEPTIONS CIBLÉES (`landed_cost_receipts`) — jamais sur toutes celles de la
+-- société (658 T04 le mesure : une réception voisine non ciblée ne compte
+-- pas) ; sans cible, la répartition est REFUSÉE (658 T02). Un frais DÉJÀ
+-- réparti est REFUSÉ nommé (658 T03) — un rejeu silencieux masquerait une
+-- double répartition en production. La 765 ajoute à ce contrat ce que le
+-- sien n'avait pas : la BASE vient des LIGNES DES RÉCEPTIONS CIBLÉES (la
+-- 125 lisait les mouvements avec un filtre faux — `'receipt'` au lieu de
+-- `'goods_receipt'` — et trouvait zéro mouvement ; la source pièce évite
+-- le piège), le LIEN de chaîne vers le MOUVEMENT réel ajusté quand il en
+-- existe un (effet `stock.landed_cost.distributed`, contrat déclaré plus
+-- bas), le refus du frais ANNULÉ, et la CUMP ajustée AU DÉPÔT de la
+-- réception (`stock_quantities` : clé produit × dépôt, sans NULL mesuré). DEUX suites, UN moteur : 658 et 765 vivent sur la même
+-- fonction — c'est la règle W5 appliquée à l'envers : le second arrivant
+-- ne réécrit pas le contrat du premier, il l'ÉTEND.
 -- ═══════════════════════════════════════════════════════════════════════════
 
 -- ── 1. Registre : landed_costs ──────────────────────────────────────────────
@@ -52,7 +64,11 @@ WHERE NOT EXISTS (
   SELECT 1 FROM public.document_effects
    WHERE document_type = 'landed_costs' AND effet = 'stock.landed_cost.distributed');
 
--- ── 3. Maillon : distribute_landed_cost modifié ─────────────────────────────
+-- ── 3. LE MAILLON : distribute_landed_cost — le moteur UNIQUE ───────────────
+-- Contrat 658 (ciblage des réceptions, refus sans cible, refus du déjà
+-- réparti) + apports 765 (filtre goods_receipt, lien de chaîne par mouvement,
+-- refus du frais annulé, CUMP au dépôt). Le nom historique est CONSERVÉ —
+-- c'est une fonction publique déjà livrée par la 125 et appelée par le front.
 CREATE OR REPLACE FUNCTION public.distribute_landed_cost(
   p_landed_cost_id uuid
 )
@@ -67,20 +83,16 @@ DECLARE
   v_total_base numeric := 0;
   v_line record;
   v_distributed numeric;
+  v_n integer := 0;
 BEGIN
   SELECT * INTO v_lc FROM landed_costs WHERE id = p_landed_cost_id AND tenant_id = v_tid;
   IF NOT FOUND THEN RAISE EXCEPTION 'Frais accessoire introuvable'; END IF;
 
-  -- Garde d'idempotence (promesse de la 765) : un frais DÉJÀ réparti ne se
-  -- répartit pas deux fois. Rejouer REND l'état sans réécrire ni les
-  -- landed_cost_lines ni la CUMP (le total_amount appliqué deux fois
-  -- fausserait le coût unitaire).
+  -- REJEU : un frais DÉJÀ réparti est REFUSÉ nommé (contrat 658 T03) — un
+  -- rejeu silencieux masquerait une double répartition en production.
   IF v_lc.status = 'distributed' THEN
-    RETURN jsonb_build_object(
-      'success', true,
-      'already_distributed', true,
-      'note', 'Frais accessoire déjà réparti : état maintenu, aucune ré-écriture'
-    );
+    RAISE EXCEPTION 'Frais accessoire % déjà réparti — corrigez le total et régénérez (L20), ou annulez : un second partage écraserait le premier.', COALESCE(v_lc.invoice_number, v_lc.id::text)
+      USING ERRCODE = 'check_violation';
   END IF;
 
   -- Un frais ANNULÉ n'est pas réparti (le rejeu ne retombe pas).
@@ -89,66 +101,107 @@ BEGIN
       USING ERRCODE = 'check_violation';
   END IF;
 
-  -- Calculer la base de répartition
+  -- Idempotence de l'état (658) : une répartition antérieure inachevée est
+  -- effacée AVANT le partage — jamais deux fois le même frais.
+  DELETE FROM landed_cost_lines WHERE landed_cost_id = p_landed_cost_id AND tenant_id = v_tid;
+
+  -- LA BASE : les LIGNES des RÉCEPTIONS CIBLÉES (landed_cost_receipts) —
+  -- jamais toutes celles de la société (658 T04). La base vient des lignes
+  -- de réception (contrat 658) : c'est la pièce de réception qui dit ce qui
+  -- est entré ; la 125 lisait les mouvements avec un filtre faux
+  -- (`'receipt'` au lieu de `'goods_receipt'`) et trouvait zéro — autant
+  -- prendre la source qui ne dépend pas du filtre. 'weight'/'volume'
+  -- tombent sur la valeur (pas de pesée réelle — limite dite, comme avant).
   SELECT COALESCE(SUM(
     CASE v_lc.distribution_method
-      WHEN 'value' THEN sm.unit_cost * sm.quantity
-      WHEN 'quantity' THEN sm.quantity
-      ELSE sm.unit_cost * sm.quantity
+      WHEN 'quantity' THEN grl.quantity_received
+      WHEN 'weight'  THEN grl.quantity_received * COALESCE(p.weight, 0)
+      ELSE grl.quantity_received * COALESCE(p.cost_price, p.purchase_price, 0)
     END
   ), 0) INTO v_total_base
-  FROM stock_movements sm
-  WHERE sm.reference_type = 'goods_receipt'
-    AND sm.tenant_id = v_tid
-    AND sm.movement_type = 'in';
+  FROM landed_cost_receipts lcr
+  JOIN goods_receipt_lines grl
+    ON grl.goods_receipt_id = lcr.receipt_id
+   AND grl.tenant_id = v_tid
+  JOIN products p ON p.id = grl.product_id AND p.tenant_id = v_tid
+  WHERE lcr.landed_cost_id = p_landed_cost_id
+    AND lcr.tenant_id = v_tid;
 
   IF v_total_base = 0 THEN
-    RAISE EXCEPTION 'Aucune réception à répartir';
+    RAISE EXCEPTION 'Aucune réception à répartir pour ce frais (base nulle) — reliez le frais à ses réceptions (landed_cost_receipts).'
+      USING ERRCODE = 'check_violation';
   END IF;
 
-  -- Répartir
+  -- Répartir, LIGNE de RÉCEPTION par LIGNE de RÉCEPTION (chaque entrée
+  -- réelle reçoit sa part, au dépôt de sa réception).
   FOR v_line IN
-    SELECT id, product_id, unit_cost, quantity
-    FROM stock_movements
-    WHERE reference_type = 'goods_receipt' AND tenant_id = v_tid AND movement_type = 'in'
+    SELECT grl.product_id, gr.warehouse_id, grl.quantity_received,
+           lcr.receipt_id,
+           CASE v_lc.distribution_method
+             WHEN 'quantity' THEN grl.quantity_received
+             WHEN 'weight'  THEN grl.quantity_received * COALESCE(p.weight, 0)
+             ELSE grl.quantity_received * COALESCE(p.cost_price, p.purchase_price, 0)
+           END AS base,
+           COALESCE(p.cost_price, p.purchase_price, 0) AS cout_unitaire
+    FROM landed_cost_receipts lcr
+    JOIN goods_receipts gr ON gr.id = lcr.receipt_id AND gr.tenant_id = v_tid
+    JOIN goods_receipt_lines grl
+      ON grl.goods_receipt_id = gr.id
+     AND grl.tenant_id = v_tid
+    JOIN products p ON p.id = grl.product_id AND p.tenant_id = v_tid
+    WHERE lcr.landed_cost_id = p_landed_cost_id
+      AND lcr.tenant_id = v_tid
+      AND COALESCE(grl.quantity_received, 0) <> 0
   LOOP
-    v_distributed := v_lc.total_amount * (
-      CASE v_lc.distribution_method
-        WHEN 'value' THEN v_line.unit_cost * v_line.quantity
-        WHEN 'quantity' THEN v_line.quantity
-        ELSE v_line.unit_cost * v_line.quantity
-      END / v_total_base
-    );
+    v_distributed := v_lc.total_amount * (v_line.base / v_total_base);
 
     INSERT INTO landed_cost_lines (
       tenant_id, landed_cost_id, product_id,
       distributed_amount, original_unit_cost, new_unit_cost
     ) VALUES (
       v_tid, p_landed_cost_id, v_line.product_id,
-      v_distributed, v_line.unit_cost,
-      v_line.unit_cost + v_distributed / v_line.quantity
+      v_distributed, v_line.cout_unitaire,
+      v_line.cout_unitaire + v_distributed / v_line.quantity_received
     );
 
-    -- Ajuster le CUMP
+    -- Ajuster la CUMP DU COUPLE (article, dépôt) de la réception (658).
     UPDATE stock_quantities
-    SET unit_cost = unit_cost + v_distributed / v_line.quantity,
+    SET unit_cost = COALESCE(unit_cost, 0) + v_distributed / v_line.quantity_received,
         updated_at = now()
-    WHERE product_id = v_line.product_id AND tenant_id = v_tid;
+    WHERE tenant_id = v_tid
+      AND product_id = v_line.product_id
+      AND warehouse_id = v_line.warehouse_id;
 
-    -- Lien chaîne : landed_costs → stock_movements
-    PERFORM link_documents(
-      v_tid,
-      'landed_costs', p_landed_cost_id,
-      'stock_movements', v_line.id,
-      'stock.landed_cost.distributed', 'adjusted_by',
-      jsonb_build_object('distributed_amount', v_distributed,
-                         'product_id', v_line.product_id)
+    -- Lien de chaîne : landed_costs → le MOUVEMENT réel de cette réception,
+    -- quand la réception en a produit (765). Une réception sans mouvement —
+    -- pièce créée sans transition d'état — ajuste la couche SANS lien : le
+    -- lien suit le flux de stock, il n'invente pas de document aval
+    -- (`link_documents` refuse un aval introuvable, 451).
+    PERFORM (
+      SELECT link_documents(
+        v_tid,
+        'landed_costs', p_landed_cost_id,
+        'stock_movements', sm.id,
+        'stock.landed_cost.distributed', 'adjusted_by',
+        jsonb_build_object('distributed_amount', v_distributed,
+                           'product_id', v_line.product_id))
+      FROM stock_movements sm
+      WHERE sm.tenant_id = v_tid
+        AND sm.reference_type = 'goods_receipt'
+        AND sm.reference_id = v_line.receipt_id
+        AND sm.product_id = v_line.product_id
+        AND sm.movement_type = 'in'
+      ORDER BY sm.id
+      LIMIT 1
     );
+
+    v_n := v_n + 1;
   END LOOP;
 
   UPDATE landed_costs SET status = 'distributed' WHERE id = p_landed_cost_id;
 
-  RETURN jsonb_build_object('success', true, 'landed_cost_id', p_landed_cost_id);
+  RETURN jsonb_build_object('success', true, 'landed_cost_id', p_landed_cost_id,
+                            'lignes', v_n, 'base', v_total_base);
 END;
 $$;
 

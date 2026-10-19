@@ -70,8 +70,9 @@
 -- ROUGE D'ABORD — la suite 766 (T01→T08) est le contrat : T01 mesure la CUMP
 -- 55,00 → 60,00 après correction 100 → 200, les fermetures ET les créations
 -- de liens, la ligne de journal avec sa cause ; T02→T04 les trois refus ;
--- T05 le triplet journal/événement/catalogue ; T06 la garde d'idempotence de
--- la 765 (suite non réécrite ici) ; T07 et T08 les deux non-suivis nommés.
+-- T05 le triplet journal/événement/catalogue ; T06 le rejeu REFUSÉ nommé
+-- (contrat unifié 658 + 765 — la suite est réécrite pour le mesurer) ; T07
+-- et T08 les deux non-suivis nommés.
 -- ═══════════════════════════════════════════════════════════════════════════
 
 -- ── 1. Le registre des repreneurs (effet → RPC de régénération) ─────────────
@@ -177,9 +178,10 @@ BEGIN
    WHERE landed_cost_id = p_amont_id
      AND tenant_id = p_tenant;
 
-  -- 2. Le frais repasse à `pending` : la garde d'idempotence de la 765
-  --    (un frais déjà réparti rend l'état sans réécrire) laisse alors la
-  --    répartition s'exécuter, sur le total AYANT ÉTÉ CORRIGÉ.
+  -- 2. Le frais repasse à `pending` : un frais DÉJÀ réparti est REFUSÉ
+  --    nommé (contrat unifié 658 + 765) — le repreneur remet donc l'état
+  --    à zro (lignes effacées ci-dessus) avant de relancer, sur le total
+  --    AYANT ÉTÉ CORRIGÉ.
   UPDATE landed_costs
      SET status = 'pending'
    WHERE id = p_amont_id

@@ -1,17 +1,21 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 -- 765_chain_l16_cump_ecriture_tests.sql — P10 : CUMP ↔ écriture comptable
 -- ═══════════════════════════════════════════════════════════════════════════
+-- CONTRAT : le moteur `distribute_landed_cost` est UN (658 + 765) — les
+-- frais se répartissent SUR LES RÉCEPTIONS CIBLÉES (`landed_cost_receipts`) ;
+-- chaque scénario qui répartit relie donc son frais à sa réception.
 -- Ce que cette suite ÉPROUVE :
 --   T01  LE BUG FIX : `distribute_landed_cost` trouve les mouvements
---        `goods_receipt` (avant 765, le filtre `'receipt'` ne trouvait rien) ;
+--        `goods_receipt` DES RÉCEPTIONS CIBLÉES (avant 765, le filtre
+--        `'receipt'` ne trouvait rien) ;
 --   T02  LE MAILLON : un lien `landed_costs → stock_movements` est créé avec
 --        l'effet `stock.landed_cost.distributed` ;
 --   T03  LA GARDE : une `landed_costs` reliée ne se supprime pas
 --        (CHAIN_DELETE_REFUSED) ;
 --   T04  NON-RÉGRESSION : une `landed_costs` SANS lien se supprime ;
 --   T05  COUVERTURE : `landed_costs` porte sa garde de suppression ;
---   T06  LA CUMP : le coût unitaire de `stock_quantités` est ajusté après
---        répartition des frais accessoires.
+--   T06  LA CUMP : le coût unitaire de `stock_quantities` est ajusté au
+--        DÉPÔT du mouvement après répartition des frais accessoires.
 -- ═══════════════════════════════════════════════════════════════════════════
 \ir ci/audit_helpers.sql
 SELECT set_config('audit.file', '765', false);
@@ -60,6 +64,8 @@ BEGIN
   PERFORM set_config('app.current_tenant', v.t::text, false);
   INSERT INTO landed_costs (tenant_id, supplier_id, total_amount, distribution_method)
     VALUES (v.t, v.sup, 100, 'value') RETURNING id INTO lc_id;
+  INSERT INTO landed_cost_receipts (tenant_id, landed_cost_id, receipt_id)
+    VALUES (v.t, lc_id, v.gr);   -- le ciblage (contrat 658) : le frais vise SA réception
   BEGIN
     result := distribute_landed_cost(lc_id);
   EXCEPTION WHEN OTHERS THEN err := SQLERRM; END;
@@ -77,6 +83,8 @@ BEGIN
   PERFORM set_config('app.current_tenant', v.t::text, false);
   INSERT INTO landed_costs (tenant_id, supplier_id, total_amount, distribution_method)
     VALUES (v.t, v.sup, 100, 'value') RETURNING id INTO lc_id;
+  INSERT INTO landed_cost_receipts (tenant_id, landed_cost_id, receipt_id)
+    VALUES (v.t, lc_id, v.gr);   -- le ciblage (contrat 658)
   PERFORM distribute_landed_cost(lc_id);
   SELECT count(*) INTO n FROM document_links dl
    WHERE dl.tenant_id = v.t AND dl.amont_type = 'landed_costs' AND dl.amont_id = lc_id
@@ -97,6 +105,8 @@ BEGIN
   PERFORM set_config('app.current_tenant', v.t::text, false);
   INSERT INTO landed_costs (tenant_id, supplier_id, total_amount, distribution_method)
     VALUES (v.t, v.sup, 100, 'value') RETURNING id INTO lc_id;
+  INSERT INTO landed_cost_receipts (tenant_id, landed_cost_id, receipt_id)
+    VALUES (v.t, lc_id, v.gr);   -- le ciblage (contrat 658)
   PERFORM distribute_landed_cost(lc_id);
   PERFORM set_config('role', 'none', true);
   BEGIN
@@ -150,6 +160,8 @@ BEGIN
     FROM stock_quantities WHERE product_id = v.p AND tenant_id = v.t;
   INSERT INTO landed_costs (tenant_id, supplier_id, total_amount, distribution_method)
     VALUES (v.t, v.sup, 100, 'value') RETURNING id INTO lc_id;
+  INSERT INTO landed_cost_receipts (tenant_id, landed_cost_id, receipt_id)
+    VALUES (v.t, lc_id, v.gr);   -- le ciblage (contrat 658)
   result := distribute_landed_cost(lc_id);
   SELECT COALESCE(unit_cost, 0) INTO uc_after
     FROM stock_quantities WHERE product_id = v.p AND tenant_id = v.t;

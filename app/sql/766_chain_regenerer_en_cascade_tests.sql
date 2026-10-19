@@ -82,6 +82,8 @@ BEGIN
   PERFORM set_config('app.current_tenant', v.t::text, false);
   INSERT INTO landed_costs (tenant_id, supplier_id, total_amount, distribution_method)
     VALUES (v.t, v.sup, 100, 'value') RETURNING id INTO lc_id;
+  INSERT INTO landed_cost_receipts (tenant_id, landed_cost_id, receipt_id)
+    VALUES (v.t, lc_id, v.gr);   -- le ciblage (contrat 658 unifié)
   PERFORM distribute_landed_cost(lc_id);
   cump_avant := _cump766(v.t, 'A-T01');
 
@@ -194,6 +196,8 @@ BEGIN
   PERFORM set_config('app.current_tenant', v.t::text, false);
   INSERT INTO landed_costs (tenant_id, supplier_id, total_amount, distribution_method)
     VALUES (v.t, v.sup, 100, 'value') RETURNING id INTO lc_id;
+  INSERT INTO landed_cost_receipts (tenant_id, landed_cost_id, receipt_id)
+    VALUES (v.t, lc_id, v.gr);   -- le ciblage (contrat 658 unifié)
   PERFORM distribute_landed_cost(lc_id);
   UPDATE landed_costs SET total_amount = 200 WHERE id = lc_id;
   r := chain_regenerer_en_cascade(v.t, 'landed_costs', lc_id, 'prix de revient corrigé');
@@ -218,17 +222,20 @@ END $$;
 
 
 -- ═══════════════════════════════════════════════════════════════════════
--- T06 — le rejeu du répartiteur SEUL rend l'état sans réécrire
---      (la garde d'idempotence promise par la 765, tenue ici).
+-- T06 — le REJEU est REFUSÉ nommé (contrat unifié 658 + 765) :
+--      un frais déjà réparti ne repartage pas — et rien n'est
+--      réécrit (lignes et CUMP inchangées).
 -- ═══════════════════════════════════════════════════════════════════════
 DO $$
 DECLARE v record; lc_id uuid; r1 jsonb;
-        n1 int; cump1 numeric; n2 int; cump2 numeric;
+        n1 int; cump1 numeric; n2 int; cump2 numeric; msg text := '';
 BEGIN
   v := _mk766_env('T06', 50);
   PERFORM set_config('app.current_tenant', v.t::text, false);
   INSERT INTO landed_costs (tenant_id, supplier_id, total_amount, distribution_method)
     VALUES (v.t, v.sup, 100, 'value') RETURNING id INTO lc_id;
+  INSERT INTO landed_cost_receipts (tenant_id, landed_cost_id, receipt_id)
+    VALUES (v.t, lc_id, v.gr);   -- le ciblage (contrat 658 unifié)
   r1 := distribute_landed_cost(lc_id);
   SELECT count(*) INTO n1 FROM landed_cost_lines WHERE landed_cost_id = lc_id;
   cump1 := _cump766(v.t, 'A-T06');
@@ -236,16 +243,15 @@ BEGIN
   BEGIN
     PERFORM distribute_landed_cost(lc_id);
   EXCEPTION WHEN OTHERS THEN
-    PERFORM _rec('T06', 'le rejeu du répartiteur REND l''état sans réécrire (garde 765)',
-      false, 'le rejeu a LEVÉ au lieu de rendre : ' || left(SQLERRM, 70));
-    RETURN;
+    msg := SQLERRM;
   END;
   SELECT count(*) INTO n2 FROM landed_cost_lines WHERE landed_cost_id = lc_id;
   cump2 := _cump766(v.t, 'A-T06');
 
-  PERFORM _rec('T06', 'le rejeu du répartiteur REND l''état sans réécrire (garde 765)',
-    n2 = n1 AND cump2 = cump1 AND (r1->>'success') = 'true',
-    format('lignes avant=%s après=%s | CUMP avant=%s après=%s', n1, n2, cump1, cump2));
+  PERFORM _rec('T06', 'le rejeu est REFUSÉ nommé (« déjà réparti ») — rien n''est réécrit (contrat 658)',
+    msg LIKE '%déjà réparti%' AND n2 = n1 AND cump2 = cump1 AND (r1->>'success') = 'true',
+    format('refus=%s | lignes avant=%s après=%s | CUMP avant=%s après=%s',
+           left(msg, 60), n1, n2, cump1, cump2));
 END $$;
 
 -- ═══════════════════════════════════════════════════════════════════════
@@ -259,6 +265,8 @@ BEGIN
   PERFORM set_config('app.current_tenant', v.t::text, false);
   INSERT INTO landed_costs (tenant_id, supplier_id, total_amount, distribution_method)
     VALUES (v.t, v.sup, 100, 'value') RETURNING id INTO lc_id;
+  INSERT INTO landed_cost_receipts (tenant_id, landed_cost_id, receipt_id)
+    VALUES (v.t, lc_id, v.gr);   -- le ciblage (contrat 658 unifié)
   PERFORM distribute_landed_cost(lc_id);
   SELECT id INTO mv FROM stock_movements WHERE tenant_id = v.t LIMIT 1;
 
@@ -290,6 +298,8 @@ BEGIN
   PERFORM set_config('app.current_tenant', v.t::text, false);
   INSERT INTO landed_costs (tenant_id, supplier_id, total_amount, distribution_method)
     VALUES (v.t, v.sup, 100, 'value') RETURNING id INTO lc_id;
+  INSERT INTO landed_cost_receipts (tenant_id, landed_cost_id, receipt_id)
+    VALUES (v.t, lc_id, v.gr);   -- le ciblage (contrat 658 unifié)
   PERFORM distribute_landed_cost(lc_id);
   UPDATE landed_costs SET total_amount = 200 WHERE id = lc_id;
 
