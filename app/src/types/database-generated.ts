@@ -11449,6 +11449,7 @@ export interface Database {
         cost_variance: number | null
         mrp_run_id: string | null
         mrp_proposal_id: string | null
+        project_id: string | null
       }
       Insert: {
         id?: string
@@ -11482,6 +11483,7 @@ export interface Database {
         cost_variance?: number
         mrp_run_id?: string
         mrp_proposal_id?: string
+        project_id?: string
       }
       Update: {
         id?: string
@@ -11515,6 +11517,7 @@ export interface Database {
         cost_variance?: number
         mrp_run_id?: string
         mrp_proposal_id?: string
+        project_id?: string
       }
       Relationships: [
         {
@@ -11536,6 +11539,13 @@ export interface Database {
           columns: ["tenant_id", "product_id"],
           isOneToOne: false,
           referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "manufacturing_orders_project_fk",
+          columns: ["tenant_id", "project_id"],
+          isOneToOne: false,
+          referencedRelation: "projects",
           referencedColumns: ["tenant_id", "id"]
         },
         {

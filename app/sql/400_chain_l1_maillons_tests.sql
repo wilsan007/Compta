@@ -38,7 +38,7 @@
 -- ============================================================
 \ir ci/audit_helpers.sql
 SELECT set_config('audit.file', '400', false);
-DELETE FROM _audit_results WHERE file = '310';
+DELETE FROM _audit_results WHERE file = '400';
 
 -- ─────────────────────────────────────────────────────────────
 -- Outillage propre à ce fichier (préfixé `_`, hors contrôle des droits)

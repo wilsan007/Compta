@@ -2611,6 +2611,21 @@ jobs:
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/766_chain_regenerer_en_cascade_tests.sql
 
 
+      # L18 — TRANCHE 2 (767) : LA FABRICATION À LA COMMANDE. Le porteur
+      # projet de l'OF (colonne `project_id` + clé composite ISO-02 — c'est
+      # elle qui refuse le projet fantôme/étranger, 23503), le lien tracé
+      # projects → manufacturing_orders (effet déclaré + produit), et les
+      # consommations d'OF (`reference_type = 'production'`) qui imputent enfin
+      # `projects.actual_cost` (le compagnon 418 est RÉÉCRIT, un seul moteur).
+      # Le déclencheur ne porte PAS de préfixe zz_ : sur l'OF, trier après
+      # zz_l16_production_start / zz_l1_manufacturing_order fait tomber
+      # 401 T11 (mesuré). 10 verdicts : le lien, le coût (4×5=20), le sens,
+      # l'UPDATE remplace, le DELETE rend, le cas ordinaire muet, les deux
+      # refus nommés par la clé, le contrat, le changement de projet.
+      - name: 'L18 : fabrication à la commande — un projet commande un OF (767)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/767_chain_l18_fabrication_projet_tests.sql
+
+
 
       # P1 (A3.4) — l'ATTESTATION D'INTÉGRITÉ TECHNIQUE : un `jsonb` de FAITS
       # (dernier relevé des invariants, écarts nommés, rapport du banc — non_joue
