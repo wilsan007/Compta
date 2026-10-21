@@ -11450,6 +11450,7 @@ export interface Database {
         mrp_run_id: string | null
         mrp_proposal_id: string | null
         project_id: string | null
+        analytic_section_id: string | null
       }
       Insert: {
         id?: string
@@ -11484,6 +11485,7 @@ export interface Database {
         mrp_run_id?: string
         mrp_proposal_id?: string
         project_id?: string
+        analytic_section_id?: string
       }
       Update: {
         id?: string
@@ -11518,8 +11520,16 @@ export interface Database {
         mrp_run_id?: string
         mrp_proposal_id?: string
         project_id?: string
+        analytic_section_id?: string
       }
       Relationships: [
+        {
+          foreignKeyName: "manufacturing_orders_analytic_section_fk",
+          columns: ["tenant_id", "analytic_section_id"],
+          isOneToOne: false,
+          referencedRelation: "analytic_sections",
+          referencedColumns: ["tenant_id", "id"]
+        },
         {
           foreignKeyName: "manufacturing_orders_bom_id_fkey",
           columns: ["tenant_id", "bom_id"],
@@ -20685,6 +20695,7 @@ export interface Database {
         lot_id: string | null
         serial_id: string | null
         location_id: string | null
+        analytic_section_id: string | null
       }
       Insert: {
         id?: string
@@ -20705,6 +20716,7 @@ export interface Database {
         lot_id?: string
         serial_id?: string
         location_id?: string
+        analytic_section_id?: string
       }
       Update: {
         id?: string
@@ -20725,6 +20737,7 @@ export interface Database {
         lot_id?: string
         serial_id?: string
         location_id?: string
+        analytic_section_id?: string
       }
       Relationships: [
         {
@@ -20732,6 +20745,13 @@ export interface Database {
           columns: ["tenant_id", "warehouse_id"],
           isOneToOne: false,
           referencedRelation: "warehouses",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "stock_movements_analytic_section_fk",
+          columns: ["tenant_id", "analytic_section_id"],
+          isOneToOne: false,
+          referencedRelation: "analytic_sections",
           referencedColumns: ["tenant_id", "id"]
         },
         {

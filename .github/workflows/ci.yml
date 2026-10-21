@@ -2635,6 +2635,17 @@ jobs:
       - name: 'L18 : fabrication à la commande — un projet commande un OF (767)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/767_chain_l18_fabrication_projet_tests.sql
 
+      # L18 — TRANCHE 2 FIN (768) : L'IMPUTATION ANALYTIQUE du stock. Les deux
+      # porteurs (`stock_movements` / `manufacturing_orders` +
+      # `analytic_section_id`, clés composites ISO-02), la circulation dans les
+      # deux seules fonctions vivantes qui comptabilisent le stock (STK et
+      # JE-OF, réécrites sur la 388 rôles — pas une ligne de rôles retirée),
+      # et le vrai chemin de clôture d'OF (résolution par NUMÉRO quand
+      # `reference_id` est absent). 8 verdicts dont le cas muet et la
+      # protection de section par l'écriture postée (W2 contre SET NULL).
+      - name: 'L18 : imputation analytique du stock — la section circule (768)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/768_chain_l18_imputation_analytique_tests.sql
+
 
 
       # P1 (A3.4) — l'ATTESTATION D'INTÉGRITÉ TECHNIQUE : un `jsonb` de FAITS
