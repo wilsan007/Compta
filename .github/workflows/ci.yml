@@ -1965,6 +1965,8 @@ jobs:
       # refusé, indicateur inconnu, priorité de la société.
       - name: 'I-08 : le dictionnaire de données (461)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/461_metric_definitions_tests.sql
+        -- 769: L19-reporting metric definitions historization
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/769_metric_definitions_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
