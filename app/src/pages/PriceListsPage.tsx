@@ -74,7 +74,7 @@ const [lists, setLists] = useState<PriceList[]>([])
                 <TableRow>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-1">
-                      <button onClick={() => toggleExpand(l.id)} className="p-0.5 rounded hover:bg-[var(--color-neutral-100)]">
+                      <button onClick={() => toggleExpand(l.id)} aria-label={tCommon(expanded.has(l.id) ? 'actions.collapse' : 'actions.expand')} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)]">
                         {expanded.has(l.id) ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                       </button>
                       {l.name}

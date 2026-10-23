@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
-import { getTenantId, ti, tud, fetchAllRows } from './core'
+import { getTenantId, ti, tud, fetchAllRows, nextDocumentNumber } from './core'
+import { getMyProfile } from './sprintH'
 import type { Joined } from '@/types/dbRow'
 import type { WorkStoppage, IjssHistory, WorkHardshipRecord, CpfTransaction, MedicalExam, ExpenseCategory, ExpenseReportLine, InterviewCampaign, EmployeeObjective, EmployeeExitProcess, ExpenseReport, CpfAccount } from '@/types'
 
@@ -365,7 +366,12 @@ export async function getExpensePayrollIntegration(): Promise<ExpensePayrollLink
 
 export async function createMyExpenseReport(data: Partial<ExpenseReport>) {
   const tid = await getTenantId()
-  const { data: result, error } = await supabase.from('expense_reports').insert(ti({ ...data, status: 'draft' }, 'expense_reports', tid)).select().single()
+  // `expense_reports.employee_id` et `number` sont NOT NULL et aucun déclencheur ne les
+  // pose : sans eux, la création échouait pour TOUT salarié (audit du 23/10/2026).
+  const me = data.employee_id ? null : await getMyProfile()
+  const employeeId = data.employee_id ?? me?.id
+  if (!employeeId) throw new Error('employee_id manquant : aucun dossier salarié pour ce compte')
+  const { data: result, error } = await supabase.from('expense_reports').insert(ti({ ...data, number: data.number ?? await nextDocumentNumber('NDF'), employee_id: employeeId, status: 'draft' }, 'expense_reports', tid)).select().single()
   if (error) throw error
   return result as ExpenseReport
 }

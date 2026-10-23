@@ -65,7 +65,7 @@ export function WorkflowsPage() {
                 <TableCell className="text-xs">{wf.schedule || '—'}</TableCell>
                 <TableCell className="text-xs">{wf.last_run ? formatDate(wf.last_run) : t('workflows.never')}</TableCell>
                 <TableCell>
-                  <button onClick={() => handleToggle(wf.id, wf.status)}>
+                  <button onClick={() => handleToggle(wf.id, wf.status)} className="inline-flex min-h-6 min-w-6 items-center">
                     <Badge variant={wf.status === 'active' ? 'success' : 'neutral'}>{getStatusLabel(wf.status)}</Badge>
                   </button>
                 </TableCell>
@@ -83,7 +83,7 @@ export function WorkflowsPage() {
               <div className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <WorkflowIcon className="w-5 h-5 text-[var(--color-primary)]" />
-                  <button onClick={() => handleToggle(wf.id, wf.status)}><Badge variant={wf.status === 'active' ? 'success' : 'neutral'}>{getStatusLabel(wf.status)}</Badge></button>
+                  <button onClick={() => handleToggle(wf.id, wf.status)} className="inline-flex min-h-6 min-w-6 items-center"><Badge variant={wf.status === 'active' ? 'success' : 'neutral'}>{getStatusLabel(wf.status)}</Badge></button>
                 </div>
                 <h3 className="text-sm font-semibold">{wf.name}</h3>
                 <p className="text-xs text-[var(--color-text-secondary)] mt-1">{wf.description || '—'}</p>

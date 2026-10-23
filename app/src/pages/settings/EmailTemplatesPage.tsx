@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PageHeader, Button, Table, TableRow, TableCell, Input, Select, Badge, EmptyState, Breadcrumb, SkeletonTable, Modal, Textarea } from '@/components/ui'
 import { supabase } from '@/lib/supabase'
+import { getTenantId, ti } from '@/lib/queries/core'
 import { useToast } from '@/lib/toast'
 import { Mail, Plus, Trash2, Edit, Eye, Code } from 'lucide-react'
 import { confirmDialog } from '@/lib/confirm'
@@ -108,14 +109,15 @@ export function EmailTemplatesPage() {
         toast('success', 'Template mis à jour', '')
       } else {
         const tplDef = TEMPLATE_KEYS.find(t => t.key === form.template_key)
-        const { error } = await supabase.from('email_templates').insert({
+        const tid = await getTenantId()
+        const { error } = await supabase.from('email_templates').insert(ti({
           template_key: form.template_key,
           subject: form.subject,
           body_html: form.body_html,
           body_text: form.body_text || null,
           variables: tplDef?.vars || [],
           locale: form.locale,
-        })
+        }, 'email_templates', tid))
         if (error) throw error
         toast('success', 'Template créé', '')
       }
@@ -168,7 +170,7 @@ export function EmailTemplatesPage() {
               <TableCell className="text-sm">{tpl.subject}</TableCell>
               <TableCell><Badge variant="info">{tpl.locale}</Badge></TableCell>
               <TableCell><div className="flex gap-1 flex-wrap">{(tpl.variables || []).slice(0, 3).map(v => <Badge key={v} variant="neutral">{'{{' + v + '}}'}</Badge>)}{(tpl.variables || []).length > 3 && <Badge variant="neutral">+{tpl.variables.length - 3}</Badge>}</div></TableCell>
-              <TableCell><button onClick={() => handleToggle(tpl)}>{tpl.active ? <Badge variant="success">Actif</Badge> : <Badge variant="neutral">Inactif</Badge>}</button></TableCell>
+              <TableCell><button onClick={() => handleToggle(tpl)} className="inline-flex min-h-6 min-w-6 items-center">{tpl.active ? <Badge variant="success">Actif</Badge> : <Badge variant="neutral">Inactif</Badge>}</button></TableCell>
               <TableCell>
                 <div className="flex gap-1">
                   <button onClick={() => openEdit(tpl)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}><Edit className="w-4 h-4" aria-hidden="true" /></button>

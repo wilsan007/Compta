@@ -187,6 +187,11 @@ function PurchaseRequestForm({ request, onClose, onSaved }: {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    // Une demande d'achat sans aucune ligne décrite ne demande rien.
+    if (!lines.some(l => l.description.trim())) {
+      toast('warning', tCommon('form.requiredField'), t('purchaseRequests.lines'))
+      return
+    }
     setSaving(true)
     try {
       const data = {

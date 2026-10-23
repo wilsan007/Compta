@@ -293,6 +293,7 @@ function RecurringEntryForm({ journals, editing, onClose, onSaved }: {
                 <TableRow key={idx}>
                   <TableCell>
                     <input
+                      aria-label={t('recurring.account')}
                       className="input text-xs"
                       placeholder="401000"
                       value={line.account_code}
@@ -301,6 +302,7 @@ function RecurringEntryForm({ journals, editing, onClose, onSaved }: {
                   </TableCell>
                   <TableCell>
                     <input
+                      aria-label={t('recurring.description')}
                       className="input text-xs"
                       value={line.description}
                       onChange={(e) => updateLine(idx, 'description', e.target.value)}
@@ -308,6 +310,7 @@ function RecurringEntryForm({ journals, editing, onClose, onSaved }: {
                   </TableCell>
                   <TableCell>
                     <input
+                      aria-label={t('recurring.debit')}
                       className="input text-xs text-right"
                       type="number"
                       value={line.debit}
@@ -316,6 +319,7 @@ function RecurringEntryForm({ journals, editing, onClose, onSaved }: {
                   </TableCell>
                   <TableCell>
                     <input
+                      aria-label={t('recurring.credit')}
                       className="input text-xs text-right"
                       type="number"
                       value={line.credit}

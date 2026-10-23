@@ -19,6 +19,7 @@
     "i18n:usage": "node scripts/check-i18n-usage.mjs",
     "db:types": "node scripts/generate-db-types.mjs",
     "db:embeds": "node scripts/check-embeds.mjs",
+    "db:tenant-injection": "node scripts/check-tenant-injection.mjs",
     "db:written-columns": "node scripts/check-written-columns.mjs",
     "audit:unchecked-writes": "node scripts/check-unchecked-writes.mjs",
     "audit:any-ceiling": "node scripts/check-any-ceiling.mjs",

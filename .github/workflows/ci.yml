@@ -436,6 +436,15 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Audit indépendant du 23/10/2026 : 22 tables dont `tenant_id` est NOT NULL sans
+      # défaut ni déclencheur n'étaient pas dans `TENANT_TABLES` — `ti()` ne le posait
+      # pas, la RLS refusait toute création depuis l'écran (403). Contrôle croisé
+      # base (colonnes) × front (insertions) : il a vu ces 23 tables rouges avant.
+      - name: 'Audit 23/10 : tout insert de l’écran pose son tenant_id'
+        run: node scripts/check-tenant-injection.mjs
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # Règle E01 de l'annexe E du cahier de localisation : un compte écrit en
       # clair là où le pack doit répondre. Ici le gisement de FOND — les
       # définitions effectives des fonctions (`pg_proc.prosrc`) : c'est un

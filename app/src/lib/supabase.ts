@@ -177,6 +177,16 @@ const TENANT_TABLES = new Set([
   'rh_dashboard_configs', 'rh_reports',
   'tax_cash_basis_entries', 'tax_groups', 'tax_payments', 'tax_repartition_lines',
   'tier_ribs', 'vat_on_collections',
+  // Audit indépendant du 23/10/2026 : ces tables exigent un `tenant_id` envoyé par le client
+  // (NOT NULL, ni défaut ni déclencheur) — absentes d'ici, `ti()` ne le posait pas et la RLS
+  // refusait toute création depuis l'écran (403). Gardé par scripts/check-tenant-injection.mjs.
+  'role_permissions', 'business_connectors', 'collective_agreements', 'collective_classifications',
+  'crm_scoring_rules', 'crm_sequences', 'crm_sequence_steps', 'custom_field_definitions',
+  'import_column_mappings', 'import_batches', 'data_import_logs',
+  'job_postings', 'job_applications',
+  'stock_transfers', 'stock_transfer_lines', 'uom_categories', 'uoms', 'reorder_rules',
+  'stock_count_cycles', 'maintenance_records', 'landed_costs', 'landed_cost_receipts',
+  'email_templates',
 ])
 
 const EXEMPT_TABLES = new Set([

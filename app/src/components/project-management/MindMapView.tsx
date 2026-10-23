@@ -35,6 +35,7 @@ const priorityColors: Record<string, string> = {
 
 export function MindMapView({ projectId }: MindMapViewProps) {
   const { t } = useTranslation('taskManagement')
+  const { t: tc } = useTranslation('common')
   const { tasks, loading } = useTaskContext()
   const { projects } = useProjectContext()
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
@@ -125,7 +126,9 @@ export function MindMapView({ projectId }: MindMapViewProps) {
         >
           {hasChildren ? (
             <button
-              className="flex items-center justify-center w-4 h-4 text-[var(--color-text-secondary)] hover:text-[var(--color-text)] flex-shrink-0"
+              aria-label={isExpanded ? tc('actions.collapse') : tc('actions.expand')}
+              aria-expanded={isExpanded}
+              className="flex items-center justify-center w-6 h-6 text-[var(--color-text-secondary)] hover:text-[var(--color-text)] flex-shrink-0"
               onClick={(e) => {
                 e.stopPropagation()
                 toggleExpand(node.task.id)

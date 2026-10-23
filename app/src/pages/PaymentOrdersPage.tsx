@@ -168,6 +168,11 @@ function PaymentOrderForm({ onClose, onSaved }: { onClose: () => void; onSaved: 
       toast('warning', tCommon('form.requiredField'), t('paymentOrders.form.ibanRefused'))
       return
     }
+    // Un ordre à 0 n'ordonne rien : `required` laisse passer le 0 initial d'un champ numérique.
+    if (!(amount > 0)) {
+      toast('warning', tCommon('form.requiredField'), t('paymentOrders.form.amount'))
+      return
+    }
     setSaving(true)
     try {
       const number = await nextDocumentNumber('PAY')

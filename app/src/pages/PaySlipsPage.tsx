@@ -109,7 +109,7 @@ const [slips, setSlips] = useState<Awaited<ReturnType<typeof getPaySlips>>>([])
               <Card key={runId}>
                 <div className="p-4 border-b border-[var(--color-border)] flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <button onClick={() => toggleExpand(runId)} className="p-0.5 rounded hover:bg-[var(--color-neutral-100)]">
+                    <button onClick={() => toggleExpand(runId)} aria-label={isExpanded ? tCommon('actions.collapse') : tCommon('actions.expand')} aria-expanded={isExpanded} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)]">
                       {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                     </button>
                     <span className="font-semibold">{run?.number || t('paySlips.title')}</span>
@@ -135,7 +135,7 @@ const [slips, setSlips] = useState<Awaited<ReturnType<typeof getPaySlips>>>([])
                           <TableRow key={s.id}>
                             <TableCell className="font-mono text-xs">
                               {hasVariableElements && (
-                                <button onClick={() => setExpandedSlip(isSlipExpanded ? null : s.id)} className="p-0.5 rounded hover:bg-[var(--color-neutral-100)] mr-1">
+                                <button onClick={() => setExpandedSlip(isSlipExpanded ? null : s.id)} aria-label={isSlipExpanded ? tCommon('actions.collapse') : tCommon('actions.expand')} aria-expanded={isSlipExpanded} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] mr-1">
                                   {isSlipExpanded ? <ChevronDown className="w-3 h-3 inline" /> : <ChevronRight className="w-3 h-3 inline" />}
                                 </button>
                               )}
