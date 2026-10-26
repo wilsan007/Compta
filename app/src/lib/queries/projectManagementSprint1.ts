@@ -1,4 +1,5 @@
 // Sprint 1 queries: Time Tracking, Watchers, Activity Log, Templates, Notifications
+import { fromDbTask } from '@/lib/taskStatus'
 import { supabase } from '@/lib/supabase'
 import { getTenantId, ti, tud } from '@/lib/queries/core'
 import { shouldSendEmail } from '@/types/projectManagement'
@@ -352,7 +353,7 @@ export async function applyTaskTemplate(
     .select()
     .single()
   if (taskErr) throw taskErr
-  const created = task as ProjectTask
+  const created = fromDbTask(task as ProjectTask)
 
   // Create checklist items
   if (tpl.checklist_template && Array.isArray(tpl.checklist_template)) {

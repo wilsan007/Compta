@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '@/lib/toast'
-import { Search, Plus, LayoutGrid } from 'lucide-react'
+import { Plus, LayoutGrid } from 'lucide-react'
 import { DynamicTable } from '@/components/project-management/DynamicTable'
 import { KanbanBoard } from '@/components/project-management/KanbanBoard'
 import { GanttChart } from '@/components/project-management/GanttChart'
@@ -40,11 +40,15 @@ export function ProjectManagementPage({ projectId, initialView }: ProjectManagem
   const { t } = useTranslation('taskManagement')
   const { t: tNav } = useTranslation('nav')
   const view: ViewType = initialView || 'table'
-  const [searchQuery, setSearchQuery] = useState('')
   const [taskDialogOpen, setTaskDialogOpen] = useState(false)
 
   return (
     <div className="flex flex-col h-full">
+      {/* Vue tableau : ni fil d'Ariane ni bandeau « Gestion de Projets » — le
+          tableau dynamique a sa propre barre (titre, création, export) et prend
+          toute la page (demandé le 25/10). Les autres vues gardent le bandeau. */}
+      {view !== 'table' && (
+      <>
       <Breadcrumb items={[{ label: tNav('groups.projectManagement') }, { label: t('title') }]} />
 
       {/* Top toolbar */}
@@ -59,17 +63,8 @@ export function ProjectManagementPage({ projectId, initialView }: ProjectManagem
           </div>
         </div>
 
+        {/* Le champ de recherche qui vivait ici n'était lu par AUCUNE vue (placebo). */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="relative hidden sm:block">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t('actions.search')}
-              className="w-40 lg:w-56 pl-8 pr-3 py-1.5 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-neutral-50)] text-[var(--color-text)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent transition-all"
-            />
-          </div>
           <button
             onClick={() => setTaskDialogOpen(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)] transition-colors"
@@ -79,6 +74,8 @@ export function ProjectManagementPage({ projectId, initialView }: ProjectManagem
           </button>
         </div>
       </div>
+      </>
+      )}
 
       {/* Full-width content area */}
       <div className="flex-1 overflow-hidden bg-[var(--color-background)]">

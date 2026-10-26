@@ -76,6 +76,7 @@ L'essentiel en huit lignes :
 > | **`770` → `779`** | **plan6 A3 (certificat d'intégrité, A3.4)** — **P1** : `chain_certificat_integrite`, l'attestation d'intégrité technique (jsonb de faits) — branche `plan6/a3-moteur` | **2026-10-11** |
 > | **`780` → `789`** | **garde de suppression des types récents** (suite de la `450` T11, ex-numéro `530` en double) — ⚠️ **le numéro est aussi un ORDRE** : sa boucle pose les gardes sur le registre **tel qu'il est à son passage**, donc elle doit tourner **APRÈS toutes les inscriptions de types** (tentative `457` rouge le 13/10, run `38424071395`) | **2026-10-13** |
 > | **`790` → `799`** | **plan6 intégration (correctifs de fusion)** — `790` : le garde de `create_notification` (712) n'exige le marqueur serveur **que hors déclencheur** (`pg_trigger_depth()`) + `REVOKE` de `zz_715_check_subscription_member` | **2026-10-13** |
+> | **`800` → `809`** | **gestion de projets (tableau, Gantt, dépendances)** — `800` un vocabulaire de statut + taux de réalisation par action + une règle d'avancement ; `801` bornes de dates (enfant dans son parent, parent déplacé = enfants déplacés) ; `802` liens « B après A » entre tâches et entre projets, report automatique ; `803` une action ne se coche qu'avec une preuve jointe ; `804` le statut suit l'avancement calculé (sans écraser bloqué/approuvé/annulé). Suite `800_pm_gestion_projets_tests.sql` (26 scénarios) | **2026-10-24** |
 
 >
 > *Règle de coexistence : une session qui travaille sur une série déjà

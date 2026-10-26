@@ -158,7 +158,7 @@ const TENANT_TABLES = new Set([
   // Sprint G: Dématérialisation RH
   'employee_documents', 'document_distribution_logs', 'rh_requests', 'rh_knowledge_base',
   // Project Management & Task Management
-  'project_tasks', 'project_task_dependencies', 'project_stages', 'project_milestones',
+  'project_tasks', 'project_task_dependencies', 'project_dependencies', 'project_stages', 'project_milestones',
   'project_tags', 'project_task_tags', 'project_task_assignees',
   'project_members',
   'notification_email_queue', 'notification_preferences',

@@ -2,9 +2,10 @@ import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Popover } from './Popover'
 import { Avatar } from './Avatar'
-import { AlertTriangle, UserPlus, Mail } from 'lucide-react'
+import { AlertTriangle, UserPlus, Mail, User } from 'lucide-react'
+import { Initials } from './table/kit'
 import { useWorkloadAlert } from '@/hooks/useWorkloadAlert'
-import { getEmployees } from '@/lib/queries/payroll'
+import { getEmployeesShared } from '@/lib/employeesShared'
 import { useModuleAwareAccess } from '@/components/cross-module/useModuleAwareAccess'
 import { QuickEmployeeAccess } from '@/components/cross-module/QuickEmployeeAccess'
 import { QuickUserAccess } from '@/components/cross-module/QuickUserAccess'
@@ -29,8 +30,8 @@ export function AssigneeSelect({ value, onCommit, disabled }: AssigneeSelectProp
   const [showQuickAdd, setShowQuickAdd] = useState(false)
   const [showQuickInvite, setShowQuickInvite] = useState(false)
 
-  const loadEmployees = () => {
-    void getEmployees()
+  const loadEmployees = (force = false) => {
+    void getEmployeesShared({ force })
       .then(setEmployees)
       .catch(() => {})
   }
@@ -63,14 +64,17 @@ export function AssigneeSelect({ value, onCommit, disabled }: AssigneeSelectProp
         )}>
           {displayName ? (
             <>
-              <Avatar name={displayName} size="xs" />
-              <span className="text-xs truncate max-w-[70px]" title={displayName}>{displayName}</span>
+              <Initials name={displayName} />
+              <span className="text-sm truncate max-w-[110px]" title={displayName}>{displayName}</span>
               {workload.isOverloaded && (
                 <AlertTriangle className="w-3 h-3 text-[var(--color-warning)]" />
               )}
             </>
           ) : (
-            <span className="text-xs text-[var(--color-text-tertiary)]">—</span>
+            <span className="flex items-center gap-2 text-sm text-[var(--color-text-tertiary)]">
+              <User className="h-4 w-4" />
+              {t('dyn.unassigned')}
+            </span>
           )}
         </div>
       }
@@ -137,13 +141,13 @@ export function AssigneeSelect({ value, onCommit, disabled }: AssigneeSelectProp
     {showQuickAdd && (
       <QuickEmployeeAccess
         onClose={() => setShowQuickAdd(false)}
-        onSaved={() => loadEmployees()}
+        onSaved={() => loadEmployees(true)}
       />
     )}
     {showQuickInvite && (
       <QuickUserAccess
         onClose={() => setShowQuickInvite(false)}
-        onSaved={() => loadEmployees()}
+        onSaved={() => loadEmployees(true)}
         forceInline
         module="projectManagement"
       />

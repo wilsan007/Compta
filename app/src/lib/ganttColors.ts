@@ -17,14 +17,6 @@ export function getProjectColor(index: number): string {
   return GANTT_COLOR_PALETTE[index % GANTT_COLOR_PALETTE.length]
 }
 
-export function assignProjectColors(projectIds: string[]): Map<string, string> {
-  const colorMap = new Map<string, string>()
-  projectIds.forEach((id, i) => {
-    colorMap.set(id, getProjectColor(i))
-  })
-  return colorMap
-}
-
 export function getTaskColor(
   projectId: string | null,
   projectColorMap: Map<string, string>,

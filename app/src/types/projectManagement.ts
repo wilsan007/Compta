@@ -97,6 +97,17 @@ export interface ProjectTaskDependency {
   created_at: string
 }
 
+// « Le projet `project_id` commence après la fin de `depends_on_project_id` »
+// (fin→début + délai) — migration 802.
+export interface ProjectDependency {
+  id: string
+  tenant_id: string
+  project_id: string
+  depends_on_project_id: string
+  lag_days: number
+  created_at: string
+}
+
 // ============ Project Stage ============
 
 export interface ProjectStage {
@@ -173,6 +184,8 @@ export interface TaskAction {
   title: string
   weight_percentage: number
   is_done: boolean
+  // taux de réalisation 0–100 (800) ; 100 ⇔ is_done, tenu par la base
+  progress: number
   due_date: string | null
   notes: string | null
   created_at: string
@@ -245,23 +258,6 @@ export const emptyTaskFilters: TaskFilters = {
 }
 
 // ============ Gantt Types ============
-
-export interface GanttTask {
-  id: string
-  title: string
-  start_date: string
-  due_date: string
-  progress: number
-  project_id: string | null
-  project_name?: string
-  project_color?: string
-  parent_id: string | null
-  task_level: number
-  status: TaskStatus
-  priority: TaskPriority
-  assignee: string | null
-  display_order: string
-}
 
 export interface ViewConfig {
   viewMode: ViewMode

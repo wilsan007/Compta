@@ -31,7 +31,9 @@
 -- diagnostic**, exécutable en une commande.
 --
 -- LA RÈGLE DU PLAFOND (celle de G1). Mesuré sur base neuve, 02/10/2026 :
---     * **340** tables sous `FORCE ROW LEVEL SECURITY` (13/10/2026, fusion E + F + C +
+--     * **341** tables sous `FORCE ROW LEVEL SECURITY` (24/10/2026 : +1
+--       `project_dependencies`, 802, avec ses politiques d'écriture). Avant :
+--       **340** (13/10/2026, fusion E + F + C +
 --       intégration — de 322 à 340, +18 pour F et C, mesuré sur base
 --       migrations seules) : +14 le 05/10 (plan6 F) — 702 (groups, group_members,
 --       intra_group_transactions), 704 (collective_agreements,
@@ -99,7 +101,7 @@ SELECT (SELECT count(*) FROM g7_exposition) AS tables_forcees,
 -- Plafond DATÉ (une ligne à mettre à jour, jamais à relever sans la mesurer)
 CREATE TEMP TABLE g7_plafond (nom text PRIMARY KEY, plafond int);
 INSERT INTO g7_plafond VALUES
-  ('tables_forcees', 340),
+  ('tables_forcees', 341),  -- 24/10/2026 : +1 project_dependencies (802), qui a ses 3 politiques d'écriture
   ('muettes',         21);
 
 DO $$

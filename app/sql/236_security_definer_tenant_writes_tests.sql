@@ -372,6 +372,13 @@ BEGIN
   INSERT INTO task_actions (tenant_id, task_id, title, weight_percentage, is_done)
   VALUES (ta, fb.tache, 'Action de A sur la tâche de B', 100, false)
   RETURNING id INTO v_action;
+  -- Depuis la 803 (25/10), cocher une action exige une preuve jointe : elle
+  -- fait partie de l'état fabriqué, sinon le refus de la 803 masquerait la
+  -- mesure de cloisonnement.
+  PERFORM _fk236('task_action_attachments', false);
+  INSERT INTO task_action_attachments (tenant_id, task_action_id, task_id, file_name, file_path)
+  VALUES (ta, v_action, fb.tache, 'preuve.pdf', ta || '/actions/' || v_action || '/preuve.pdf');
+  PERFORM _fk236('task_action_attachments', true);
   PERFORM _as236(ta);
   UPDATE task_actions SET is_done = true WHERE id = v_action;
   PERFORM _mesure236();

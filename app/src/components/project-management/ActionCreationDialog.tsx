@@ -13,7 +13,7 @@ export function ActionCreationDialog({ open, onClose, onConfirm }: ActionCreatio
   const { t } = useTranslation('taskManagement')
   const { t: tCommon } = useTranslation('common')
   const [title, setTitle] = useState('')
-  const [weight, setWeight] = useState(0)
+  const [weight, setWeight] = useState(20)
   const [dueDate, setDueDate] = useState('')
   const [notes, setNotes] = useState('')
 
@@ -21,7 +21,7 @@ export function ActionCreationDialog({ open, onClose, onConfirm }: ActionCreatio
     if (!title.trim()) return
     onConfirm(title.trim(), weight, dueDate || null, notes.trim() || null)
     setTitle('')
-    setWeight(0)
+    setWeight(20)
     setDueDate('')
     setNotes('')
     onClose()
@@ -48,8 +48,11 @@ export function ActionCreationDialog({ open, onClose, onConfirm }: ActionCreatio
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder={t('action.namePlaceholder')}
+            maxLength={40}
             className="w-full px-3 py-2 text-sm border border-[var(--color-border)] rounded bg-[var(--color-surface)] outline-none focus:border-[var(--color-primary)]"
           />
+          {/* l'en-tête de colonne tient sur deux lignes : 40 caractères au plus */}
+          <p className="mt-1 text-xs text-[var(--color-text-tertiary)]">{t('dyn.titleCounter', { count: title.length })}</p>
         </div>
         <div>
           <label className="text-sm font-medium text-[var(--color-text)] mb-1 block">
@@ -57,7 +60,7 @@ export function ActionCreationDialog({ open, onClose, onConfirm }: ActionCreatio
           </label>
           <input
             type="range"
-            min={0}
+            min={1}
             max={100}
             value={weight}
             onChange={(e) => setWeight(Number(e.target.value))}

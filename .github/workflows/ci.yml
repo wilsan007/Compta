@@ -998,6 +998,25 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # 800 → 802 (24/10/2026) : gestion de projets. Un vocabulaire de statut
+      # (l'écran écrivait `doing`, la base comparait `in_progress`), un taux de
+      # réalisation par action et UNE règle d'avancement (actions + sous-tâches
+      # se réécrivaient l'un l'autre), les bornes de dates (enfant dans son
+      # parent, parent déplacé = enfants déplacés), et les liens « B après A »
+      # entre tâches et entre projets avec report automatique. 22 scénarios,
+      # 0 vert avant les migrations (13 rouges, 8 impossibles faute de colonne
+      # et de table). T22 rejoue le déplacement en `authenticated` dans une
+      # session neuve : joué en superutilisateur, un droit d'exécution retiré
+      # passait inaperçu (mesuré sur Supabase local le 24/10).
+      # 803 et 804 (25/10) : une action ne se coche qu'avec une preuve jointe
+      # (T23 → T25, rouges avant la 803), et le statut d'une tâche suit son
+      # avancement calculé sans écraser un statut posé à la main (T26, rouge
+      # avant la 804). 26 scénarios.
+      - name: 'Gestion de projets : statuts, avancement, bornes, dépendances, preuves (800-804)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/800_pm_gestion_projets_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # W7 — M-05 analytique : les deux déclencheurs de `journal_lines` étaient
       # **vides** et aucune écriture engendrée ne portait de section. La 304 fait
       # circuler la section de la **ligne de document** (facture de vente, facture
