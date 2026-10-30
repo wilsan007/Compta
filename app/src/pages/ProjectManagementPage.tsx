@@ -19,6 +19,9 @@ import { MindMapView } from '@/components/project-management/MindMapView'
 import { BoxView } from '@/components/project-management/BoxView'
 import { DocView } from '@/components/project-management/DocView'
 import { ChatView } from '@/components/project-management/ChatView'
+import { ProjectFoldersView } from '@/components/project-management/ProjectFoldersView'
+import { AttentionView } from '@/components/project-management/AttentionView'
+import { ResourceUsageView } from '@/components/project-management/ResourceUsageView'
 import { TaskCreationDialog } from '@/components/project-management/TaskCreationDialog'
 import { Breadcrumb } from '@/components/ui'
 import { TaskProvider, useTaskContext } from '@/contexts/TaskContext'
@@ -30,6 +33,7 @@ type ViewType =
   | 'my-tasks' | 'calendar' | 'large-screen' | 'workload'
   | 'activity' | 'timeline' | 'notifications'
   | 'mind-map' | 'box' | 'doc' | 'chat'
+  | 'folders' | 'resources' | 'attention'
 
 interface ProjectManagementPageProps {
   projectId?: string
@@ -99,6 +103,9 @@ export function ProjectManagementPage({ projectId, initialView }: ProjectManagem
             {view === 'box' && <BoxView projectId={projectId} />}
             {view === 'doc' && <DocView projectId={projectId} />}
             {view === 'chat' && <ChatView projectId={projectId} />}
+            {view === 'folders' && <ProjectFoldersView projectId={projectId} />}
+            {view === 'resources' && <ResourceUsageView projectId={projectId} />}
+            {view === 'attention' && <AttentionView projectId={projectId} />}
             <ToolbarTaskDialog
               open={taskDialogOpen}
               onClose={() => setTaskDialogOpen(false)}

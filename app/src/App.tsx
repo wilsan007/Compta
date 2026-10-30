@@ -545,6 +545,9 @@ function App() {
           <Route path="/project-management/box" element={<ProjectManagementPage initialView="box" />} />
           <Route path="/project-management/doc" element={<ProjectManagementPage initialView="doc" />} />
           <Route path="/project-management/chat" element={<ProjectManagementPage initialView="chat" />} />
+          <Route path="/project-management/folders" element={<ProjectManagementPage initialView="folders" />} />
+          <Route path="/project-management/resources" element={<ProjectManagementPage initialView="resources" />} />
+          <Route path="/project-management/attention" element={<ProjectManagementPage initialView="attention" />} />
           <Route path="/accounting/fixed-assets" element={<FixedAssetsPage />} />
 
           {/* HR & Payroll */}
