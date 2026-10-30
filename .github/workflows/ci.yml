@@ -1012,7 +1012,11 @@ jobs:
       # (T23 → T25, rouges avant la 803), et le statut d'une tâche suit son
       # avancement calculé sans écraser un statut posé à la main (T26, rouge
       # avant la 804). 26 scénarios.
-      - name: 'Gestion de projets : statuts, avancement, bornes, dépendances, preuves (800-804)'
+      # 805 (30/10) : les responsables d'une tâche portent leur société —
+      # `project_task_assignees` n'avait pas de tenant_id (T27 → T30 rouges avant :
+      # 42703 depuis l'écran, salarié d'une autre société accepté, lecteur qui
+      # retire). 31 scénarios.
+      - name: 'Gestion de projets : statuts, avancement, bornes, dépendances, preuves, responsables (800-805)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/800_pm_gestion_projets_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta

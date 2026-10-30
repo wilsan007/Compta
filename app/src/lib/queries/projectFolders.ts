@@ -10,8 +10,6 @@ import type { ResourceEmployee, ResourceTimeEntry } from '@/lib/resourceUsage'
 
 // `order` : colonnes du tri TOTAL (la pagination l'exige). Par défaut `id` ;
 // `project_task_assignees` n'a pas d'`id`, sa clé est (task_id, employee_id).
-// `tenantColumn: false` : cette table n'a pas non plus de `tenant_id` — la RLS
-// l'isole par la tâche (voir `getTaskAssignees`), filtrer par colonne échouerait.
 //
 // Les tables sont désignées par un nom : le client typé ne sait pas suivre un nom
 // dynamique, d'où cette vue structurelle du seul sous-ensemble de filtres utilisé.
@@ -30,10 +28,9 @@ async function readAll<T>(
   table: string,
   columns: string,
   tweak?: (q: Filterable<T>) => Filterable<T>,
-  order: string[] = ['id'],
-  tenantColumn = true
+  order: string[] = ['id']
 ): Promise<T[]> {
-  const tid = tenantColumn ? await getTenantId() : null
+  const tid = await getTenantId()
   return fetchAllRows<T>(
     () => {
       let q = fromTable<T>(table, columns)
@@ -69,7 +66,7 @@ export async function getFolderSourceRows(): Promise<FolderSourceRows> {
     readAll<{ task_id: string; employee_id: string }>('project_task_assignees', 'task_id, employee_id', undefined, [
       'task_id',
       'employee_id',
-    ], false),
+    ]),
     readAll<EmployeeRef>('employees', 'id, name'),
     readAll<{ project_id: string; employee_id: string; role: string }>('project_members', 'id, project_id, employee_id, role'),
     readAll<{ task_id: string | null; duration_seconds: number | null; hourly_rate: number | null }>(
@@ -109,7 +106,7 @@ export async function getResourceSourceRows(from: string, to: string): Promise<R
     readAll<{ task_id: string; employee_id: string }>('project_task_assignees', 'task_id, employee_id', undefined, [
       'task_id',
       'employee_id',
-    ], false),
+    ]),
     readAll<ResourceTimeEntry>('project_time_entries', 'id, employee_id, task_id, project_id, start_time, duration_seconds', (q) =>
       q.gte('start_time', from).lt('start_time', upper)
     ),

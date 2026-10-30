@@ -740,51 +740,60 @@ export async function createProjectTag(name: string, color?: number): Promise<Pr
 
 // ============ Task Assignees ============
 
-// LOT7-04 : `project_task_assignees` ne porte PAS de colonne `tenant_id` — le filtre
-// applicatif renvoyait 400/42703 et la liste des affectations restait vide.
-// L'isolation multi-société est bien assurée, mais par la RLS, qui remonte à
-// `project_tasks.tenant_id` (policies `tenant_select_` / `tenant_delete_…`).
+// `project_task_assignees` porte `tenant_id` depuis la 805. Avant elle, la colonne
+// n'existait pas : le filtre applicatif renvoyait 400/42703 (LOT7-04) et changer le
+// responsable d'une tâche échouait. Lectures et écritures la filtrent de nouveau
+// par société ; la RLS (société + `can_perform`) et les clés composites tiennent
+// l'isolation en base.
 export async function getTaskAssignees(taskId: string): Promise<{ task_id: string; employee_id: string }[]> {
-  const { data, error } = await supabase
+  const tid = await getTenantId()
+  let q = supabase
     .from('project_task_assignees')
     .select('task_id, employee_id')
     .eq('task_id', taskId)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
   if (error) throw error
   return data || []
 }
 
-// Les écritures ne portent PAS non plus de `tenant_id` : la colonne n'existe pas
-// (42703 « column does not exist » — mesuré sur PostgREST le 30/10, changer le
-// responsable d'une tâche échouait). La RLS remonte à `project_tasks.tenant_id`.
 export async function assignTaskToEmployee(taskId: string, employeeId: string): Promise<void> {
+  const tid = await getTenantId()
+  const payload = ti({ task_id: taskId, employee_id: employeeId, tenant_id: tid }, 'project_task_assignees', tid)
   const { error } = await supabase
     .from('project_task_assignees')
-    .insert({ task_id: taskId, employee_id: employeeId })
+    .insert(payload)
   if (error) throw error
 }
 
 export async function unassignTaskFromEmployee(taskId: string, employeeId: string): Promise<void> {
-  const { error } = await supabase
+  const tid = await getTenantId()
+  let q = supabase
     .from('project_task_assignees')
     .delete()
     .eq('task_id', taskId)
     .eq('employee_id', employeeId)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { error } = await q
   if (error) throw error
 }
 
 export async function setTaskAssignee(taskId: string, employeeId: string | null, employeeName: string | null): Promise<void> {
+  const tid = await getTenantId()
+
   // 1. Update denormalized assignee field on project_tasks
   await updateTask(taskId, { assignee: employeeName })
 
   // 2. Clear existing junction entries for this task
-  const { error: delError } = await supabase.from('project_task_assignees').delete().eq('task_id', taskId)
+  let delQ = supabase.from('project_task_assignees').delete().eq('task_id', taskId)
+  if (tid) delQ = delQ.eq('tenant_id', tid)
+  const { error: delError } = await delQ
   if (delError) throw delError
 
   // 3. Insert new junction entry if an employee is assigned
   if (employeeId) {
-    const { error: insError } = await supabase
-      .from('project_task_assignees')
-      .insert({ task_id: taskId, employee_id: employeeId })
+    const payload = ti({ task_id: taskId, employee_id: employeeId, tenant_id: tid }, 'project_task_assignees', tid)
+    const { error: insError } = await supabase.from('project_task_assignees').insert(payload)
     if (insError) throw insError
 
     // 4. Notify the assigned employee

@@ -16629,28 +16629,38 @@ export interface Database {
       Row: {
         task_id: string
         employee_id: string
+        tenant_id: string
       }
       Insert: {
         task_id: string
         employee_id: string
+        tenant_id: string
       }
       Update: {
         task_id?: string
         employee_id?: string
+        tenant_id?: string
       }
       Relationships: [
         {
           foreignKeyName: "project_task_assignees_employee_id_fkey",
-          columns: ["employee_id"],
-          isOneToOne: true,
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
           referencedRelation: "employees",
-          referencedColumns: ["id"]
+          referencedColumns: ["tenant_id", "id"]
         },
         {
           foreignKeyName: "project_task_assignees_task_id_fkey",
-          columns: ["task_id"],
-          isOneToOne: true,
+          columns: ["tenant_id", "task_id"],
+          isOneToOne: false,
           referencedRelation: "project_tasks",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_task_assignees_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
           referencedColumns: ["id"]
         },
       ]

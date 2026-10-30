@@ -529,6 +529,129 @@ BEGIN
 END $$;
 DROP TABLE _ctx800;
 
+-- ── 805 : les responsables d'une tâche (project_task_assignees) portent leur société ──
+-- La table n'avait PAS de tenant_id : isolée par la seule RLS « la tâche est de ma
+-- société », elle n'avait ni clé composite (un salarié d'une autre société pouvait
+-- être affecté), ni garde de rôle (un lecteur affectait), et tout code qui la
+-- filtrait ou l'écrivait par société recevait 42703 (mesuré le 30/10 : changer le
+-- responsable d'une tâche échouait depuis l'écran).
+CREATE OR REPLACE FUNCTION _ident805(p_auth uuid, p_tenant uuid) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', p_auth::text, false);
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', p_auth, 'role', 'authenticated')::text, false);
+  PERFORM set_active_tenant(p_tenant);
+END $$;
+
+CREATE TEMP TABLE _ctx805 (ta uuid, tb uuid, ka uuid, kb uuid, ea uuid, ea2 uuid, eb uuid, adm_a uuid, adm_b uuid, viewer uuid);
+GRANT ALL ON _ctx805 TO PUBLIC;
+DO $$
+DECLARE ta uuid; tb uuid; pa uuid; pb uuid; ka uuid; kb uuid; ea uuid; ea2 uuid; eb uuid; v uuid;
+BEGIN
+  SELECT out_tenant, out_projet INTO ta, pa FROM _pj800('AS805A');
+  SELECT out_tenant, out_projet INTO tb, pb FROM _pj800('AS805B');
+  ka := _t800(ta, pa, 'Tâche A', NULL, NULL);
+  kb := _t800(tb, pb, 'Tâche B', NULL, NULL);
+  INSERT INTO employees (tenant_id, name, status) VALUES (ta, 'Salarié A', 'active') RETURNING id INTO ea;
+  INSERT INTO employees (tenant_id, name, status) VALUES (ta, 'Salarié A2', 'active') RETURNING id INTO ea2;
+  INSERT INTO employees (tenant_id, name, status) VALUES (tb, 'Salarié B', 'active') RETURNING id INTO eb;
+  v := uuid_generate_v4();
+  INSERT INTO auth.users (id, email) VALUES (v, 'viewer-' || v || '@audit.test');
+  INSERT INTO tenant_users (tenant_id, auth_id, email, name, role, status, created_at)
+    VALUES (ta, v, 'viewer-' || v || '@audit.test', 'Lecteur', 'viewer', 'active', now());
+  INSERT INTO _ctx805 VALUES (ta, tb, ka, kb, ea, ea2, eb,
+    (SELECT auth_id FROM tenant_users WHERE tenant_id = ta AND role = 'admin' LIMIT 1),
+    (SELECT auth_id FROM tenant_users WHERE tenant_id = tb AND role = 'admin' LIMIT 1), v);
+END $$;
+
+-- T27 — la table porte sa société, obligatoire
+DO $$
+DECLARE nul text;
+BEGIN
+  SELECT is_nullable INTO nul FROM information_schema.columns
+   WHERE table_schema = 'public' AND table_name = 'project_task_assignees' AND column_name = 'tenant_id';
+  PERFORM _rec('T27', 'project_task_assignees.tenant_id existe et est obligatoire', nul = 'NO',
+    format('is_nullable=%s', coalesce(nul, 'colonne absente')));
+END $$;
+
+-- T28 — l'appel de l'écran (task_id + employee_id, sans société) : la base la remplit
+DO $$
+DECLARE c record; got uuid;
+BEGIN
+  SELECT * INTO c FROM _ctx805;
+  PERFORM _ident805(c.adm_a, c.ta);
+  PERFORM set_config('role', 'authenticated', true);
+  INSERT INTO project_task_assignees (task_id, employee_id) VALUES (c.ka, c.ea);
+  EXECUTE 'RESET ROLE';
+  EXECUTE 'SELECT tenant_id FROM project_task_assignees WHERE task_id = $1 AND employee_id = $2' INTO got USING c.ka, c.ea;
+  PERFORM _rec('T28', 'une affectation écrite sans société reçoit celle de la tâche', got = c.ta, format('tenant_id=%s', got));
+EXCEPTION WHEN OTHERS THEN
+  EXECUTE 'RESET ROLE';
+  PERFORM _rec('T28', 'une affectation écrite sans société reçoit celle de la tâche', false, SQLERRM);
+END $$;
+
+-- T29 — pas d'affectation d'un salarié d'une autre société, ni d'une tâche qu'on ne voit pas
+DO $$
+DECLARE c record; e1 text := ''; e2 text := ''; n int;
+BEGIN
+  SELECT * INTO c FROM _ctx805;
+  PERFORM _ident805(c.adm_a, c.ta);
+  PERFORM set_config('role', 'authenticated', true);
+  BEGIN INSERT INTO project_task_assignees (task_id, employee_id) VALUES (c.ka, c.eb);
+  EXCEPTION WHEN OTHERS THEN e1 := SQLSTATE; END;
+  BEGIN INSERT INTO project_task_assignees (task_id, employee_id) VALUES (c.kb, c.ea);
+  EXCEPTION WHEN OTHERS THEN e2 := SQLSTATE; END;
+  EXECUTE 'RESET ROLE';
+  SELECT count(*) INTO n FROM project_task_assignees WHERE (task_id = c.ka AND employee_id = c.eb) OR (task_id = c.kb AND employee_id = c.ea);
+  PERFORM _rec('T29', 'refus d''affecter un salarié d''une autre société, ou une tâche d''une autre société',
+    e1 <> '' AND e2 <> '' AND n = 0, format('salarié étranger=%s tâche étrangère=%s lignes écrites=%s', nullif(e1, ''), nullif(e2, ''), n));
+EXCEPTION WHEN OTHERS THEN
+  EXECUTE 'RESET ROLE';
+  PERFORM _rec('T29', 'refus d''affecter un salarié d''une autre société, ou une tâche d''une autre société', false, SQLERRM);
+END $$;
+
+-- T30 — un lecteur n'affecte pas et ne retire pas ; une autre société ne voit rien
+DO $$
+DECLARE c record; ev text := ''; del_v int; seen_b int; del_b int; still int;
+BEGIN
+  SELECT * INTO c FROM _ctx805;
+  PERFORM _ident805(c.viewer, c.ta);
+  PERFORM set_config('role', 'authenticated', true);
+  BEGIN INSERT INTO project_task_assignees (task_id, employee_id) VALUES (c.ka, c.ea2);
+  EXCEPTION WHEN OTHERS THEN ev := SQLSTATE; END;
+  DELETE FROM project_task_assignees WHERE task_id = c.ka; GET DIAGNOSTICS del_v = ROW_COUNT;
+  EXECUTE 'RESET ROLE';
+  PERFORM _ident805(c.adm_b, c.tb);
+  PERFORM set_config('role', 'authenticated', true);
+  SELECT count(*) INTO seen_b FROM project_task_assignees WHERE task_id = c.ka;
+  DELETE FROM project_task_assignees WHERE task_id = c.ka; GET DIAGNOSTICS del_b = ROW_COUNT;
+  EXECUTE 'RESET ROLE';
+  SELECT count(*) INTO still FROM project_task_assignees WHERE task_id = c.ka;
+  PERFORM _rec('T30', 'un lecteur n''affecte ni ne retire (42501) ; une autre société ne voit ni ne retire rien',
+    ev = '42501' AND del_v = 0 AND seen_b = 0 AND del_b = 0 AND still = 1,
+    format('lecteur: insert=%s retraits=%s | autre société: vues=%s retraits=%s | restantes=%s', nullif(ev, ''), del_v, seen_b, del_b, still));
+EXCEPTION WHEN OTHERS THEN
+  EXECUTE 'RESET ROLE';
+  PERFORM _rec('T30', 'un lecteur n''affecte ni ne retire (42501) ; une autre société ne voit ni ne retire rien', false, SQLERRM);
+END $$;
+
+-- T31 — supprimer la tâche ou le salarié emporte l'affectation (cascade composite)
+DO $$
+DECLARE c record; n1 int; n2 int;
+BEGIN
+  SELECT * INTO c FROM _ctx805;
+  INSERT INTO project_task_assignees (task_id, employee_id) VALUES (c.ka, c.ea2);
+  DELETE FROM employees WHERE id = c.ea2;
+  SELECT count(*) INTO n1 FROM project_task_assignees WHERE employee_id = c.ea2;
+  DELETE FROM project_tasks WHERE id = c.ka;
+  SELECT count(*) INTO n2 FROM project_task_assignees WHERE task_id = c.ka;
+  PERFORM _rec('T31', 'supprimer le salarié, puis la tâche, emporte leurs affectations', n1 = 0 AND n2 = 0,
+    format('après salarié=%s après tâche=%s', n1, n2));
+EXCEPTION WHEN OTHERS THEN
+  PERFORM _rec('T31', 'supprimer le salarié, puis la tâche, emporte leurs affectations', false, SQLERRM);
+END $$;
+DROP TABLE _ctx805;
+DROP FUNCTION _ident805(uuid, uuid);
+
 DROP FUNCTION _a800(uuid, uuid, text, integer, integer);
 DROP FUNCTION _preuve800(uuid, uuid);
 DROP FUNCTION _t800(uuid, uuid, text, date, date, uuid, numeric);
