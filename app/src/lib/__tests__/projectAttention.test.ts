@@ -166,7 +166,7 @@ describe('computeAttention', () => {
     expect(r.items.filter((i) => i.kind === 'unassigned').map((i) => i.taskId).sort()).toEqual(['KID', 'NEAR'])
   })
 
-  it('une personne surchargée est rattachée à chaque projet qu\'elle porte', () => {
+  it('une personne surchargée est UN point d\'attention, rattaché à chaque projet qu\'elle porte', () => {
     const usage = {
       rows: [
         {
@@ -176,6 +176,7 @@ describe('computeAttention', () => {
           plannedRate: 130,
           byProject: [
             { projectId: 'P1', name: 'Projet Un', tasks: 2, plannedHours: 10, loggedHours: 0 },
+            { projectId: 'P2', name: 'Projet Deux', tasks: 1, plannedHours: 5, loggedHours: 0 },
             { projectId: null, name: 'Sans projet', tasks: 1, plannedHours: 1, loggedHours: 0 },
             { projectId: 'Pinconnu', name: 'x', tasks: 1, plannedHours: 1, loggedHours: 0 },
           ],
@@ -183,10 +184,22 @@ describe('computeAttention', () => {
         { key: 'E2', name: 'Bob', status: 'balanced', plannedRate: 80, byProject: [] },
       ],
     } as unknown as ResourceUsageResult
-    const r = computeAttention({ sources: sources(), usage, today: TODAY })
-    expect(r.items).toHaveLength(1)
-    expect(r.items[0]).toMatchObject({ kind: 'overloaded', person: 'Karim', rate: 130, projectId: 'P1', projectName: 'Projet Un' })
-    expect(r.projects[0].health).toBe('amber')
+    const two = sources()
+    two.projects.push({ ...two.projects[0], id: 'P2', name: 'Projet Deux' })
+    const r = computeAttention({ sources: two, usage, today: TODAY })
+    expect(r.items).toHaveLength(1) // une seule ligne, pas une par projet
+    expect(r.items[0]).toMatchObject({
+      kind: 'overloaded',
+      person: 'Karim',
+      rate: 130,
+      projectIds: ['P1', 'P2'],
+      projectName: 'Projet Un · Projet Deux',
+    })
+    // …mais chaque projet qu'elle porte la compte
+    expect(r.projects.map((p) => [p.projectId, p.health, p.items]).sort()).toEqual([
+      ['P1', 'amber', 1],
+      ['P2', 'amber', 1],
+    ])
   })
 
   it('l\'ordre : urgents d\'abord, puis le plus en retard ; les projets : rouge, orange, vert', () => {

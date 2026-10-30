@@ -38,6 +38,8 @@ export interface AttentionItem {
   severity: AttentionSeverity
   projectId: string | null
   projectName: string
+  // une personne surchargée est UN point d'attention, rattaché à tous les projets qu'elle porte
+  projectIds?: string[]
   taskId?: string
   taskTitle?: string
   person?: string
@@ -154,20 +156,22 @@ export function computeAttention(args: {
     }
   }
 
-  // ----- les personnes surchargées, rattachées aux projets qu'elles portent
+  // ----- les personnes surchargées : une ligne par personne, rattachée à chaque projet qu'elle porte
   for (const row of usage?.rows || []) {
     if (row.status !== 'overloaded' || row.plannedRate === null) continue
-    for (const line of row.byProject) {
-      if (!line.projectId || !activeIds.has(line.projectId)) continue
-      push({
-        id: `ov:${row.key}:${line.projectId}`,
-        kind: 'overloaded',
-        severity: 'medium',
-        projectId: line.projectId,
-        person: row.name,
-        rate: row.plannedRate,
-      })
-    }
+    const mine = row.byProject.filter((l) => l.projectId && activeIds.has(l.projectId))
+    if (mine.length === 0) continue
+    const ids = mine.map((l) => l.projectId as string)
+    items.push({
+      id: `ov:${row.key}`,
+      kind: 'overloaded',
+      severity: 'medium',
+      projectId: ids[0],
+      projectIds: ids,
+      projectName: ids.map((id) => nameOf(id)).join(' · '),
+      person: row.name,
+      rate: row.plannedRate,
+    })
   }
 
   const rank = (i: AttentionItem) => (i.severity === 'high' ? 0 : 1)
@@ -184,7 +188,7 @@ export function computeAttention(args: {
   for (const p of activeProjects) {
     const s = summaries.get(p.id)
     if (!s) continue
-    const mine = items.filter((i) => i.projectId === p.id)
+    const mine = items.filter((i) => i.projectId === p.id || i.projectIds?.includes(p.id))
     const high = mine.filter((i) => i.severity === 'high').length
     projects.push({
       projectId: p.id,
