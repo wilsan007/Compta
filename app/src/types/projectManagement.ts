@@ -448,21 +448,6 @@ export interface ProjectNotification {
   created_at: string
 }
 
-// ============ Workload Data (Sprint 1) ============
-
-export interface WorkloadEntry {
-  employee_id: string
-  employee_name: string
-  total_tasks: number
-  active_tasks: number
-  overdue_tasks: number
-  estimated_hours: number
-  spent_hours: number
-  capacity_hours: number
-  utilization_percentage: number
-  status: 'underloaded' | 'balanced' | 'overloaded'
-}
-
 // ============ Timeline Item (Sprint 1) ============
 
 export interface TimelineItem {

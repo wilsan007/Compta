@@ -409,24 +409,6 @@
     "collapseAll": "Collapse all",
     "moreEntries": "+{{count}} more activities"
   },
-  "workload": {
-    "title": "Workload",
-    "subtitle": "Distribution by member",
-    "employee": "Employee",
-    "totalTasks": "Total Tasks",
-    "activeTasks": "Active Tasks",
-    "overdueTasks": "Overdue Tasks",
-    "estimatedHours": "Estimated Hours",
-    "spentHours": "Spent Hours",
-    "capacity": "Capacity",
-    "utilization": "Utilization",
-    "underloaded": "Underloaded",
-    "balanced": "Balanced",
-    "overloaded": "Overloaded",
-    "noData": "No data",
-    "noDataDesc": "No employees assigned to tasks",
-    "reassign": "Reassign"
-  },
   "timeline": {
     "title": "Timeline",
     "subtitle": "Linear view of tasks",

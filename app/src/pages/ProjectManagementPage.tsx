@@ -11,7 +11,6 @@ import { BurndownChart } from '@/components/project-management/BurndownChart'
 import { MyTasksView } from '@/components/project-management/MyTasksView'
 import { CalendarView } from '@/components/project-management/CalendarView'
 import { LargeScreenView } from '@/components/project-management/LargeScreenView'
-import { WorkloadView } from '@/components/project-management/WorkloadView'
 import { ActivityView } from '@/components/project-management/ActivityView'
 import { TimelineView } from '@/components/project-management/TimelineView'
 import { NotificationsView } from '@/components/project-management/NotificationsView'
@@ -30,7 +29,7 @@ import type { TaskCreateInput } from '@/types/projectManagement'
 
 type ViewType =
   | 'table' | 'kanban' | 'gantt' | 'graph' | 'pivot' | 'burndown'
-  | 'my-tasks' | 'calendar' | 'large-screen' | 'workload'
+  | 'my-tasks' | 'calendar' | 'large-screen'
   | 'activity' | 'timeline' | 'notifications'
   | 'mind-map' | 'box' | 'doc' | 'chat'
   | 'folders' | 'resources' | 'attention'
@@ -95,7 +94,6 @@ export function ProjectManagementPage({ projectId, initialView }: ProjectManagem
             {view === 'my-tasks' && <MyTasksView projectId={projectId} />}
             {view === 'calendar' && <CalendarView projectId={projectId} />}
             {view === 'large-screen' && <LargeScreenView projectId={projectId} />}
-            {view === 'workload' && <WorkloadView projectId={projectId} />}
             {view === 'timeline' && <TimelineView projectId={projectId} />}
             {view === 'activity' && <ActivityView projectId={projectId} />}
             {view === 'notifications' && <NotificationsView />}

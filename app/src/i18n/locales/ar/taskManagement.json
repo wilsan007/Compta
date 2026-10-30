@@ -409,24 +409,6 @@
     "collapseAll": "طي الكل",
     "moreEntries": "+{{count}} أنشطة أخرى"
   },
-  "workload": {
-    "title": "عبء العمل",
-    "subtitle": "التوزيع حسب العضو",
-    "employee": "الموظف",
-    "totalTasks": "إجمالي المهام",
-    "activeTasks": "المهام النشطة",
-    "overdueTasks": "المهام المتأخرة",
-    "estimatedHours": "الساعات المقدرة",
-    "spentHours": "الساعات المستهلكة",
-    "capacity": "السعة",
-    "utilization": "معدل الاستخدام",
-    "underloaded": "عبء منخفض",
-    "balanced": "متوازن",
-    "overloaded": "عبء زائد",
-    "noData": "لا توجد بيانات",
-    "noDataDesc": "لا يوجد موظفون مكلفون بمهام",
-    "reassign": "إعادة التكليف"
-  },
   "timeline": {
     "title": "الخط الزمني",
     "subtitle": "عرض خطي للمهام",

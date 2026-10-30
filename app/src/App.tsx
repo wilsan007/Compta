@@ -535,7 +535,8 @@ function App() {
           <Route path="/project-management/my-tasks" element={<ProjectManagementPage initialView="my-tasks" />} />
           <Route path="/project-management/calendar" element={<ProjectManagementPage initialView="calendar" />} />
           <Route path="/project-management/large-screen" element={<ProjectManagementPage initialView="large-screen" />} />
-          <Route path="/project-management/workload" element={<ProjectManagementPage initialView="workload" />} />
+          {/* ancienne « Charge de travail » : remplacée par l'utilisation des ressources (anciens signets) */}
+          <Route path="/project-management/workload" element={<Navigate to="/project-management/resources" replace />} />
           <Route path="/project-management/timeline" element={<ProjectManagementPage initialView="timeline" />} />
           <Route path="/project-management/activity" element={<ProjectManagementPage initialView="activity" />} />
           <Route path="/project-management/notifications" element={<ProjectManagementPage initialView="notifications" />} />

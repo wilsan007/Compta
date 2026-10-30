@@ -409,24 +409,6 @@
     "collapseAll": "Tout replier",
     "moreEntries": "+{{count}} autres activités"
   },
-  "workload": {
-    "title": "Charge de travail",
-    "subtitle": "Répartition par membre",
-    "employee": "Employé",
-    "totalTasks": "Total tâches",
-    "activeTasks": "Tâches actives",
-    "overdueTasks": "Tâches en retard",
-    "estimatedHours": "Heures estimées",
-    "spentHours": "Heures passées",
-    "capacity": "Capacité",
-    "utilization": "Taux d'utilisation",
-    "underloaded": "Sous-chargé",
-    "balanced": "Équilibré",
-    "overloaded": "Surchargé",
-    "noData": "Aucune donnée",
-    "noDataDesc": "Aucun employé assigné à des tâches",
-    "reassign": "Réassigner"
-  },
   "timeline": {
     "title": "Chronologie",
     "subtitle": "Vue linéaire des tâches",

@@ -430,7 +430,6 @@ export const navModules: NavModule[] = [
         hubPath: '/project-management/section/personal',
         items: [
           { labelKey: 'items.pmMyTasks', path: '/project-management/my-tasks' },
-          { labelKey: 'items.pmWorkload', path: '/project-management/workload' },
           { labelKey: 'items.pmResources', path: '/project-management/resources' },
           { labelKey: 'items.pmActivity', path: '/project-management/activity' },
           { labelKey: 'items.pmNotifications', path: '/project-management/notifications' },
