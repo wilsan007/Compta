@@ -14,6 +14,10 @@ import { login, A, B, sql, check, attempt, save, findings } from './rig'
 
 type Cree = { table: string; id: string | null; err?: string }
 
+// Le jeu de test ne remplit que les colonnes utiles : on l'accepte comme premier
+// argument de la vraie fonction de requête, sans `any`.
+const arg = <F extends (...a: never[]) => unknown>(_fn: F, v: Record<string, unknown>) => v as Parameters<F>[0]
+
 it('Création par l\'écran dans les 26 tables de p403b.mjs (registre + pose explicite)', async () => {
   const stamp = String(Date.now()).slice(-8)
   const sb = await login(0, A)
@@ -50,33 +54,33 @@ it('Création par l\'écran dans les 26 tables de p403b.mjs (registre + pose exp
   }
 
   // ---------- Stock (9 tables) ----------
-  const w1 = await attempt(() => stock.createWarehouse({ code: `AU1${stamp}`, name: 'Dépôt audit 1', address: null, city: null, postal_code: null, country: 'France', active: true } as any))
-  const w2 = await attempt(() => stock.createWarehouse({ code: `AU2${stamp}`, name: 'Dépôt audit 2', address: null, city: null, postal_code: null, country: 'France', active: true } as any))
-  const wa: any = w1.val, wb: any = w2.val
+  const w1 = await attempt(() => stock.createWarehouse(arg(stock.createWarehouse, { code: `AU1${stamp}`, name: 'Dépôt audit 1', address: null, city: null, postal_code: null, country: 'France', active: true })))
+  const w2 = await attempt(() => stock.createWarehouse(arg(stock.createWarehouse, { code: `AU2${stamp}`, name: 'Dépôt audit 2', address: null, city: null, postal_code: null, country: 'France', active: true })))
+  const wa = w1.val as { id?: string } | null, wb = w2.val as { id?: string } | null
   check('TI-warehouses', 'prérequis des transferts : deux dépôts créés (table déjà dans le registre)', w1.ok && w2.ok, w1.err ?? w2.err ?? 'ok')
 
   const num = `TR-AUD-${stamp}`
-  await creer('stock_transfers', () => stock.createStockTransfer({ transfer_number: num, from_warehouse_id: wa?.id, to_warehouse_id: wb?.id, status: 'pending' } as any),
+  await creer('stock_transfers', () => stock.createStockTransfer(arg(stock.createStockTransfer, { transfer_number: num, from_warehouse_id: wa?.id, to_warehouse_id: wb?.id, status: 'pending' })),
     `select id, tenant_id from stock_transfers where transfer_number=$1`, [num])
   const tr = (await sql(`select id from stock_transfers where transfer_number=$1`, [num]))[0]
-  await creer('stock_transfer_lines', () => stock.createStockTransferLine({ transfer_id: tr?.id, product_id: produit.id, quantity: 2 } as any),
+  await creer('stock_transfer_lines', () => stock.createStockTransferLine(arg(stock.createStockTransferLine, { transfer_id: tr?.id, product_id: produit.id, quantity: 2 })),
     `select id, tenant_id from stock_transfer_lines where transfer_id=$1`, [tr?.id])
 
   const catName = `Catégorie audit ${stamp}`
-  await creer('uom_categories', () => stock.createUomCategory({ name: catName } as any),
+  await creer('uom_categories', () => stock.createUomCategory(arg(stock.createUomCategory, { name: catName })),
     `select id, tenant_id from uom_categories where name=$1`, [catName])
   const cat = (await sql(`select id from uom_categories where name=$1`, [catName]))[0]
-  await creer('uoms', () => stock.createUom({ code: `U${stamp}`, name: `Unité audit ${stamp}`, category_id: cat?.id } as any),
+  await creer('uoms', () => stock.createUom(arg(stock.createUom, { code: `U${stamp}`, name: `Unité audit ${stamp}`, category_id: cat?.id })),
     `select id, tenant_id from uoms where code=$1`, [`U${stamp}`])
 
-  await creer('reorder_rules', () => stock.createReorderRule({ product_id: produit.id, min_quantity: 5, max_quantity: 50 } as any),
+  await creer('reorder_rules', () => stock.createReorderRule(arg(stock.createReorderRule, { product_id: produit.id, min_quantity: 5, max_quantity: 50 })),
     `select id, tenant_id from reorder_rules where product_id=$1 order by created_at desc limit 1`, [produit.id])
-  await creer('stock_count_cycles', () => stock.createStockCountCycle({ product_id: produit.id } as any),
+  await creer('stock_count_cycles', () => stock.createStockCountCycle(arg(stock.createStockCountCycle, { product_id: produit.id })),
     `select id, tenant_id from stock_count_cycles where product_id=$1 order by created_at desc limit 1`, [produit.id])
-  await creer('maintenance_records', () => stock.createMaintenanceRecord({ maintenance_date: '2026-10-23', status: 'planned', notes: `audit ${stamp}` } as any),
+  await creer('maintenance_records', () => stock.createMaintenanceRecord(arg(stock.createMaintenanceRecord, { maintenance_date: '2026-10-23', status: 'planned', notes: `audit ${stamp}` })),
     `select id, tenant_id from maintenance_records where notes=$1`, [`audit ${stamp}`])
   const fact = `FA-AUD-${stamp}`
-  await creer('landed_costs', () => stock.createLandedCost({ invoice_number: fact, supplier_id: null, total_amount: 120, distribution_method: 'value', status: 'pending' } as any),
+  await creer('landed_costs', () => stock.createLandedCost(arg(stock.createLandedCost, { invoice_number: fact, supplier_id: null, total_amount: 120, distribution_method: 'value', status: 'pending' })),
     `select id, tenant_id from landed_costs where invoice_number=$1`, [fact])
   const lc = (await sql(`select id from landed_costs where invoice_number=$1`, [fact]))[0]
   await creer('landed_cost_receipts', () => stock.addLandedCostReceipt(lc?.id, reception.id),
