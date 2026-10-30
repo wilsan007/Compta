@@ -511,6 +511,8 @@ describe('9. Task Assignees', () => {
     const payload = mockChain.insert.mock.calls[0][0]
     expect(payload.task_id).toBe('t1')
     expect(payload.employee_id).toBe('e1')
+    // la table n'a pas de colonne `tenant_id` (isolée par la RLS via la tâche) : l'écrire est refusé (42703)
+    expect(payload).not.toHaveProperty('tenant_id')
   })
 
   it('unassignTaskFromEmployee supprime de la junction', async () => {
@@ -519,6 +521,7 @@ describe('9. Task Assignees', () => {
     expect(mockChain.delete).toHaveBeenCalled()
     expect(mockChain.eq).toHaveBeenCalledWith('task_id', 't1')
     expect(mockChain.eq).toHaveBeenCalledWith('employee_id', 'e1')
+    expect(mockChain.eq).not.toHaveBeenCalledWith('tenant_id', expect.anything())
   })
 
   it('setTaskAssignee avec employeeId null → supprime seulement', async () => {
@@ -528,6 +531,11 @@ describe('9. Task Assignees', () => {
     mockChain.then = vi.fn((resolve: any) => Promise.resolve({ data: null, error: null }).then(resolve))
     await setTaskAssignee('t1', null, null)
     expect(mockChain.delete).toHaveBeenCalled()
+    // l'`updateTask` de l'étape 1 filtre par société (project_tasks) ; le DELETE de la
+    // jonction, lui, ne le peut pas : on ne regarde que les filtres posés après lui
+    const deleteOrder = mockChain.delete.mock.invocationCallOrder[0]
+    const afterDelete = mockChain.eq.mock.calls.filter((_c: unknown, i: number) => mockChain.eq.mock.invocationCallOrder[i] > deleteOrder)
+    expect(afterDelete.map((c: unknown[]) => c[0])).toEqual(['task_id'])
     // Pas d'insert si employeeId est null
     expect(mockChain.insert).not.toHaveBeenCalled()
   })
@@ -541,6 +549,7 @@ describe('9. Task Assignees', () => {
     expect(mockChain.update).toHaveBeenCalled()
     expect(mockChain.delete).toHaveBeenCalled()
     expect(mockChain.insert).toHaveBeenCalled()
+    expect(mockChain.insert.mock.calls[0][0]).not.toHaveProperty('tenant_id')
   })
 })
 

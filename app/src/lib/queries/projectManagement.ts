@@ -753,43 +753,38 @@ export async function getTaskAssignees(taskId: string): Promise<{ task_id: strin
   return data || []
 }
 
+// Les écritures ne portent PAS non plus de `tenant_id` : la colonne n'existe pas
+// (42703 « column does not exist » — mesuré sur PostgREST le 30/10, changer le
+// responsable d'une tâche échouait). La RLS remonte à `project_tasks.tenant_id`.
 export async function assignTaskToEmployee(taskId: string, employeeId: string): Promise<void> {
-  const tid = await getTenantId()
-  const payload = ti({ task_id: taskId, employee_id: employeeId, tenant_id: tid }, 'project_task_assignees', tid)
   const { error } = await supabase
     .from('project_task_assignees')
-    .insert(payload)
+    .insert({ task_id: taskId, employee_id: employeeId })
   if (error) throw error
 }
 
 export async function unassignTaskFromEmployee(taskId: string, employeeId: string): Promise<void> {
-  const tid = await getTenantId()
-  let q = supabase
+  const { error } = await supabase
     .from('project_task_assignees')
     .delete()
     .eq('task_id', taskId)
     .eq('employee_id', employeeId)
-  if (tid) q = q.eq('tenant_id', tid)
-  const { error } = await q
   if (error) throw error
 }
 
 export async function setTaskAssignee(taskId: string, employeeId: string | null, employeeName: string | null): Promise<void> {
-  const tid = await getTenantId()
-
   // 1. Update denormalized assignee field on project_tasks
   await updateTask(taskId, { assignee: employeeName })
 
   // 2. Clear existing junction entries for this task
-  let delQ = supabase.from('project_task_assignees').delete().eq('task_id', taskId)
-  if (tid) delQ = delQ.eq('tenant_id', tid)
-  const { error: delError } = await delQ
+  const { error: delError } = await supabase.from('project_task_assignees').delete().eq('task_id', taskId)
   if (delError) throw delError
 
   // 3. Insert new junction entry if an employee is assigned
   if (employeeId) {
-    const payload = ti({ task_id: taskId, employee_id: employeeId, tenant_id: tid }, 'project_task_assignees', tid)
-    const { error: insError } = await supabase.from('project_task_assignees').insert(payload)
+    const { error: insError } = await supabase
+      .from('project_task_assignees')
+      .insert({ task_id: taskId, employee_id: employeeId })
     if (insError) throw insError
 
     // 4. Notify the assigned employee
