@@ -22,7 +22,7 @@ interface ActionCellProps {
 // Sans preuve, la case est grisée : la base refuserait de toute façon (803).
 export const ActionCell = memo(function ActionCell({ action, taskTitle, proofs, isSub, selected, canEdit, onToggle, onProof }: ActionCellProps) {
   const { t } = useTranslation('taskManagement')
-  if (!action) return <span className="text-[var(--color-border)]" aria-hidden="true">·</span>
+  if (!action) return <span className="text-[var(--color-text-tertiary)]" aria-hidden="true">·</span>
   const locked = !action.is_done && proofs === 0
   return (
     <div className="flex items-center justify-center gap-1.5">
