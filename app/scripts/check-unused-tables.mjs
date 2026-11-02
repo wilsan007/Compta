@@ -22,7 +22,10 @@ const ceilingFile = join(appRoot, '.unused-tables-ceiling.json')
 // 1. Extraire les noms de tables depuis le schéma SQL
 function extractTableNames() {
   const tables = new Set()
-  const files = readdirSync(sqlDir).filter(f => f.endsWith('.sql'))
+  // Les suites de tests (`*_tests.sql`) créent des tables de travail (`_ctx800`…) :
+  // ce sont des fixtures, pas des tables métier — elles ne décrivent pas le schéma
+  // (mesuré le 02/11/2026 : `_ctx800` faisait passer le compte de 72 à 73).
+  const files = readdirSync(sqlDir).filter(f => f.endsWith('.sql') && !f.endsWith('_tests.sql'))
   for (const file of files) {
     // Les commentaires SQL sont retirés avant la lecture : une phrase comme
     // « APRÈS le CREATE TABLE puis… » ou « `CREATE TABLE IF NOT EXISTS` ne… »
