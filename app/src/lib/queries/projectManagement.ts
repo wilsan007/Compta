@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
-import { getTenantId, ti, tud } from './core'
+import { fetchAllRows, getTenantId, ti, tud, type RangeableQuery } from './core'
 import { createNotification } from './projectManagementSprint1'
+import { fromDbTask, taskStatusFromDb, toDbTaskWrite } from '@/lib/taskStatus'
 import type {
   ProjectTask,
   TaskAction,
@@ -8,6 +9,7 @@ import type {
   TaskDocument,
   TaskComment,
   ProjectTaskDependency,
+  ProjectDependency,
   ProjectStage,
   ProjectMilestone,
   ProjectTag,
@@ -29,7 +31,7 @@ export async function getTasks(projectId?: string): Promise<ProjectTask[]> {
   if (projectId) q = q.eq('project_id', projectId)
   const { data, error } = await q
   if (error) throw error
-  return (data || []) as ProjectTask[]
+  return ((data || []) as ProjectTask[]).map(fromDbTask)
 }
 
 export async function getTaskById(id: string): Promise<ProjectTask | null> {
@@ -38,25 +40,25 @@ export async function getTaskById(id: string): Promise<ProjectTask | null> {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q.maybeSingle()
   if (error) throw error
-  return data as ProjectTask | null
+  return data ? fromDbTask(data as ProjectTask) : null
 }
 
 export async function createTask(task: TaskCreateInput): Promise<ProjectTask> {
   const tid = await getTenantId()
-  const payload = ti({ ...task, tenant_id: tid }, 'project_tasks', tid)
+  const payload = ti(toDbTaskWrite({ ...task, tenant_id: tid }), 'project_tasks', tid)
   const { data, error } = await supabase
     .from('project_tasks')
     .insert(payload)
     .select()
     .single()
   if (error) throw error
-  return data as ProjectTask
+  return fromDbTask(data as ProjectTask)
 }
 
 export async function updateTask(id: string, updates: TaskUpdateInput): Promise<ProjectTask> {
   const tid = await getTenantId()
   const { data, error } = await tud(
-    supabase.from('project_tasks').update(updates),
+    supabase.from('project_tasks').update(toDbTaskWrite(updates)),
     'project_tasks',
     tid
   )
@@ -65,7 +67,7 @@ export async function updateTask(id: string, updates: TaskUpdateInput): Promise<
     .select()
     .single()
   if (error) throw error
-  return data as ProjectTask
+  return fromDbTask(data as ProjectTask)
 }
 
 export async function deleteTask(id: string): Promise<void> {
@@ -138,6 +140,40 @@ export async function getTaskActions(taskId: string): Promise<TaskAction[]> {
   return (data || []) as TaskAction[]
 }
 
+// Une seule lecture pour toutes les lignes du tableau (la grille d'actions n'a pas
+// à interroger la base une fois par tâche). Les identifiants sont envoyés par
+// paquets pour borner la longueur de l'URL, et chaque paquet est paginé : PostgREST
+// tronque à 1000 lignes. Le tri (date, puis identifiant) est total, sinon une page
+// peut répéter ou perdre une ligne.
+const ACTIONS_TASK_CHUNK = 100
+
+export async function getActionsForTasks(taskIds: string[]): Promise<TaskAction[]> {
+  if (taskIds.length === 0) return []
+  const tid = await getTenantId()
+  const chunks: string[][] = []
+  for (let i = 0; i < taskIds.length; i += ACTIONS_TASK_CHUNK) {
+    chunks.push(taskIds.slice(i, i + ACTIONS_TASK_CHUNK))
+  }
+  const pages = await Promise.all(
+    chunks.map((ids) =>
+      fetchAllRows<TaskAction>(
+        () => {
+          let q = supabase
+            .from('task_actions')
+            .select('*')
+            .in('task_id', ids)
+            .order('created_at', { ascending: true })
+            .order('id', { ascending: true })
+          if (tid) q = q.eq('tenant_id', tid)
+          return q as unknown as RangeableQuery<TaskAction>
+        },
+        { label: 'getActionsForTasks' }
+      )
+    )
+  )
+  return pages.flat()
+}
+
 export async function addActionColumn(
   taskId: string,
   title: string,
@@ -188,25 +224,6 @@ export async function addDetailedAction(
   return data as TaskAction
 }
 
-export async function recalculateTaskProgress(taskId: string): Promise<number> {
-  const actions = await getTaskActions(taskId)
-  if (actions.length === 0) return 0
-
-  const totalWeight = actions.reduce((sum, a) => sum + (a.weight_percentage || 0), 0)
-  const doneActions = actions.filter((a) => a.is_done)
-  const doneWeight = doneActions.reduce((sum, a) => sum + (a.weight_percentage || 0), 0)
-
-  let progress: number
-  if (totalWeight > 0) {
-    progress = Math.round((doneWeight / totalWeight) * 100)
-  } else {
-    progress = Math.round((doneActions.length / actions.length) * 100)
-  }
-
-  await updateTask(taskId, { progress })
-  return progress
-}
-
 export async function toggleAction(actionId: string, isDone: boolean): Promise<{ action: TaskAction; progress: number }> {
   const tid = await getTenantId()
   const { data, error } = await tud(
@@ -220,8 +237,50 @@ export async function toggleAction(actionId: string, isDone: boolean): Promise<{
     .single()
   if (error) throw error
   const action = data as TaskAction
-  const progress = await recalculateTaskProgress(action.task_id)
-  return { action, progress }
+  return { action, progress: await getTaskProgress(action.task_id) }
+}
+
+// La progression d'une tâche est calculée par la BASE (800 : actions pondérées,
+// sous-tâches, remontée à la mère et au projet). Le client la relit, il ne la
+// recalcule plus — l'ancien calcul client ignorait les sous-tâches et réécrivait
+// la valeur de la base.
+export async function getTaskProgress(taskId: string): Promise<number> {
+  const tid = await getTenantId()
+  let q = supabase.from('project_tasks').select('progress').eq('id', taskId)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q.maybeSingle()
+  if (error) throw error
+  return (data as { progress: number } | null)?.progress ?? 0
+}
+
+export async function updateActionProgress(actionId: string, progress: number): Promise<TaskAction> {
+  const tid = await getTenantId()
+  const { data, error } = await tud(
+    supabase.from('task_actions').update({ progress }),
+    'task_actions',
+    tid
+  )
+    .eq('id', actionId)
+    .eq('tenant_id', tid)
+    .select()
+    .single()
+  if (error) throw error
+  return data as TaskAction
+}
+
+export async function updateActionWeight(actionId: string, weight: number): Promise<TaskAction> {
+  const tid = await getTenantId()
+  const { data, error } = await tud(
+    supabase.from('task_actions').update({ weight_percentage: weight }),
+    'task_actions',
+    tid
+  )
+    .eq('id', actionId)
+    .eq('tenant_id', tid)
+    .select()
+    .single()
+  if (error) throw error
+  return data as TaskAction
 }
 
 export async function deleteAction(actionId: string): Promise<void> {
@@ -270,9 +329,13 @@ export async function uploadTaskDocument(
   projectId?: string | null
 ): Promise<TaskDocument> {
   const tid = await getTenantId()
-  const filePath = `task-docs/${taskId}/${Date.now()}-${file.name}`
+  if (!tid) throw new Error('Aucune société active')
+  // Le compartiment `task-attachments` visé jusqu'ici n'existe pas : aucun
+  // document ne pouvait être déposé. `project-docs` exige que le chemin commence
+  // par l'identifiant de la société (politiques de stockage).
+  const filePath = projectFilePath(tid, 'taches', taskId, file.name)
   const { error: uploadError } = await supabase.storage
-    .from('task-attachments')
+    .from(PROJECT_BUCKET)
     .upload(filePath, file)
   if (uploadError) throw uploadError
 
@@ -296,6 +359,115 @@ export async function uploadTaskDocument(
     .single()
   if (error) throw error
   return data as TaskDocument
+}
+
+// ============ Fichiers du tableau (documents, preuves d'action) ============
+
+const PROJECT_BUCKET = 'project-docs'
+
+function projectFilePath(tenantId: string, kind: 'taches' | 'actions', ownerId: string, name: string): string {
+  const safe = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9._-]+/g, '_')
+  return `${tenantId}/${kind}/${ownerId}/${Date.now()}-${safe}`
+}
+
+export async function downloadProjectFile(path: string): Promise<Blob> {
+  const { data, error } = await supabase.storage.from(PROJECT_BUCKET).download(path)
+  if (error) throw error
+  return data
+}
+
+// Document de PREUVE d'une action : sans lui, la base refuse de la cocher (803).
+export async function uploadActionProof(action: TaskAction, file: File): Promise<TaskActionAttachment> {
+  const tid = await getTenantId()
+  if (!tid) throw new Error('Aucune société active')
+  const filePath = projectFilePath(tid, 'actions', action.id, file.name)
+  const { error: uploadError } = await supabase.storage.from(PROJECT_BUCKET).upload(filePath, file)
+  if (uploadError) throw uploadError
+  const { data: auth } = await supabase.auth.getUser()
+  const payload = ti(
+    {
+      task_action_id: action.id,
+      task_id: action.task_id,
+      file_name: file.name,
+      file_path: filePath,
+      file_size: file.size,
+      mime_type: file.type,
+      uploader_id: auth.user?.id ?? null,
+      tenant_id: tid,
+    },
+    'task_action_attachments',
+    tid
+  )
+  const { data, error } = await supabase.from('task_action_attachments').insert(payload).select().single()
+  if (error) throw error
+  return data as TaskActionAttachment
+}
+
+export interface TaskTableCounts {
+  documents: Map<string, number> // par tâche
+  comments: Map<string, number> // par tâche
+  proofs: Map<string, number> // par action
+}
+
+// Les compteurs du tableau en TROIS lectures pour toutes les lignes (wadashaqayn
+// faisait une requête par action et par ligne). Paquets d'identifiants, pagination.
+export async function getTaskTableCounts(taskIds: string[]): Promise<TaskTableCounts> {
+  const counts: TaskTableCounts = { documents: new Map(), comments: new Map(), proofs: new Map() }
+  if (taskIds.length === 0) return counts
+  const tid = await getTenantId()
+  const chunks: string[][] = []
+  for (let i = 0; i < taskIds.length; i += ACTIONS_TASK_CHUNK) chunks.push(taskIds.slice(i, i + ACTIONS_TASK_CHUNK))
+  const read = (table: string, column: string) =>
+    Promise.all(
+      chunks.map((ids) =>
+        fetchAllRows<Record<string, string>>(
+          () => {
+            let q = supabase.from(table).select(`id, ${column}`).in('task_id', ids).order('id', { ascending: true })
+            if (tid) q = q.eq('tenant_id', tid)
+            return q as unknown as RangeableQuery<Record<string, string>>
+          },
+          { label: `getTaskTableCounts:${table}` }
+        )
+      )
+    ).then((pages) => pages.flat())
+  const [docs, comments, proofs] = await Promise.all([
+    read('task_documents', 'task_id'),
+    read('task_comments', 'task_id'),
+    read('task_action_attachments', 'task_action_id'),
+  ])
+  const bump = (m: Map<string, number>, k: string) => m.set(k, (m.get(k) || 0) + 1)
+  docs.forEach((r) => bump(counts.documents, r.task_id))
+  comments.forEach((r) => bump(counts.comments, r.task_id))
+  proofs.forEach((r) => bump(counts.proofs, r.task_action_id))
+  return counts
+}
+
+// Une tâche neuve avec toutes ses valeurs par défaut (le type d'écriture exige
+// chaque colonne).
+export function newTaskInput(partial: Partial<TaskCreateInput> & { title: string }): TaskCreateInput {
+  return {
+    project_id: null,
+    parent_id: null,
+    status: 'todo',
+    priority: 'medium',
+    assignee: null,
+    assignee_id: null,
+    start_date: null,
+    due_date: null,
+    effort_estimate_h: 0,
+    effort_spent_h: 0,
+    progress: 0,
+    display_order: '0',
+    task_level: 0,
+    budget: 0,
+    color: 0,
+    acceptance_criteria: null,
+    recurring_task: false,
+    recurring_interval: 1,
+    recurring_rule_type: 'weekly',
+    linked_action_id: null,
+    ...partial,
+  }
 }
 
 // ============ Task Comments ============
@@ -372,6 +544,75 @@ export async function createTaskDependency(
     .single()
   if (error) throw error
   return data as ProjectTaskDependency
+}
+
+// Tous les liens qui touchent les tâches affichées, en une lecture (paquets
+// d'identifiants pour borner l'URL, pagination pour les 1000 lignes de PostgREST).
+export async function getDependenciesForTasks(taskIds: string[]): Promise<ProjectTaskDependency[]> {
+  if (taskIds.length === 0) return []
+  const tid = await getTenantId()
+  const chunks: string[][] = []
+  for (let i = 0; i < taskIds.length; i += ACTIONS_TASK_CHUNK) chunks.push(taskIds.slice(i, i + ACTIONS_TASK_CHUNK))
+  const pages = await Promise.all(
+    chunks.map((ids) =>
+      fetchAllRows<ProjectTaskDependency>(
+        () => {
+          let q = supabase
+            .from('project_task_dependencies')
+            .select('*')
+            .in('task_id', ids)
+            .order('created_at', { ascending: true })
+            .order('id', { ascending: true })
+          if (tid) q = q.eq('tenant_id', tid)
+          return q as unknown as RangeableQuery<ProjectTaskDependency>
+        },
+        { label: 'getDependenciesForTasks' }
+      )
+    )
+  )
+  return pages.flat()
+}
+
+export async function getProjectDependencies(): Promise<ProjectDependency[]> {
+  const tid = await getTenantId()
+  return fetchAllRows<ProjectDependency>(
+    () => {
+      let q = supabase
+        .from('project_dependencies')
+        .select('*')
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true })
+      if (tid) q = q.eq('tenant_id', tid)
+      return q as unknown as RangeableQuery<ProjectDependency>
+    },
+    { label: 'getProjectDependencies' }
+  )
+}
+
+export async function createProjectDependency(
+  projectId: string,
+  dependsOnProjectId: string,
+  lagDays = 0
+): Promise<ProjectDependency> {
+  const tid = await getTenantId()
+  const payload = ti(
+    { project_id: projectId, depends_on_project_id: dependsOnProjectId, lag_days: lagDays, tenant_id: tid },
+    'project_dependencies',
+    tid
+  )
+  const { data, error } = await supabase.from('project_dependencies').insert(payload).select().single()
+  if (error) throw error
+  return data as ProjectDependency
+}
+
+export async function deleteProjectDependency(id: string): Promise<void> {
+  const tid = await getTenantId()
+  const { error } = await tud(
+    supabase.from('project_dependencies').delete(),
+    'project_dependencies',
+    tid
+  ).eq('id', id).eq('tenant_id', tid)
+  if (error) throw error
 }
 
 export async function deleteTaskDependency(id: string): Promise<void> {
@@ -499,15 +740,19 @@ export async function createProjectTag(name: string, color?: number): Promise<Pr
 
 // ============ Task Assignees ============
 
-// LOT7-04 : `project_task_assignees` ne porte PAS de colonne `tenant_id` — le filtre
-// applicatif renvoyait 400/42703 et la liste des affectations restait vide.
-// L'isolation multi-société est bien assurée, mais par la RLS, qui remonte à
-// `project_tasks.tenant_id` (policies `tenant_select_` / `tenant_delete_…`).
+// `project_task_assignees` porte `tenant_id` depuis la 805. Avant elle, la colonne
+// n'existait pas : le filtre applicatif renvoyait 400/42703 (LOT7-04) et changer le
+// responsable d'une tâche échouait. Lectures et écritures la filtrent de nouveau
+// par société ; la RLS (société + `can_perform`) et les clés composites tiennent
+// l'isolation en base.
 export async function getTaskAssignees(taskId: string): Promise<{ task_id: string; employee_id: string }[]> {
-  const { data, error } = await supabase
+  const tid = await getTenantId()
+  let q = supabase
     .from('project_task_assignees')
     .select('task_id, employee_id')
     .eq('task_id', taskId)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
   if (error) throw error
   return data || []
 }
@@ -601,7 +846,7 @@ export async function getSubtaskCount(parentId: string): Promise<{ total: number
   const { data, error } = await q
   if (error) throw error
   const all = data || []
-  const done = all.filter((t: any) => t.status === 'done' || t.status === 'canceled').length
+  const done = all.filter((t: { status: string }) => ['done', 'canceled'].includes(taskStatusFromDb(t.status))).length
   return { total: all.length, done }
 }
 

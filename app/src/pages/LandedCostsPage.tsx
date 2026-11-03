@@ -158,6 +158,8 @@ function LandedCostForm({ onClose, onSaved }: { onClose: () => void; onSaved: ()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    // Un coût d'approche à 0 n'est pas un coût : `required` laisse passer le 0 initial.
+    if (!(amount > 0)) { toast('warning', tCommon('form.requiredField'), t('landed.amount')); return }
     setSaving(true)
     try {
       await createLandedCost({ invoice_number: invoice || null, supplier_id: null, total_amount: amount, distribution_method: method, status: 'pending' })

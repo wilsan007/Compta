@@ -535,7 +535,8 @@ function App() {
           <Route path="/project-management/my-tasks" element={<ProjectManagementPage initialView="my-tasks" />} />
           <Route path="/project-management/calendar" element={<ProjectManagementPage initialView="calendar" />} />
           <Route path="/project-management/large-screen" element={<ProjectManagementPage initialView="large-screen" />} />
-          <Route path="/project-management/workload" element={<ProjectManagementPage initialView="workload" />} />
+          {/* ancienne « Charge de travail » : remplacée par l'utilisation des ressources (anciens signets) */}
+          <Route path="/project-management/workload" element={<Navigate to="/project-management/resources" replace />} />
           <Route path="/project-management/timeline" element={<ProjectManagementPage initialView="timeline" />} />
           <Route path="/project-management/activity" element={<ProjectManagementPage initialView="activity" />} />
           <Route path="/project-management/notifications" element={<ProjectManagementPage initialView="notifications" />} />
@@ -545,6 +546,9 @@ function App() {
           <Route path="/project-management/box" element={<ProjectManagementPage initialView="box" />} />
           <Route path="/project-management/doc" element={<ProjectManagementPage initialView="doc" />} />
           <Route path="/project-management/chat" element={<ProjectManagementPage initialView="chat" />} />
+          <Route path="/project-management/folders" element={<ProjectManagementPage initialView="folders" />} />
+          <Route path="/project-management/resources" element={<ProjectManagementPage initialView="resources" />} />
+          <Route path="/project-management/attention" element={<ProjectManagementPage initialView="attention" />} />
           <Route path="/accounting/fixed-assets" element={<FixedAssetsPage />} />
 
           {/* HR & Payroll */}

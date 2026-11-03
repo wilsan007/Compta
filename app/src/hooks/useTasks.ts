@@ -26,9 +26,9 @@ export function useTasks(projectId?: string) {
   const [filters, setFilters] = useState<TaskFilters>(emptyTaskFilters)
   const reqIdRef = useRef(0)
 
-  const refetch = useCallback(async () => {
+  const load = useCallback(async (silent: boolean) => {
     const reqId = ++reqIdRef.current
-    setLoading(true)
+    if (!silent) setLoading(true)
     setError(null)
     try {
       const data = await getTasks(projectId)
@@ -38,9 +38,14 @@ export function useTasks(projectId?: string) {
       if (reqId !== reqIdRef.current) return
       setError(err.message || 'Failed to load tasks')
     } finally {
-      if (reqId === reqIdRef.current) setLoading(false)
+      if (reqId === reqIdRef.current && !silent) setLoading(false)
     }
   }, [projectId])
+
+  const refetch = useCallback(() => load(false), [load])
+  // Relecture sans écran de chargement : après une écriture que la base propage
+  // (progression remontée à la mère et au projet, dates décalées en cascade).
+  const refreshSilently = useCallback(() => load(true), [load])
 
   useEffect(() => {
     refetch()
@@ -68,11 +73,13 @@ export function useTasks(projectId?: string) {
         setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)))
         return updated
       } catch (err) {
-        await refetch()
+        // la base a refusé (borne de dates, lien) : on revient à son état, sans
+        // repasser par l'écran de chargement
+        await load(true)
         throw err
       }
     },
-    [optimisticUpdate, refetch]
+    [optimisticUpdate, load]
   )
 
   const handleDeleteTask = useCallback(
@@ -176,6 +183,7 @@ export function useTasks(projectId?: string) {
     filters,
     setFilters,
     refetch,
+    refreshSilently,
     createTask: handleCreateTask,
     updateTask: handleUpdateTask,
     deleteTask: handleDeleteTask,

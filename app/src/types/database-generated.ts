@@ -16267,6 +16267,55 @@ export interface Database {
         },
       ]
     }
+    project_dependencies: {
+      Row: {
+        id: string
+        tenant_id: string
+        project_id: string
+        depends_on_project_id: string
+        lag_days: number
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        project_id: string
+        depends_on_project_id: string
+        lag_days?: number
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        project_id?: string
+        depends_on_project_id?: string
+        lag_days?: number
+        created_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "project_dependencies_depends_on_fkey",
+          columns: ["tenant_id", "depends_on_project_id"],
+          isOneToOne: false,
+          referencedRelation: "projects",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_dependencies_project_fkey",
+          columns: ["tenant_id", "project_id"],
+          isOneToOne: false,
+          referencedRelation: "projects",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_dependencies_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
     project_docs: {
       Row: {
         id: string
@@ -16580,28 +16629,38 @@ export interface Database {
       Row: {
         task_id: string
         employee_id: string
+        tenant_id: string
       }
       Insert: {
         task_id: string
         employee_id: string
+        tenant_id: string
       }
       Update: {
         task_id?: string
         employee_id?: string
+        tenant_id?: string
       }
       Relationships: [
         {
           foreignKeyName: "project_task_assignees_employee_id_fkey",
-          columns: ["employee_id"],
-          isOneToOne: true,
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
           referencedRelation: "employees",
-          referencedColumns: ["id"]
+          referencedColumns: ["tenant_id", "id"]
         },
         {
           foreignKeyName: "project_task_assignees_task_id_fkey",
-          columns: ["task_id"],
-          isOneToOne: true,
+          columns: ["tenant_id", "task_id"],
+          isOneToOne: false,
           referencedRelation: "project_tasks",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_task_assignees_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
           referencedColumns: ["id"]
         },
       ]
@@ -21604,6 +21663,7 @@ export interface Database {
         due_date: string | null
         notes: string | null
         created_at: string | null
+        progress: number
       }
       Insert: {
         id?: string
@@ -21615,6 +21675,7 @@ export interface Database {
         due_date?: string
         notes?: string
         created_at?: string
+        progress?: number
       }
       Update: {
         id?: string
@@ -21626,6 +21687,7 @@ export interface Database {
         due_date?: string
         notes?: string
         created_at?: string
+        progress?: number
       }
       Relationships: [
         {

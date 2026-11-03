@@ -55,7 +55,9 @@ INSERT INTO roles_perimetre (table_name) VALUES
   ('manufacturing_orders'), ('pos_terminals'), ('pos_sessions'), ('pos_tickets'),
   ('pos_ticket_lines'), ('pos_payments'),
   ('tax_rates'), ('payroll_cumulative'), ('pay_slip_clarified'),
-  ('document_transformations'), ('crm_opportunities');
+  ('document_transformations'), ('crm_opportunities'),
+  -- 805 : affecter quelqu'un à une tâche, c'est modifier la tâche (un lecteur le faisait)
+  ('project_task_assignees');
 
 -- ------------------------------------------------------------
 -- 2. Le détecteur

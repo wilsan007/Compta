@@ -436,6 +436,15 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Audit indépendant du 23/10/2026 : 22 tables dont `tenant_id` est NOT NULL sans
+      # défaut ni déclencheur n'étaient pas dans `TENANT_TABLES` — `ti()` ne le posait
+      # pas, la RLS refusait toute création depuis l'écran (403). Contrôle croisé
+      # base (colonnes) × front (insertions) : il a vu ces 23 tables rouges avant.
+      - name: 'Audit 23/10 : tout insert de l’écran pose son tenant_id'
+        run: node scripts/check-tenant-injection.mjs
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # Règle E01 de l'annexe E du cahier de localisation : un compte écrit en
       # clair là où le pack doit répondre. Ici le gisement de FOND — les
       # définitions effectives des fonctions (`pg_proc.prosrc`) : c'est un
@@ -986,6 +995,29 @@ jobs:
       # épuisait la pile). T01/T02/T04/T05 vus rouges avant la 303.
       - name: 'AUD : avancement pondéré et anti-cycle des tâches (303)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/303_project_progress_and_cycle_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # 800 → 802 (24/10/2026) : gestion de projets. Un vocabulaire de statut
+      # (l'écran écrivait `doing`, la base comparait `in_progress`), un taux de
+      # réalisation par action et UNE règle d'avancement (actions + sous-tâches
+      # se réécrivaient l'un l'autre), les bornes de dates (enfant dans son
+      # parent, parent déplacé = enfants déplacés), et les liens « B après A »
+      # entre tâches et entre projets avec report automatique. 22 scénarios,
+      # 0 vert avant les migrations (13 rouges, 8 impossibles faute de colonne
+      # et de table). T22 rejoue le déplacement en `authenticated` dans une
+      # session neuve : joué en superutilisateur, un droit d'exécution retiré
+      # passait inaperçu (mesuré sur Supabase local le 24/10).
+      # 803 et 804 (25/10) : une action ne se coche qu'avec une preuve jointe
+      # (T23 → T25, rouges avant la 803), et le statut d'une tâche suit son
+      # avancement calculé sans écraser un statut posé à la main (T26, rouge
+      # avant la 804). 26 scénarios.
+      # 805 (30/10) : les responsables d'une tâche portent leur société —
+      # `project_task_assignees` n'avait pas de tenant_id (T27 → T30 rouges avant :
+      # 42703 depuis l'écran, salarié d'une autre société accepté, lecteur qui
+      # retire). 31 scénarios.
+      - name: 'Gestion de projets : statuts, avancement, bornes, dépendances, preuves, responsables (800-805)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/800_pm_gestion_projets_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 

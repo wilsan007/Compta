@@ -140,7 +140,7 @@ export function RoutingsPage() {
                 <TableRow>
                   <TableCell className="font-mono text-xs">
                     <div className="flex items-center gap-1">
-                      <button onClick={() => toggleExpand(r.id)} className="p-0.5 rounded hover:bg-[var(--color-neutral-100)]">
+                      <button onClick={() => toggleExpand(r.id)} aria-label={tCommon(expanded.has(r.id) ? 'actions.collapse' : 'actions.expand')} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)]">
                         {expanded.has(r.id) ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                       </button>
                       {r.code}

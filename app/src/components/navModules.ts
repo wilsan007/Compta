@@ -408,6 +408,7 @@ export const navModules: NavModule[] = [
         hubPath: '/project-management/section/views',
         items: [
           { labelKey: 'items.pmHome', path: '/project-management' },
+          { labelKey: 'items.pmAttention', path: '/project-management/attention' },
           { labelKey: 'items.pmTasks', path: '/project-management/tasks' },
           { labelKey: 'items.pmKanban', path: '/project-management/kanban' },
           { labelKey: 'items.pmGantt', path: '/project-management/gantt' },
@@ -429,7 +430,7 @@ export const navModules: NavModule[] = [
         hubPath: '/project-management/section/personal',
         items: [
           { labelKey: 'items.pmMyTasks', path: '/project-management/my-tasks' },
-          { labelKey: 'items.pmWorkload', path: '/project-management/workload' },
+          { labelKey: 'items.pmResources', path: '/project-management/resources' },
           { labelKey: 'items.pmActivity', path: '/project-management/activity' },
           { labelKey: 'items.pmNotifications', path: '/project-management/notifications' },
         ],
@@ -453,6 +454,7 @@ export const navModules: NavModule[] = [
         subGroupKey: 'subGroups.pmCollaboration',
         hubPath: '/project-management/section/collaboration',
         items: [
+          { labelKey: 'items.pmFolders', path: '/project-management/folders' },
           { labelKey: 'items.pmDoc', path: '/project-management/doc' },
           { labelKey: 'items.pmChat', path: '/project-management/chat' },
         ],

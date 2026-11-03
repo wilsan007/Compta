@@ -22,6 +22,7 @@ const statusColors: Record<TaskStatus, { bg: string; border: string; text: strin
 
 export function BoxView({ projectId }: BoxViewProps) {
   const { t } = useTranslation('taskManagement')
+  const { t: tc } = useTranslation('common')
   const { tasks, loading } = useTaskContext()
   const { projects, projectColorMap } = useProjectContext()
   const [expandedBoxes, setExpandedBoxes] = useState<Set<string>>(new Set())
@@ -100,11 +101,15 @@ export function BoxView({ projectId }: BoxViewProps) {
           {/* Box header */}
           <div className="flex items-center gap-2 px-3 py-2">
             {hasChildren ? (
-              <button className="flex items-center justify-center w-5 h-5 rounded flex-shrink-0 hover:bg-black/5 transition-colors">
+              <button
+                aria-label={isExpanded ? tc('actions.collapse') : tc('actions.expand')}
+                aria-expanded={isExpanded}
+                className="flex items-center justify-center w-6 h-6 rounded flex-shrink-0 hover:bg-black/5 transition-colors"
+              >
                 {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
               </button>
             ) : (
-              <span className="w-5 h-5 flex-shrink-0" />
+              <span className="w-6 h-6 flex-shrink-0" />
             )}
 
             {/* Status badge */}

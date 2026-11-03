@@ -117,17 +117,17 @@ export function KnowledgeBasePage() {
           {filtered.map(a => (
             <TableRow key={a.id}>
               <TableCell className="font-medium">
-                <button onClick={() => handleView(a.id)} className="hover:underline text-left">{a.title}</button>
+                <button onClick={() => handleView(a.id)} className="min-h-6 hover:underline text-left">{a.title}</button>
               </TableCell>
               <TableCell className="text-xs">{a.category ? t(`knowledgeBase.${a.category}`) : '-'}</TableCell>
               <TableCell><Badge variant={getStatusBadge(a.status)}>{t(`knowledgeBase.${a.status}`)}</Badge></TableCell>
               <TableCell className="font-mono text-xs">{a.views}</TableCell>
               <TableCell className="text-xs">
                 <div className="flex gap-1">
-                  <button onClick={() => handleRate(a.id, true)} className="flex items-center gap-1 text-[var(--color-success)] hover:underline">
+                  <button onClick={() => handleRate(a.id, true)} className="flex min-h-6 min-w-6 items-center gap-1 text-[var(--color-success)] hover:underline">
                     <ThumbsUp className="w-3 h-3" /> {a.helpful_count}
                   </button>
-                  <button onClick={() => handleRate(a.id, false)} className="flex items-center gap-1 text-[var(--color-danger)] hover:underline ml-2">
+                  <button onClick={() => handleRate(a.id, false)} className="flex min-h-6 min-w-6 items-center gap-1 text-[var(--color-danger)] hover:underline ml-2">
                     <ThumbsDown className="w-3 h-3" /> {a.not_helpful_count}
                   </button>
                 </div>

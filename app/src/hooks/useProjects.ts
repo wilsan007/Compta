@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { GANTT_COLOR_PALETTE } from '@/lib/ganttColors'
 import { getProjects } from '@/lib/queries/accounting'
 import { getCustomers } from '@/lib/queries/partners'
 import type { Project } from '@/types'
@@ -27,8 +28,8 @@ export function useProjects() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const refetch = useCallback(async () => {
-    setLoading(true)
+  const refetch = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
     setError(null)
     try {
       const [data, customers] = await Promise.all([getProjects(), getCustomers()])
@@ -39,24 +40,43 @@ export function useProjects() {
     } catch (err: any) {
       setError(err.message || 'Failed to load projects')
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [])
+
+  // Après une écriture qui se propage en base (dates décalées, progression
+  // remontée), on relit sans repasser par l'écran de chargement.
+  const refreshSilently = useCallback(() => refetch(true), [refetch])
 
   useEffect(() => {
     refetch()
   }, [refetch])
 
-  const projectColorMap = new Map<string, string>()
-  for (const p of projects) {
-    projectColorMap.set(p.id, p.color || '#0066cc')
-  }
+  // Une couleur par projet, la même dans toutes les vues : celle du projet si
+  // elle est posée, sinon une couleur de la palette attribuée dans l'ordre de
+  // CRÉATION (stable : un projet ajouté ne repeint pas les autres). L'ancien
+  // repli peignait tous les projets sans couleur du même bleu.
+  const projectColorMap = useMemo(() => {
+    const map = new Map<string, string>()
+    const byCreation = [...projects].sort((a, b) =>
+      String(a.created_at || '').localeCompare(String(b.created_at || '')) || a.id.localeCompare(b.id)
+    )
+    byCreation.forEach((p, i) => {
+      // `#0066cc` est la valeur PAR DÉFAUT de la colonne : posée sur tout projet
+      // créé sans choix, elle peignait tous les projets du même bleu (mesuré le
+      // 25/10). Seule une couleur réellement choisie l'emporte sur la palette.
+      const own = typeof p.color === 'string' && /^#[0-9a-f]{6}$/i.test(p.color) && p.color.toLowerCase() !== '#0066cc' ? p.color : null
+      map.set(p.id, own ?? GANTT_COLOR_PALETTE[i % 30])
+    })
+    return map
+  }, [projects])
 
   return {
     projects,
     loading,
     error,
     refetch,
+    refreshSilently,
     projectColorMap,
     customerNames,
   }

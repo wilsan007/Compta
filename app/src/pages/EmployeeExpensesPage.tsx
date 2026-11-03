@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Badge } from '@/components/ui'
+import { getMyProfile } from '@/lib/queries/sprintH'
 import { getMyExpenseReports, createMyExpenseReport, submitMyExpenseReport, deleteMyExpenseReport, getExpenseCategories, getExpenseReportLines, addExpenseReportLine, getExpensePayrollIntegration } from '@/lib/queries/sprintDE'
 import type { ExpensePayrollLink } from '@/lib/queries/sprintDE'
 import { errorMessage, formatDate, formatCurrency } from '@/lib/utils'
@@ -152,6 +153,10 @@ function ExpenseReportForm({ onClose, onSaved }: { onClose: () => void; onSaved:
     e.preventDefault()
     setSaving(true)
     try {
+      // Un compte connecté n'est pas forcément un salarié : on le dit avant l'envoi
+      // plutôt que de laisser la base répondre « employee_id manquant ».
+      const emp = await getMyProfile()
+      if (!emp?.id) throw new Error(tCommon('common.noEmployeeRecord'))
       await createMyExpenseReport({ period } as any)
       toast('success', tCommon('common.success'), tCommon('common.saved'))
       onSaved()

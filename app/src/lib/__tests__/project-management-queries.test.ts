@@ -76,7 +76,7 @@ import {
   getTaskActions,
   addActionColumn,
   addDetailedAction,
-  recalculateTaskProgress,
+  updateActionProgress,
   toggleAction,
   deleteAction,
   getTaskComments,
@@ -338,56 +338,27 @@ describe('3. Task Actions (checklist)', () => {
     expect(payload.weight_percentage).toBe(30)
   })
 
-  it('recalculateTaskProgress avec actions pondérées', async () => {
-    const actions = [
-      { id: 'a1', is_done: true, weight_percentage: 50 },
-      { id: 'a2', is_done: false, weight_percentage: 50 },
-    ]
-    // Premier appel: getTaskActions
-    setMockData(actions)
-    // Deuxième appel: updateTask
-    mockChain.single = vi.fn(() => Promise.resolve({ data: { id: 't1', progress: 50 }, error: null }))
-    const progress = await recalculateTaskProgress('t1')
-    expect(progress).toBe(50)
-  })
-
-  it('recalculateTaskProgress sans poids → proportionnelle', async () => {
-    const actions = [
-      { id: 'a1', is_done: true, weight_percentage: 0 },
-      { id: 'a2', is_done: true, weight_percentage: 0 },
-      { id: 'a3', is_done: false, weight_percentage: 0 },
-    ]
-    setMockData(actions)
-    mockChain.single = vi.fn(() => Promise.resolve({ data: { progress: 67 }, error: null }))
-    const progress = await recalculateTaskProgress('t1')
-    expect(progress).toBe(67)  // 2/3 * 100 = 66.67 → arrondi à 67
-  })
-
-  it('recalculateTaskProgress sans actions → 0', async () => {
-    setMockData([])
-    const progress = await recalculateTaskProgress('t1')
-    expect(progress).toBe(0)
-  })
-
-  it('recalculateTaskProgress toutes done → 100', async () => {
-    const actions = [
-      { id: 'a1', is_done: true, weight_percentage: 50 },
-      { id: 'a2', is_done: true, weight_percentage: 50 },
-    ]
-    setMockData(actions)
-    mockChain.single = vi.fn(() => Promise.resolve({ data: { progress: 100 }, error: null }))
-    const progress = await recalculateTaskProgress('t1')
-    expect(progress).toBe(100)
-  })
-
-  it('toggleAction met à jour et recalcule', async () => {
+  // 800 (24/10/2026) : la progression d'une tâche est calculée par la BASE
+  // (actions pondérées × taux, sous-tâches, remontée). L'ancien
+  // `recalculateTaskProgress` la recalculait côté client à partir des seules
+  // actions et la RÉÉCRIVAIT — il écrasait la part des sous-tâches. Il est
+  // retiré ; ces tests vérifient que le client relit au lieu d'écrire.
+  it('toggleAction coche puis RELIT la progression calculée par la base', async () => {
     const action = { id: 'a1', task_id: 't1', is_done: true, weight_percentage: 100 }
     mockChain.single = vi.fn(() => Promise.resolve({ data: action, error: null }))
-    // Pour recalculateTaskProgress
-    mockChain.then = vi.fn((resolve: any) => Promise.resolve({ data: [action], error: null }).then(resolve))
+    mockChain.maybeSingle = vi.fn(() => Promise.resolve({ data: { progress: 73 }, error: null }))
     const result = await toggleAction('a1', true)
     expect(result.action).toEqual(action)
-    expect(result.progress).toBe(100)
+    expect(result.progress).toBe(73)
+    // une seule écriture : la case de l'action ; aucune sur project_tasks.progress
+    const writes = mockChain.update.mock.calls.map((c: unknown[]) => c[0])
+    expect(writes).toEqual([{ is_done: true }])
+  })
+
+  it('updateActionProgress écrit le taux de l’action, rien d’autre', async () => {
+    mockChain.single = vi.fn(() => Promise.resolve({ data: { id: 'a1', progress: 60 }, error: null }))
+    await updateActionProgress('a1', 60)
+    expect(mockChain.update.mock.calls.map((c: unknown[]) => c[0])).toEqual([{ progress: 60 }])
   })
 
   it('deleteAction supprime', async () => {
@@ -540,6 +511,8 @@ describe('9. Task Assignees', () => {
     const payload = mockChain.insert.mock.calls[0][0]
     expect(payload.task_id).toBe('t1')
     expect(payload.employee_id).toBe('e1')
+    // 805 : la table porte tenant_id (clés composites) — l'écriture le renseigne
+    expect(payload).toHaveProperty('tenant_id')
   })
 
   it('unassignTaskFromEmployee supprime de la junction', async () => {
@@ -548,6 +521,7 @@ describe('9. Task Assignees', () => {
     expect(mockChain.delete).toHaveBeenCalled()
     expect(mockChain.eq).toHaveBeenCalledWith('task_id', 't1')
     expect(mockChain.eq).toHaveBeenCalledWith('employee_id', 'e1')
+    expect(mockChain.eq).toHaveBeenCalledWith('tenant_id', expect.anything())
   })
 
   it('setTaskAssignee avec employeeId null → supprime seulement', async () => {

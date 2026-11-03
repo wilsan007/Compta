@@ -91,6 +91,7 @@ machine ; ces deux tables sont la vérité du dépôt.
 | **`770` → `779`** | **plan6 A3 (certificat d'intégrité, A3.4)** — **P1** : `chain_certificat_integrite`, l'attestation d'intégrité technique | **2026-10-11** |
 | **`780` → `789`** | **garde de suppression des types récents** (suite de la `450` T11) — ⚠️ **ordre** : sa boucle couvre le registre **tel qu'il est à son passage** → elle doit tourner **après toutes les inscriptions de types**. Prise le 13/10 après échec de la tentative `457` (suite `450` T11 rouge, run `38424071395`) | **2026-10-13** |
 | **`790` → `799`** | **plan6 intégration (correctifs de fusion)** — `790` : garde `create_notification` limité aux appels RPC hors déclencheur + `REVOKE` `zz_715_check_subscription_member` (batterie du 13/10 : 22 échecs, causes mesurées) | **2026-10-13** |
+| **`800` → `809`** | **gestion de projets (tableau, Gantt, dépendances)** — `800` statuts + taux d'action + avancement unique, `801` bornes de dates, `802` dépendances tâches et projets, `803` preuve obligatoire pour cocher une action, `804` statut qui suit l'avancement (prises par `migration-numero.mjs`) | **2026-10-24** |
 | `380` → `399` | **LIBRE** — à inscrire avant usage | — |
 
 

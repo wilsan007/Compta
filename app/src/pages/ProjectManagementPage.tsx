@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '@/lib/toast'
-import { Search, Plus, LayoutGrid } from 'lucide-react'
+import { Plus, LayoutGrid } from 'lucide-react'
 import { DynamicTable } from '@/components/project-management/DynamicTable'
 import { KanbanBoard } from '@/components/project-management/KanbanBoard'
 import { GanttChart } from '@/components/project-management/GanttChart'
@@ -11,7 +11,6 @@ import { BurndownChart } from '@/components/project-management/BurndownChart'
 import { MyTasksView } from '@/components/project-management/MyTasksView'
 import { CalendarView } from '@/components/project-management/CalendarView'
 import { LargeScreenView } from '@/components/project-management/LargeScreenView'
-import { WorkloadView } from '@/components/project-management/WorkloadView'
 import { ActivityView } from '@/components/project-management/ActivityView'
 import { TimelineView } from '@/components/project-management/TimelineView'
 import { NotificationsView } from '@/components/project-management/NotificationsView'
@@ -19,6 +18,9 @@ import { MindMapView } from '@/components/project-management/MindMapView'
 import { BoxView } from '@/components/project-management/BoxView'
 import { DocView } from '@/components/project-management/DocView'
 import { ChatView } from '@/components/project-management/ChatView'
+import { ProjectFoldersView } from '@/components/project-management/ProjectFoldersView'
+import { AttentionView } from '@/components/project-management/AttentionView'
+import { ResourceUsageView } from '@/components/project-management/ResourceUsageView'
 import { TaskCreationDialog } from '@/components/project-management/TaskCreationDialog'
 import { Breadcrumb } from '@/components/ui'
 import { TaskProvider, useTaskContext } from '@/contexts/TaskContext'
@@ -27,9 +29,10 @@ import type { TaskCreateInput } from '@/types/projectManagement'
 
 type ViewType =
   | 'table' | 'kanban' | 'gantt' | 'graph' | 'pivot' | 'burndown'
-  | 'my-tasks' | 'calendar' | 'large-screen' | 'workload'
+  | 'my-tasks' | 'calendar' | 'large-screen'
   | 'activity' | 'timeline' | 'notifications'
   | 'mind-map' | 'box' | 'doc' | 'chat'
+  | 'folders' | 'resources' | 'attention'
 
 interface ProjectManagementPageProps {
   projectId?: string
@@ -40,11 +43,15 @@ export function ProjectManagementPage({ projectId, initialView }: ProjectManagem
   const { t } = useTranslation('taskManagement')
   const { t: tNav } = useTranslation('nav')
   const view: ViewType = initialView || 'table'
-  const [searchQuery, setSearchQuery] = useState('')
   const [taskDialogOpen, setTaskDialogOpen] = useState(false)
 
   return (
     <div className="flex flex-col h-full">
+      {/* Vue tableau : ni fil d'Ariane ni bandeau « Gestion de Projets » — le
+          tableau dynamique a sa propre barre (titre, création, export) et prend
+          toute la page (demandé le 25/10). Les autres vues gardent le bandeau. */}
+      {view !== 'table' && (
+      <>
       <Breadcrumb items={[{ label: tNav('groups.projectManagement') }, { label: t('title') }]} />
 
       {/* Top toolbar */}
@@ -59,17 +66,8 @@ export function ProjectManagementPage({ projectId, initialView }: ProjectManagem
           </div>
         </div>
 
+        {/* Le champ de recherche qui vivait ici n'était lu par AUCUNE vue (placebo). */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="relative hidden sm:block">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t('actions.search')}
-              className="w-40 lg:w-56 pl-8 pr-3 py-1.5 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-neutral-50)] text-[var(--color-text)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent transition-all"
-            />
-          </div>
           <button
             onClick={() => setTaskDialogOpen(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)] transition-colors"
@@ -79,6 +77,8 @@ export function ProjectManagementPage({ projectId, initialView }: ProjectManagem
           </button>
         </div>
       </div>
+      </>
+      )}
 
       {/* Full-width content area */}
       <div className="flex-1 overflow-hidden bg-[var(--color-background)]">
@@ -94,7 +94,6 @@ export function ProjectManagementPage({ projectId, initialView }: ProjectManagem
             {view === 'my-tasks' && <MyTasksView projectId={projectId} />}
             {view === 'calendar' && <CalendarView projectId={projectId} />}
             {view === 'large-screen' && <LargeScreenView projectId={projectId} />}
-            {view === 'workload' && <WorkloadView projectId={projectId} />}
             {view === 'timeline' && <TimelineView projectId={projectId} />}
             {view === 'activity' && <ActivityView projectId={projectId} />}
             {view === 'notifications' && <NotificationsView />}
@@ -102,6 +101,9 @@ export function ProjectManagementPage({ projectId, initialView }: ProjectManagem
             {view === 'box' && <BoxView projectId={projectId} />}
             {view === 'doc' && <DocView projectId={projectId} />}
             {view === 'chat' && <ChatView projectId={projectId} />}
+            {view === 'folders' && <ProjectFoldersView projectId={projectId} />}
+            {view === 'resources' && <ResourceUsageView projectId={projectId} />}
+            {view === 'attention' && <AttentionView projectId={projectId} />}
             <ToolbarTaskDialog
               open={taskDialogOpen}
               onClose={() => setTaskDialogOpen(false)}

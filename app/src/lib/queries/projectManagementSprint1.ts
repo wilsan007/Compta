@@ -1,4 +1,5 @@
 // Sprint 1 queries: Time Tracking, Watchers, Activity Log, Templates, Notifications
+import { fromDbTask } from '@/lib/taskStatus'
 import { supabase } from '@/lib/supabase'
 import { getTenantId, ti, tud } from '@/lib/queries/core'
 import { shouldSendEmail } from '@/types/projectManagement'
@@ -11,7 +12,6 @@ import type {
   TaskTemplate,
   TaskTemplateCreateInput,
   ProjectNotification,
-  WorkloadEntry,
 } from '@/types/projectManagement'
 import type { ProjectTask } from '@/types/projectManagement'
 
@@ -352,7 +352,7 @@ export async function applyTaskTemplate(
     .select()
     .single()
   if (taskErr) throw taskErr
-  const created = task as ProjectTask
+  const created = fromDbTask(task as ProjectTask)
 
   // Create checklist items
   if (tpl.checklist_template && Array.isArray(tpl.checklist_template)) {
@@ -532,53 +532,4 @@ export async function createNotification(
     // Email failure should not block the in-app notification
     console.error('Notification email error:', emailErr)
   }
-}
-
-// ============ Workload Computation ============
-
-export async function getWorkloadData(tasks: ProjectTask[], capacityHoursPerWeek: number = 40): Promise<WorkloadEntry[]> {
-  const now = new Date()
-  const overdueThreshold = now.toISOString().split('T')[0]
-
-  const byEmployee = new Map<string, { name: string; tasks: ProjectTask[] }>()
-
-  for (const task of tasks) {
-    if (!task.assignee || task.status === 'done' || task.status === 'canceled') continue
-    const name = task.assignee
-    if (!byEmployee.has(name)) {
-      byEmployee.set(name, { name, tasks: [] })
-    }
-    byEmployee.get(name)!.tasks.push(task)
-  }
-
-  const entries: WorkloadEntry[] = []
-  for (const [name, info] of byEmployee) {
-    const total = info.tasks.length
-    const active = info.tasks.filter((t) => t.status === 'doing' || t.status === 'todo').length
-    const overdue = info.tasks.filter(
-      (t) => t.due_date && t.due_date < overdueThreshold && t.status !== 'done' && t.status !== 'canceled'
-    ).length
-    const estimated = info.tasks.reduce((sum, t) => sum + (t.effort_estimate_h || 0), 0)
-    const spent = info.tasks.reduce((sum, t) => sum + (t.effort_spent_h || 0), 0)
-    const utilization = capacityHoursPerWeek > 0 ? Math.round((estimated / capacityHoursPerWeek) * 100) : 0
-
-    let status: WorkloadEntry['status'] = 'balanced'
-    if (utilization > 100) status = 'overloaded'
-    else if (utilization < 50) status = 'underloaded'
-
-    entries.push({
-      employee_id: name,
-      employee_name: name,
-      total_tasks: total,
-      active_tasks: active,
-      overdue_tasks: overdue,
-      estimated_hours: Math.round(estimated * 10) / 10,
-      spent_hours: Math.round(spent * 10) / 10,
-      capacity_hours: capacityHoursPerWeek,
-      utilization_percentage: utilization,
-      status,
-    })
-  }
-
-  return entries.sort((a, b) => b.utilization_percentage - a.utilization_percentage)
 }

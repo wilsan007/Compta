@@ -1,10 +1,5 @@
-import type { ViewMode, GanttTask } from '@/types/projectManagement'
+import type { ViewMode } from '@/types/projectManagement'
 import { getCurrentLocale } from '@/lib/utils'
-
-export interface ViewConfigInternal {
-  viewMode: ViewMode
-  yearBuffer: number
-}
 
 export const VIEW_MODE_CONFIG: Record<ViewMode, { label: string; daysPerUnit: number; pixelPerUnit: number }> = {
   day: { label: 'Day', daysPerUnit: 1, pixelPerUnit: 40 },
@@ -12,63 +7,6 @@ export const VIEW_MODE_CONFIG: Record<ViewMode, { label: string; daysPerUnit: nu
   month: { label: 'Month', daysPerUnit: 30, pixelPerUnit: 120 },
   quarter: { label: 'Quarter', daysPerUnit: 90, pixelPerUnit: 100 },
   year: { label: 'Year', daysPerUnit: 365, pixelPerUnit: 80 },
-}
-
-export function getTimelineRange(tasks: GanttTask[], yearBuffer: number = 1): { start: Date; end: Date } {
-  if (tasks.length === 0) {
-    const now = new Date()
-    const start = new Date(now.getFullYear() - yearBuffer, 0, 1)
-    const end = new Date(now.getFullYear() + yearBuffer, 11, 31)
-    return { start, end }
-  }
-
-  let minDate = new Date(tasks[0].start_date || tasks[0].due_date || new Date())
-  let maxDate = new Date(tasks[0].due_date || tasks[0].start_date || new Date())
-
-  for (const task of tasks) {
-    if (task.start_date) {
-      const d = new Date(task.start_date)
-      if (d < minDate) minDate = d
-    }
-    if (task.due_date) {
-      const d = new Date(task.due_date)
-      if (d > maxDate) maxDate = d
-    }
-  }
-
-  minDate.setFullYear(minDate.getFullYear() - yearBuffer)
-  maxDate.setFullYear(maxDate.getFullYear() + yearBuffer)
-
-  return { start: minDate, end: maxDate }
-}
-
-export function getTaskPosition(
-  task: GanttTask,
-  timelineStart: Date,
-  viewMode: ViewMode
-): { left: number; width: number } {
-  const config = VIEW_MODE_CONFIG[viewMode]
-  const dayToPixel = config.pixelPerUnit / config.daysPerUnit
-
-  const taskStart = new Date(task.start_date || task.due_date || new Date())
-  const taskEnd = new Date(task.due_date || task.start_date || new Date())
-
-  if (taskEnd < taskStart) taskEnd.setTime(taskStart.getTime())
-
-  const diffStart = Math.max(0, (taskStart.getTime() - timelineStart.getTime()) / (1000 * 60 * 60 * 24))
-  const diffEnd = Math.max(1, (taskEnd.getTime() - taskStart.getTime()) / (1000 * 60 * 60 * 24))
-
-  const left = diffStart * dayToPixel
-  const width = Math.max(20, diffEnd * dayToPixel)
-
-  return { left, width }
-}
-
-export function getTimelineWidth(timelineStart: Date, timelineEnd: Date, viewMode: ViewMode): number {
-  const config = VIEW_MODE_CONFIG[viewMode]
-  const dayToPixel = config.pixelPerUnit / config.daysPerUnit
-  const totalDays = (timelineEnd.getTime() - timelineStart.getTime()) / (1000 * 60 * 60 * 24)
-  return totalDays * dayToPixel
 }
 
 export function getTimelineHeaders(
